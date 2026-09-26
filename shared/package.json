@@ -1,0 +1,15 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for ServiceBay PM",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "echo \"Shared workspace - no build needed (TypeScript only)\"",
+    "lint": "echo \"No lint configured\"",
+    "test": "echo \"No tests configured\"",
+    "typecheck": "echo \"No typecheck configured\""
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

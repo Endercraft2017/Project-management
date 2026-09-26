@@ -1,0 +1,45 @@
+{
+  "name": "servicebay-pm",
+  "version": "1.0.0",
+  "description": "Project management and collaboration tool for ServiceBay.ai",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client",
+    "shared"
+  ],
+  "scripts": {
+    "start": "npm run start --workspace=server",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run prisma:generate && npm run build --workspaces",
+    "build:server": "npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "prisma:generate": "cd server && npx prisma generate",
+    "test": "npm run test --workspaces",
+    "test:server": "npm run test --workspace=server",
+    "test:client": "npm run test --workspace=client",
+    "lint": "npm run lint --workspaces",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "npm run typecheck --workspaces",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^7.0.2",
+    "concurrently": "^8.2.2",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "nodemailer": "^7.0.9",
+    "prettier": "^3.2.5",
+    "sass-embedded": "^1.93.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@radix-ui/react-tooltip": "^1.2.8"
+  }
+}

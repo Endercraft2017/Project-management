@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design system: "Liquid Glass" (adapted from Test_web_UIs/saved/002-liquid-glass).
+ * App chrome (sidebar, top bar, dock, menus) is translucent glass floating over an
+ * animated color field. Work surfaces use a denser pane and solid cards so dense
+ * content (task trees, gantt, chat) stays legible.
+ */
+@layer base {
+  :root {
+    --background: 240 33% 97%;
+    --foreground: 240 24% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 24% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 24% 12%;
+    --primary: 245 75% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 25% 94%;
+    --secondary-foreground: 240 24% 16%;
+    --muted: 240 22% 94%;
+    --muted-foreground: 240 8% 44%;
+    --accent: 245 60% 95%;
+    --accent-foreground: 245 50% 30%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 18% 88%;
+    --input: 240 18% 86%;
+    --ring: 245 75% 60%;
+    --radius: 0.75rem;
+
+    /* Glass material */
+    --app-bg: #eef0fb;
+    --glass-bg: rgba(255, 255, 255, 0.55);
+    --glass-bg-strong: rgba(255, 255, 255, 0.74);
+    --glass-border: rgba(255, 255, 255, 0.75);
+    --glass-highlight: rgba(255, 255, 255, 0.55);
+    --glass-shadow: 0 8px 32px rgba(31, 27, 75, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -1px 0 rgba(31, 27, 75, 0.04);
+
+    /* Ambient background blobs */
+    --blob-1: #ff7ad1;
+    --blob-2: #6b8cff;
+    --blob-3: #5ff0b8;
+    --blob-opacity: 0.45;
+  }
+
+  .dark {
+    --background: 240 33% 6%;
+    --foreground: 240 20% 96%;
+    --card: 240 24% 10%;
+    --card-foreground: 240 20% 96%;
+    --popover: 240 24% 11%;
+    --popover-foreground: 240 20% 96%;
+    --primary: 245 85% 70%;
+    --primary-foreground: 240 40% 8%;
+    --secondary: 240 18% 16%;
+    --secondary-foreground: 240 20% 96%;
+    --muted: 240 18% 15%;
+    --muted-foreground: 240 10% 66%;
+    --accent: 245 30% 20%;
+    --accent-foreground: 240 20% 96%;
+    --destructive: 0 65% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 16% 18%;
+    --input: 240 16% 20%;
+    --ring: 245 85% 70%;
+
+    --app-bg: #0b0b16;
+    --glass-bg: rgba(24, 24, 44, 0.5);
+    --glass-bg-strong: rgba(14, 14, 28, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.07);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.02);
+
+    --blob-1: #ff5ecb;
+    --blob-2: #4d7bff;
+    --blob-3: #3ddc97;
+    --blob-opacity: 0.5;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply text-foreground antialiased;
+    background-color: var(--app-bg);
+  }
+}
+
+@layer components {
+  /*
+   * The glass material. The specular highlight is a background layer (not a
+   * ::before overlay) so it never tints text or needs positioning.
+   *
+   * backdrop-filter makes an element the containing block for position:fixed
+   * descendants, so never put .glass on an element whose children render
+   * fixed modals — use a sibling backdrop layer instead (see GlassSurface).
+   */
+  .glass,
+  .glass-strong {
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  .glass {
+    background: linear-gradient(135deg, var(--glass-highlight) 0%, transparent 40%), var(--glass-bg);
+  }
+
+  .glass-strong {
+    background: linear-gradient(135deg, var(--glass-highlight) 0%, transparent 30%),
+      var(--glass-bg-strong);
+  }
+
+  /* Browsers without backdrop-filter: fall back to near-opaque surfaces */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .glass-strong {
+      background: hsl(var(--card) / 0.96);
+    }
+  }
+
+  .ambient-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(60px);
+    opacity: var(--blob-opacity);
+    will-change: transform;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-foreground/15;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-foreground/30;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mention styles (for display in messages) */
+.mention {
+  @apply inline-block px-1.5 py-0.5 rounded-md bg-blue-600 text-white border border-blue-700 font-medium cursor-pointer transition-colors hover:bg-blue-700;
+}
+
+.mention-you {
+  @apply bg-orange-600 text-white border-orange-700 dark:bg-orange-600 dark:text-white dark:border-orange-700 font-semibold;
+}
+
+.mention-you:hover {
+  @apply bg-orange-700 dark:bg-orange-700;
+}
+
+/* Mention chip styles (for textarea input) */
+.mention-chip {
+  @apply inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-primary/20 text-primary font-medium cursor-default select-none;
+}
+
+.mention-chip:hover {
+  @apply bg-primary/30;
+}
+
+/* Task mention chip styles */
+.task-mention-chip {
+  @apply inline-flex items-center px-2 py-0.5 mx-0.5 rounded-md bg-green-500/20 text-green-700 dark:text-green-400 font-medium cursor-pointer select-none transition-colors;
+}
+
+.task-mention-chip:hover {
+  @apply bg-green-500/30 underline;
+}
+
+/* Mention input contenteditable styles */
+.mention-input {
+  @apply outline-none;
+}
+
+.mention-input:empty:before {
+  @apply text-muted-foreground;
+  content: attr(data-placeholder);
+}
+
+/* Message highlight animation (like Slack) */
+@keyframes messageHighlight {
+  0% {
+    background-color: rgb(255, 243, 148); /* Yellow highlight */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.message-highlight {
+  animation: messageHighlight 2s ease-out;
+}
+
+.dark .message-highlight {
+  animation: messageHighlightDark 2s ease-out;
+}
+
+@keyframes messageHighlightDark {
+  0% {
+    background-color: rgb(113, 96, 0); /* Dark yellow highlight */
+  }
+  100% {
+    background-color: transparent;
+  }
+}

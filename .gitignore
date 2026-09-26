@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Production
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.test
+.env.temp
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Prisma
+prisma/migrations/*_*.sql
+
+# Uploads
+uploads/
+*.tmp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Misc
+.cache
+.temp
+
+# Local tool state
+.kilo/
+.claude/settings.local.json

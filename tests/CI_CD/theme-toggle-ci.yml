@@ -1,0 +1,21 @@
+name: Theme Toggle CI
+
+on:
+  push:
+    paths:
+      - 'client/src/components/theme/**'
+      - 'client/src/store/themeStore.ts'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm test -- theme-toggle.test.ts

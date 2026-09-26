@@ -1,0 +1,226 @@
+/**
+ * Frappe Gantt Custom Styles
+ * Customizes Gantt chart to match application theme
+ */
+
+/* Gantt Container */
+.gantt-wrapper {
+  min-height: 400px;
+  overflow-x: auto;
+}
+
+.gantt-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Gantt SVG Background */
+.gantt .grid-background {
+  fill: hsl(var(--background));
+}
+
+.gantt .grid-header {
+  fill: hsl(var(--muted));
+}
+
+.gantt .grid-row {
+  fill: hsl(var(--card));
+}
+
+.gantt .grid-row:nth-child(even) {
+  fill: hsl(var(--muted) / 0.3);
+}
+
+/* Today Marker */
+.gantt .today-highlight {
+  fill: hsl(var(--primary) / 0.1);
+  stroke: hsl(var(--primary));
+  stroke-width: 1;
+}
+
+/* Task Bars - Status Colors */
+.gantt .bar-wrapper .gantt-task-completed .bar {
+  fill: hsl(142.1 76.2% 36.3%); /* Green - Completed */
+}
+
+.gantt .bar-wrapper .gantt-task-in-progress .bar {
+  fill: hsl(var(--primary)); /* Blue - In Progress */
+}
+
+.gantt .bar-wrapper .gantt-task-overdue .bar {
+  fill: hsl(0 84.2% 60.2%); /* Red - Overdue */
+}
+
+.gantt .bar-wrapper .gantt-task-not-started .bar {
+  fill: hsl(var(--muted-foreground) / 0.5); /* Gray - Not Started */
+}
+
+/* Progress Bar Inside Tasks */
+.gantt .bar-progress {
+  fill: hsl(var(--primary) / 0.8);
+}
+
+.gantt .gantt-task-completed .bar-progress {
+  fill: hsl(142.1 76.2% 36.3% / 0.8);
+}
+
+/* Task Labels */
+.gantt .bar-label {
+  fill: hsl(var(--background));
+  font-size: 12px;
+  font-weight: 500;
+  dominant-baseline: central;
+}
+
+.gantt .bar-label.big {
+  fill: hsl(var(--background));
+}
+
+/* Hover Effects */
+.gantt .bar-wrapper:hover .bar {
+  opacity: 0.9;
+  stroke: hsl(var(--foreground));
+  stroke-width: 2;
+}
+
+.gantt .bar-wrapper.active .bar {
+  stroke: hsl(var(--ring));
+  stroke-width: 2;
+}
+
+/* Handle (for dragging) */
+.gantt .handle {
+  fill: hsl(var(--background));
+  stroke: hsl(var(--border));
+  stroke-width: 1;
+  cursor: ew-resize;
+}
+
+.gantt .handle:hover {
+  fill: hsl(var(--accent));
+}
+
+/* Grid Lines */
+.gantt .grid-line {
+  stroke: hsl(var(--border));
+  stroke-width: 1;
+}
+
+.gantt .row-line {
+  stroke: hsl(var(--border) / 0.5);
+}
+
+.gantt .tick {
+  stroke: hsl(var(--border));
+  stroke-width: 0.5;
+}
+
+/* Header Text */
+.gantt .upper-text,
+.gantt .lower-text {
+  fill: hsl(var(--foreground));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.gantt .lower-text {
+  fill: hsl(var(--muted-foreground));
+  font-size: 11px;
+}
+
+/* Arrows (Dependencies) */
+.gantt .arrow {
+  fill: none;
+  stroke: hsl(var(--primary));
+  stroke-width: 1.5;
+}
+
+/* Popup */
+.gantt .popup-wrapper {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  padding: 12px;
+  font-size: 12px;
+  color: hsl(var(--foreground));
+}
+
+.gantt .popup-wrapper .title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: hsl(var(--foreground));
+}
+
+.gantt .popup-wrapper .subtitle {
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 4px;
+}
+
+.gantt .popup-wrapper .pointer {
+  fill: hsl(var(--card));
+  stroke: hsl(var(--border));
+}
+
+/* Dark Mode Adjustments */
+@media (prefers-color-scheme: dark) {
+  .gantt .bar-wrapper .bar {
+    opacity: 0.9;
+  }
+
+  .gantt .grid-background {
+    fill: hsl(var(--background));
+  }
+
+  .gantt .grid-header {
+    fill: hsl(var(--muted) / 0.5);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .gantt .bar-label {
+    font-size: 10px;
+  }
+
+  .gantt .upper-text,
+  .gantt .lower-text {
+    font-size: 10px;
+  }
+}
+
+/* Read-only Mode */
+.gantt.readonly .handle {
+  cursor: not-allowed;
+  display: none;
+}
+
+.gantt.readonly .bar-wrapper {
+  cursor: pointer;
+}
+
+/* Loading State */
+.gantt-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Empty State */
+.gantt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+}
+
+.gantt-empty p {
+  margin-top: 12px;
+  max-width: 400px;
+}

@@ -1,0 +1,420 @@
+// Prisma Schema for ServiceBay PM
+// PostgreSQL database with proper relationships and indexes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+enum ConversationType {
+  DM
+  GROUP
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+// Models
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  picture   String?
+  role      Role     @default(MEMBER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Google Drive integration
+  googleRefreshToken String?   @db.Text
+  googleAccessToken  String?   @db.Text
+  tokenExpiresAt     DateTime?
+
+  // Relations
+  createdTasks         Task[]                @relation("TaskCreator")
+  assignedTasks        Task[]                @relation("TaskAssignee")
+  createdSprints       Sprint[]              @relation("SprintCreator")
+  conversationMembers  ConversationMember[]
+  sentMessages         Message[]
+  syncLogs             SyncLog[]
+  uploadedFiles        File[]
+  sentInvites          TeamInvite[]          @relation("InviteCreator")
+  dailyUpdates         DailyUpdate[]         @relation("UserDailyUpdates")
+  notes                Note[]                @relation("UserNotes")
+  weeklySummaries      MemberWeeklySummary[] @relation("UserWeeklySummaries")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Sprint {
+  id          String        @id @default(uuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  status      SprintStatus  @default(PLANNED)
+  goal        String?       @db.Text
+  isActive    Boolean       @default(false)
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  createdBy User   @relation("SprintCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  tasks     Task[]
+
+  @@index([createdById])
+  @@index([status])
+  @@index([isActive])
+  @@index([startDate, endDate])
+  @@map("sprints")
+}
+
+model Task {
+  id             String    @id @default(uuid())
+  taskName       String
+  sprintId       String
+  parentTaskId   String?
+  details        String?   @db.Text
+  progress       Int       @default(0) // 0-100
+  assignedToId   String?
+  startDate      DateTime?
+  deadline       DateTime?
+  nestingLevel   Int       @default(0) // 0-3
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  sprint       Sprint  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  assignedTo   User?   @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
+  createdBy    User    @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  parentTask   Task?   @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks     Task[]  @relation("TaskHierarchy")
+
+  @@index([sprintId])
+  @@index([parentTaskId])
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([deadline])
+  @@map("tasks")
+}
+
+model Conversation {
+  id          String            @id @default(uuid())
+  type        ConversationType
+  name        String?           // Null for DM, required for GROUP
+  description String?           @db.Text
+  createdById String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  members  ConversationMember[]
+  messages Message[]
+  files    File[]
+
+  @@index([type])
+  @@index([createdById])
+  @@map("conversations")
+}
+
+model ConversationMember {
+  id             String    @id @default(uuid())
+  conversationId String
+  userId         String
+  isAdmin        Boolean   @default(false)
+  lastReadAt     DateTime?
+  joinedAt       DateTime  @default(now())
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@map("conversation_members")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String   @db.Text
+  attachments    Json?    // Array of file URLs: {name: string, url: string, size: number}[]
+  reactions      Json?    // Object: {emoji: userId[]}
+
+  // Threading support
+  parentMessageId    String?  // Null for main messages, set for replies
+  threadRepliesCount Int      @default(0) // Denormalized for performance
+
+  // Mentions support
+  mentions           String[] @default([]) // Array of mentioned user IDs
+
+  isEdited       Boolean  @default(false)
+  isDeleted      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  files        File[]
+  driveAttachments   MessageAttachment[]
+
+  // Self-referential relations for threading
+  parentMessage Message?  @relation("MessageThread", fields: [parentMessageId], references: [id], onDelete: Cascade)
+  replies       Message[] @relation("MessageThread")
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([parentMessageId]) // For thread queries
+  @@index([mentions]) // For querying messages mentioning specific users
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id             String   @id @default(uuid())
+  messageId      String
+  driveFileId    String
+  fileName       String
+  mimeType       String
+  fileSize       BigInt
+  thumbnailLink  String?  @db.Text
+  webViewLink    String   @db.Text
+  webContentLink String?  @db.Text
+  iconLink       String?
+  createdAt      DateTime @default(now())
+
+  // Relations
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model SyncLog {
+  id              String   @id @default(uuid())
+  spreadsheetId   String
+  sheetName       String
+  syncType        String   // 'export', 'import', 'bidirectional'
+  recordsExported Int      @default(0)
+  recordsImported Int      @default(0)
+  recordsUpdated  Int      @default(0)
+  recordsSkipped  Int      @default(0)
+  conflicts       Int      @default(0)
+  status          String   // 'completed', 'failed', 'partial'
+  error           String?  @db.Text
+  duration        Int      // milliseconds
+  performedById   String
+  createdAt       DateTime @default(now())
+
+  // Relations
+  performedBy     User     @relation(fields: [performedById], references: [id], onDelete: Restrict)
+
+  @@index([spreadsheetId])
+  @@index([performedById])
+  @@index([createdAt])
+  @@map("sync_logs")
+}
+
+model File {
+  id              String    @id @default(uuid())
+  filename        String    // Original filename (sanitized)
+  storedFilename  String    // Generated unique filename
+  mimeType        String
+  size            Int       // Bytes
+  path            String    // Storage path or S3 key
+  uploadedById    String
+  conversationId  String?   // For chat attachments
+  messageId       String?   // For chat attachments
+  createdAt       DateTime  @default(now())
+
+  uploadedBy      User          @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  conversation    Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message         Message?      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([uploadedById])
+  @@index([conversationId])
+  @@index([messageId])
+  @@index([createdAt])
+  @@map("files")
+}
+
+model TeamInvite {
+  id          String        @id @default(uuid())
+  email       String
+  token       String        @unique @default(uuid())
+  role        Role          @default(MEMBER)
+  status      InviteStatus  @default(PENDING)
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime      @default(now())
+
+  invitedBy   User          @relation("InviteCreator", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("team_invites")
+}
+
+model DailyUpdate {
+  id        String   @id @default(uuid())
+  date      DateTime @db.Date // Date only (YYYY-MM-DD)
+  content   String   @db.Text
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation("UserDailyUpdates", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Constraint: One update per user per day
+  @@unique([userId, date])
+  @@index([date])
+  @@index([userId])
+  @@map("daily_updates")
+}
+
+// Personal Notes with Reminders
+model Note {
+  id        String    @id @default(uuid())
+  title     String
+  content   String    @db.Text // Markdown content
+  tags      String[]  @default([]) // Array of tags for organization
+  isPinned  Boolean   @default(false)
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user      User      @relation("UserNotes", fields: [userId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
+
+  @@index([userId])
+  @@index([userId, isPinned])
+  @@index([createdAt])
+  @@map("notes")
+}
+
+model Reminder {
+  id             String    @id @default(uuid())
+  noteId         String
+  remindAt       DateTime  // When to send the reminder
+  isCompleted    Boolean   @default(false)
+  notifiedAt     DateTime? // When notification was sent
+  createdAt      DateTime  @default(now())
+
+  note           Note      @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([remindAt, isCompleted])
+  @@index([noteId])
+  @@map("reminders")
+}
+
+// Weekly Summary with AI-powered impact assessment
+model WeeklySummary {
+  id             String              @id @default(uuid())
+  weekStartDate  DateTime            @db.Date // Monday of the week
+  weekEndDate    DateTime            @db.Date // Sunday of the week
+  generatedAt    DateTime            @default(now())
+  emailSentAt    DateTime?           // When the summary was emailed
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  memberSummaries MemberWeeklySummary[]
+
+  @@unique([weekStartDate, weekEndDate])
+  @@index([weekStartDate])
+  @@index([weekEndDate])
+  @@map("weekly_summaries")
+}
+
+// Individual member's weekly summary with AI-generated content
+model MemberWeeklySummary {
+  id               String         @id @default(uuid())
+  weeklySummaryId  String
+  userId           String
+  summary          String         @db.Text // AI-generated summary
+  impactLevel      ImpactLevel    // HIGH, MEDIUM, LOW (determined by AI)
+  rawUpdates       Json           // Original updates data for reference
+  createdAt        DateTime       @default(now())
+
+  weeklySummary    WeeklySummary  @relation(fields: [weeklySummaryId], references: [id], onDelete: Cascade)
+  user             User           @relation("UserWeeklySummaries", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([weeklySummaryId, userId])
+  @@index([weeklySummaryId])
+  @@index([userId])
+  @@index([impactLevel])
+  @@map("member_weekly_summaries")
+}
+
+// Admin settings for system configuration
+model AdminSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g., "weekly_summary_email"
+  value     String   @db.Text // JSON-encoded value
+  updatedBy String   // User ID of admin who last updated
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@map("admin_settings")
+}
+
+// Enum for impact levels
+enum ImpactLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// Enum for notification types
+enum NotificationType {
+  UPDATE_REMINDER  // For missing daily update reminders
+  SYSTEM           // For system-wide notifications
+}
+
+// Persistent notifications for the bell icon
+model Notification {
+  id          String            @id @default(uuid())
+  type        NotificationType
+  userId      String            // Who should receive this notification
+  title       String
+  message     String            @db.Text
+  metadata    Json?             // Additional data (e.g., missingDates for UPDATE_REMINDER)
+  link        String?           // Optional link to navigate to
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([type])
+  @@map("notifications")
+}

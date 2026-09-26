@@ -1,0 +1,3 @@
+- Make the making of tasks accept parent tasks and when the add button on a task is pressed then that task becomes the parent task.
+- ~~Fix the case sensitive of the inviting of members, the system throws an error when I invite "Kaduan@servicebay.ai" but when the account accepts google gives "kaduan@servicebay.ai".~~ ✅ **COMPLETED** - Implemented comprehensive case-insensitive email handling. See [CASE_INSENSITIVE_EMAIL_FIX_SUMMARY.md](archive/CASE_INSENSITIVE_EMAIL_FIX_SUMMARY.md) for details.
+- Make the daily updates be able to still add updates for members that have yet to add theirs even when it is not the current day, meaning to still accept late updates.
