@@ -9,6 +9,7 @@ import { prisma } from '@/database/client';
 import { googleOAuthConfig, adminConfig } from '@/config';
 import { User, Role } from '@prisma/client';
 import { normalizeEmail, isValidDomain as validateDomain } from '@/lib/email-utils';
+import { encryptToken } from '@/lib/token-crypto';
 
 /**
  * Validate email domain
@@ -104,8 +105,8 @@ passport.use(
                 picture,
                 role: invitation.role, // Update to role from new invitation
                 isActive: true,
-                googleRefreshToken: refreshToken || user.googleRefreshToken,
-                googleAccessToken: accessToken,
+                googleRefreshToken: refreshToken ? encryptToken(refreshToken) : user.googleRefreshToken,
+                googleAccessToken: encryptToken(accessToken),
                 tokenExpiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
               },
             });
@@ -130,8 +131,8 @@ passport.use(
                 picture,
                 // Don't auto-update role from admin list for existing users
                 // Keep their assigned role
-                googleRefreshToken: refreshToken || user.googleRefreshToken,
-                googleAccessToken: accessToken,
+                googleRefreshToken: refreshToken ? encryptToken(refreshToken) : user.googleRefreshToken,
+                googleAccessToken: encryptToken(accessToken),
                 tokenExpiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
               },
             });
@@ -150,8 +151,8 @@ passport.use(
                 picture,
                 role: Role.ADMIN,
                 isActive: true,
-                googleRefreshToken: refreshToken,
-                googleAccessToken: accessToken,
+                googleRefreshToken: encryptToken(refreshToken),
+                googleAccessToken: encryptToken(accessToken),
                 tokenExpiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
               },
             });
@@ -182,8 +183,8 @@ passport.use(
                 picture,
                 role: invitation.role,
                 isActive: true,
-                googleRefreshToken: refreshToken,
-                googleAccessToken: accessToken,
+                googleRefreshToken: encryptToken(refreshToken),
+                googleAccessToken: encryptToken(accessToken),
                 tokenExpiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
               },
             });
@@ -214,7 +215,6 @@ passport.use(
  * Only store user ID in session
  */
 passport.serializeUser((user: any, done) => {
-  console.log('Serializing user to session:', user.id);
   done(null, user.id);
 });
 
@@ -224,7 +224,6 @@ passport.serializeUser((user: any, done) => {
  */
 passport.deserializeUser(async (id: string, done) => {
   try {
-    console.log('Deserializing user from session:', id);
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -237,17 +236,12 @@ passport.deserializeUser(async (id: string, done) => {
       },
     });
 
-    if (!user) {
-      console.error('Deserialize: User not found:', id);
-      return done(new Error('User not found'));
+    // Deleted or deactivated users are treated as signed out (401), not as a
+    // server error on every request
+    if (!user || !user.isActive) {
+      return done(null, false);
     }
 
-    if (!user.isActive) {
-      console.error('Deserialize: User inactive:', user.email);
-      return done(new Error('User account is inactive'));
-    }
-
-    console.log('Deserialize: User loaded successfully:', user.email);
     done(null, user);
   } catch (error) {
     console.error('Deserialize user error:', error);

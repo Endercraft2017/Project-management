@@ -5,24 +5,12 @@
 
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/useUsers';
 import { initializeSocket, connectSocket, on, off } from '@/lib/socket';
 import { playNotificationSound } from '@/lib/notificationSound';
-import TaskTree from '@/components/tasks/TaskTree';
-import SummaryView from '@/components/summary/SummaryView';
-import GanttView from '@/components/gantt/GanttView';
-import ChatView from '@/components/chat/ChatView';
-import UpdatesView from '@/components/updates/UpdatesView';
-import NotesView from '@/components/notes/NotesView';
-import WeeklySummariesView from '@/components/summaries/WeeklySummariesView';
-import AcceptInvitePage from '@/pages/AcceptInvitePage';
-import InviteUserDialog from '@/components/invites/InviteUserDialog';
-import InvitesList from '@/components/invites/InvitesList';
-import UsersList from '@/components/users/UsersList';
 import NotificationPanel from '@/components/chat/NotificationPanel';
-import AdminSettingsModal from '@/components/admin/AdminSettingsModal';
 import AmbientBackground from '@/components/layout/AmbientBackground';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
@@ -34,6 +22,29 @@ import { useActiveView } from '@/components/layout/useActiveView';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { useUiStore } from '@/store/uiStore';
 import { notificationKeys, type UnreadNotification } from '@/hooks/useNotifications';
+
+// Views and dialogs load on demand, so the first screen doesn't download
+// charts, gantt, markdown/highlighting, and attachment previewers up front
+const TaskTree = lazy(() => import('@/components/tasks/TaskTree'));
+const SummaryView = lazy(() => import('@/components/summary/SummaryView'));
+const GanttView = lazy(() => import('@/components/gantt/GanttView'));
+const ChatView = lazy(() => import('@/components/chat/ChatView'));
+const UpdatesView = lazy(() => import('@/components/updates/UpdatesView'));
+const NotesView = lazy(() => import('@/components/notes/NotesView'));
+const WeeklySummariesView = lazy(() => import('@/components/summaries/WeeklySummariesView'));
+const UsersList = lazy(() => import('@/components/users/UsersList'));
+const InvitesList = lazy(() => import('@/components/invites/InvitesList'));
+const InviteUserDialog = lazy(() => import('@/components/invites/InviteUserDialog'));
+const AdminSettingsModal = lazy(() => import('@/components/admin/AdminSettingsModal'));
+const AcceptInvitePage = lazy(() => import('@/pages/AcceptInvitePage'));
+
+function ViewLoading() {
+  return (
+    <div className="flex h-full min-h-48 items-center justify-center" role="status" aria-label="Loading">
+      <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-primary border-t-transparent" />
+    </div>
+  );
+}
 
 // Create a client with optimized defaults to reduce API calls
 // Following TanStack Query 2025 best practices
@@ -93,17 +104,14 @@ function AppContent() {
   useEffect(() => {
     // Don't register listeners until user is authenticated and socket is initialized
     if (!currentUser) {
-      console.log('[App] Skipping event listener registration - user not authenticated');
       return;
     }
 
-    console.log('[App] User authenticated, proceeding with event listener registration');
 
     let notificationTimeout: NodeJS.Timeout | null = null;
     let taskTimeout: NodeJS.Timeout | null = null;
 
     const handleNewMessage = () => {
-      console.log('[App] New message received, scheduling notification refresh');
 
       // Play notification sound
       playNotificationSound();
@@ -116,7 +124,6 @@ function AppContent() {
     };
 
     const handleTaskEvent = (eventName: string) => {
-      console.log(`[App] ${eventName}, scheduling task refresh`);
       if (taskTimeout) clearTimeout(taskTimeout);
       taskTimeout = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -129,7 +136,6 @@ function AppContent() {
     const handleTaskDeleted = () => handleTaskEvent('Task deleted');
 
     const handleTaskAssigned = () => {
-      console.log('[App] Task assigned, scheduling refresh');
 
       // Play notification sound for task assignment
       playNotificationSound();
@@ -150,7 +156,6 @@ function AppContent() {
     const handleTaskCreatedByMember = (data: any) => {
       // Only notify admins
       if (currentUser?.role === 'ADMIN' && data.adminId === currentUser.id) {
-        console.log('[App] Member created task, notifying admin');
         playNotificationSound();
 
         if (notificationTimeout) clearTimeout(notificationTimeout);
@@ -170,13 +175,11 @@ function AppContent() {
     const handleMemberDailyUpdate = (data: any) => {
       // Only notify admins
       if (currentUser?.role === 'ADMIN') {
-        console.log(`[App] ${data.userName} posted a daily update`);
         playNotificationSound();
       }
     };
 
     const handleReminderNotification = (data: any) => {
-      console.log(`[App] Reminder notification:`, data);
       playNotificationSound();
 
       // Show browser notification if permitted
@@ -189,7 +192,6 @@ function AppContent() {
     };
 
     const handleUpdateReminder = (data: any) => {
-      console.log(`[App] Update reminder notification:`, data);
       playNotificationSound();
 
       // Refresh notification panel to show the new notification
@@ -205,7 +207,6 @@ function AppContent() {
       }
     };
 
-    console.log('[App] Registering socket event listeners...');
     on('new_message', handleNewMessage);
     on('task_created', handleTaskCreated);
     on('task_updated', handleTaskUpdated);
@@ -321,6 +322,7 @@ function AppContent() {
         <main className="relative mb-[4.75rem] min-h-0 flex-1 overflow-hidden rounded-3xl lg:mb-0">
           <div aria-hidden className="glass-strong pointer-events-none absolute inset-0 rounded-3xl" />
           <div className="relative h-full overflow-y-auto">
+            <Suspense fallback={<ViewLoading />}>
             {activeView === 'dashboard' && (
               <div className="p-3 sm:p-6">
                 <SummaryView />
@@ -388,6 +390,7 @@ function AppContent() {
                 </section>
               </div>
             )}
+            </Suspense>
           </div>
         </main>
       </div>
@@ -398,11 +401,15 @@ function AppContent() {
         onOpenMenu={() => setSidebarOpen(true)}
       />
 
-      {/* Invite User Dialog */}
-      <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} />
-
-      {/* Admin Settings Modal */}
-      <AdminSettingsModal isOpen={settingsDialogOpen} onClose={() => setSettingsDialogOpen(false)} />
+      {/* Dialogs mount on first open, which also loads their code on demand */}
+      <Suspense fallback={null}>
+        {inviteDialogOpen && (
+          <InviteUserDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} />
+        )}
+        {settingsDialogOpen && (
+          <AdminSettingsModal isOpen={settingsDialogOpen} onClose={() => setSettingsDialogOpen(false)} />
+        )}
+      </Suspense>
     </div>
   );
 }
@@ -411,7 +418,11 @@ function AppRoot() {
   // An invite link (?token=...) shows the accept-invite page instead of the app
   const inviteToken = new URLSearchParams(window.location.search).get('token');
   if (inviteToken) {
-    return <AcceptInvitePage token={inviteToken} />;
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <AcceptInvitePage token={inviteToken} />
+      </Suspense>
+    );
   }
   return <AppContent />;
 }

@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import Gantt from 'frappe-gantt';
 import type { Task } from '@/types';
+import { escapeHtml } from '@/lib/utils';
 import '@/styles/gantt.css';
 
 interface GanttTask {
@@ -64,7 +65,8 @@ export default function GanttChart({
     })
     .map((task) => ({
       id: task.id,
-      name: task.taskName,
+      // frappe-gantt renders names with innerHTML (bar label and popup title)
+      name: escapeHtml(task.taskName),
       start: task.startDate,
       end: task.deadline,
       progress: Math.max(0, Math.min(100, task.progress || 0)),

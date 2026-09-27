@@ -6,6 +6,7 @@
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Check, ChevronDown, LogOut, Monitor, Moon, Settings, Sparkles, Sun } from 'lucide-react';
+import api from '@/lib/api';
 import { cn, getInitials } from '@/lib/utils';
 import { useThemeStore, type Theme } from '@/store/themeStore';
 import { useUiStore } from '@/store/uiStore';
@@ -43,6 +44,17 @@ export function Avatar({ user, className }: { user: Pick<User, 'name' | 'picture
       {getInitials(user.name)}
     </div>
   );
+}
+
+// The server only accepts POST for logout (a GET link would not end the session)
+async function signOut() {
+  try {
+    await api.post('/api/auth/logout');
+  } catch (error) {
+    console.error('Sign out failed:', error);
+  } finally {
+    window.location.assign('/');
+  }
 }
 
 export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
@@ -134,11 +146,9 @@ export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
           )}
 
           <DropdownMenu.Separator className="my-1 h-px bg-foreground/10" />
-          <DropdownMenu.Item asChild className={cn(itemClass, 'text-destructive')}>
-            <a href="/api/auth/logout">
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </a>
+          <DropdownMenu.Item className={cn(itemClass, 'text-destructive')} onSelect={signOut}>
+            <LogOut className="h-4 w-4" />
+            Sign out
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

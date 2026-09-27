@@ -41,7 +41,9 @@ const envSchema = z.object({
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 min
-  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
+  // Per user per window. The app makes several requests per screen, so this
+  // must be generous enough for normal use.
+  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('1000'),
 
   // File Upload
   MAX_FILE_SIZE: z.string().transform(Number).default('5242880'), // 5MB

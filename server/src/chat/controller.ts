@@ -570,9 +570,15 @@ export async function markNotificationRead(req: Request, res: Response) {
     const userId = req.user!.id;
     const { notificationId } = req.params;
 
-    console.log('[Chat] Marking notification as read:', notificationId, 'for user:', userId);
+    const updated = await notificationService.markNotificationAsRead(notificationId, userId);
 
-    await notificationService.markNotificationAsRead(notificationId);
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Notification not found',
+      });
+    }
 
     res.json({
       success: true,

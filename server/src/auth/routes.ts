@@ -4,11 +4,15 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { Readable } from 'stream';
 import passport from './passport-config';
 import { isAuthenticated } from './middleware';
 import { corsConfig } from '@/config';
+import { isValidDriveFileId, setDriveFileHeaders } from '@/services/drive-file-headers';
 
 const router = Router();
+
+const DRIVE_UPLOAD_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 
 /**
  * GET /auth/google
@@ -140,40 +144,15 @@ router.get('/check', (req: Request, res: Response) => {
 });
 
 /**
- * GET /auth/session
- * Get session info (for debugging)
- */
-router.get('/session', isAuthenticated, (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    session: {
-      id: req.sessionID,
-      cookie: req.session.cookie,
-      user: req.user,
-    },
-  });
-});
-
-/**
  * GET /auth/google/token
  * Get current user's Google access token for Picker API
  */
 router.get('/google/token', isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { refreshAccessToken } = await import('@/services/google-oauth-client');
-    const { prisma } = await import('@/database/client');
+    const { refreshAccessToken, hasValidDriveAccess } = await import('@/services/google-oauth-client');
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        googleAccessToken: true,
-        tokenExpiresAt: true,
-        googleRefreshToken: true,
-      },
-    });
-
-    if (!user?.googleRefreshToken) {
+    if (!(await hasValidDriveAccess(userId))) {
       return res.status(401).json({
         success: false,
         error: 'NO_DRIVE_ACCESS',
@@ -182,24 +161,14 @@ router.get('/google/token', isAuthenticated, async (req: Request, res: Response)
       });
     }
 
-    // Check if token expired, refresh if needed
-    const now = new Date();
-    const tokenExpired = !user.tokenExpiresAt || user.tokenExpiresAt <= now;
+    // Returns the stored token, refreshing it first if it has expired
+    const accessToken = await refreshAccessToken(userId);
 
-    if (tokenExpired || !user.googleAccessToken) {
-      const newToken = await refreshAccessToken(userId);
-      return res.json({
-        success: true,
-        data: {
-          accessToken: newToken,
-        },
-      });
-    }
-
+    res.setHeader('Cache-Control', 'no-store');
     res.json({
       success: true,
       data: {
-        accessToken: user.googleAccessToken,
+        accessToken,
       },
     });
   } catch (error: any) {
@@ -282,12 +251,25 @@ router.post('/drive/upload', isAuthenticated, async (req: Request, res: Response
     const { refreshAccessToken } = await import('@/services/google-oauth-client');
     const { prisma } = await import('@/database/client');
 
-    // Configure multer for memory storage (we'll upload to Drive, not disk)
-    const upload = multer.default({ storage: multer.memoryStorage() }).single('file');
+    // Memory storage (the file goes to Drive, not disk), capped so a large
+    // upload can't exhaust server memory
+    const upload = multer
+      .default({
+        storage: multer.memoryStorage(),
+        limits: { fileSize: DRIVE_UPLOAD_MAX_BYTES, files: 1 },
+      })
+      .single('file');
 
     // Parse multipart form data
     upload(req, res, async (err: any) => {
       if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({
+            success: false,
+            error: 'FILE_TOO_LARGE',
+            message: `Files can be at most ${DRIVE_UPLOAD_MAX_BYTES / (1024 * 1024)} MB`,
+          });
+        }
         console.error('[Auth] Multer error:', err);
         return res.status(400).json({
           success: false,
@@ -355,66 +337,58 @@ router.post('/drive/upload', isAuthenticated, async (req: Request, res: Response
  * Proxy Drive file content with authentication
  * This allows viewing Drive files shared in chat
  * Files should have 'anyone with link' permission for receivers to view
+ *
+ * Only passive types (images, PDF, media, plain text) are served inline;
+ * anything else is forced to download so it can never run on this origin.
  */
 router.get('/drive/file/:fileId', isAuthenticated, async (req: Request, res: Response) => {
+  const { fileId } = req.params;
+
+  if (!isValidDriveFileId(fileId)) {
+    return res.status(400).json({
+      success: false,
+      error: 'INVALID_FILE_ID',
+      message: 'Invalid file ID',
+    });
+  }
+
   try {
-    const { fileId } = req.params;
-    const { google } = await import('googleapis');
-    const fetch = (await import('node-fetch')).default;
+    // Try without user credentials first (files shared as 'anyone with link')
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (apiKey) {
+      const base = `https://www.googleapis.com/drive/v3/files/${fileId}`;
+      const key = `key=${encodeURIComponent(apiKey)}`;
+      const [metadataResponse, contentResponse] = await Promise.all([
+        fetch(`${base}?fields=mimeType,name&${key}`),
+        fetch(`${base}?alt=media&${key}`),
+      ]);
 
-    // Try to fetch file without authentication (for public files)
-    // This works for files that have been shared with 'anyone with link can view'
-    try {
-      const publicUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${process.env.GOOGLE_API_KEY}`;
-      const publicResponse = await fetch(publicUrl);
-
-      if (publicResponse.ok) {
-        // Get metadata separately for content type
-        const metadataUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,name&key=${process.env.GOOGLE_API_KEY}`;
-        const metadataResponse = await fetch(metadataUrl);
-        const metadata = await metadataResponse.json();
-
-        // Set headers
-        res.setHeader('Content-Type', metadata.mimeType || 'application/octet-stream');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-        res.setHeader('Content-Disposition', `inline; filename="${metadata.name}"`);
-
-        // Stream the file content
-        publicResponse.body?.pipe(res);
+      if (metadataResponse.ok && contentResponse.ok && contentResponse.body) {
+        const metadata = (await metadataResponse.json()) as { mimeType?: string; name?: string };
+        setDriveFileHeaders(res, metadata.mimeType, metadata.name);
+        Readable.fromWeb(contentResponse.body as any).pipe(res);
         return;
       }
-    } catch (publicError) {
-      // Public access failed, will try authenticated access below
-      console.log('[Auth] Public Drive access failed, trying authenticated access');
     }
 
-    // If public access fails, try with user's OAuth (for user's own files)
-    const userId = req.user!.id;
+    // Fall back to the viewer's own Drive access
+    const { google } = await import('googleapis');
     const { getOAuth2Client } = await import('@/services/google-oauth-client');
-    const oauth2Client = await getOAuth2Client(userId);
+    const oauth2Client = await getOAuth2Client(req.user!.id);
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
-    // Get file metadata
-    const metadata = await drive.files.get({
-      fileId,
-      fields: 'mimeType, name',
-    });
+    const metadata = await drive.files.get({ fileId, fields: 'mimeType, name' });
+    const response = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
 
-    // Get file content
-    const response = await drive.files.get(
-      { fileId, alt: 'media' },
-      { responseType: 'stream' }
-    );
-
-    // Set headers
-    res.setHeader('Content-Type', metadata.data.mimeType || 'application/octet-stream');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.setHeader('Content-Disposition', `inline; filename="${metadata.data.name}"`);
-
-    // Pipe the file stream to response
+    setDriveFileHeaders(res, metadata.data.mimeType, metadata.data.name);
     response.data.pipe(res);
   } catch (error: any) {
     console.error('[Auth] Drive file proxy error:', error.message);
+
+    if (res.headersSent) {
+      res.end();
+      return;
+    }
 
     if (error.code === 404) {
       return res.status(404).json({

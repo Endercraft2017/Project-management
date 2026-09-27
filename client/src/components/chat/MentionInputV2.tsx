@@ -8,6 +8,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { useConversationMembers } from '@/hooks/useConversationMembers';
 import { useTasks } from '@/hooks/useTasks';
 import type { User, Task } from '@/types';
+import { escapeHtml } from '@/lib/utils';
 
 interface MentionInputProps {
   value: string;
@@ -61,7 +62,8 @@ export default function MentionInputV2({
   // @[userId](userName) -> <span class="mention-chip">@userName</span>
   // $[taskId](taskName) -> <span class="task-mention-chip">$taskName</span>
   const getDisplayHTML = (text: string): string => {
-    let html = text;
+    // Escape first so typed text and user/task names can never become markup
+    let html = escapeHtml(text);
     // User mentions
     html = html.replace(
       /@\[([a-f0-9-]{36})\]\(([^)]+)\)/g,

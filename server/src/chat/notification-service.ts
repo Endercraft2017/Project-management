@@ -252,12 +252,14 @@ export async function createNotification(data: {
 /**
  * Mark a notification as read
  */
-export async function markNotificationAsRead(notificationId: string) {
-  return await prisma.notification.update({
-    where: { id: notificationId },
+export async function markNotificationAsRead(notificationId: string, userId: string) {
+  // Scoped to the recipient so users can only mark their own notifications
+  const { count } = await prisma.notification.updateMany({
+    where: { id: notificationId, userId },
     data: {
       isRead: true,
       readAt: new Date(),
     },
   });
+  return count > 0;
 }

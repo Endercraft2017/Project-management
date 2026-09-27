@@ -31,8 +31,16 @@ const HIGHLIGHTS = [
   { icon: TrendingUp, text: 'Get AI weekly summaries' },
 ];
 
+// Error codes the server's OAuth callback redirects back with (?error=...)
+const SIGN_IN_ERRORS: Record<string, string> = {
+  auth_failed:
+    "Sign-in didn't work. Make sure you're using your company Google account and that you've been invited, then try again.",
+  session_failed: "You signed in, but we couldn't start your session. Please try again.",
+};
+
 export function SignInScreen() {
-  const authFailed = new URLSearchParams(window.location.search).get('error') === 'auth_failed';
+  const errorCode = new URLSearchParams(window.location.search).get('error');
+  const errorMessage = errorCode ? SIGN_IN_ERRORS[errorCode] : undefined;
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -44,13 +52,13 @@ export function SignInScreen() {
         <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">Welcome to ServiceBay PM</h1>
         <p className="mb-8 text-muted-foreground">Please sign in to continue</p>
 
-        {authFailed && (
+        {errorMessage && (
           <div
             role="alert"
             className="mb-6 flex items-start gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-left text-sm text-destructive"
           >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>Sign-in didn't work. Make sure you're using your company Google account, then try again.</span>
+            <span>{errorMessage}</span>
           </div>
         )}
 

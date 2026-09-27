@@ -5,6 +5,7 @@
 
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import path from 'path';
 import passport from './auth/passport-config';
 import { sessionMiddleware } from './middlewares/session';
@@ -33,9 +34,31 @@ const app: Express = express();
 app.set('trust proxy', 1);
 
 /**
- * Security middleware
+ * Security headers and response compression
  */
 app.use(securityHeaders);
+app.use(compression());
+
+/**
+ * Serve the built React app in production.
+ * Registered before sessions so asset requests never touch the session store
+ * or the database. Hashed assets are immutable; index.html is served by the
+ * SPA fallback below with no-cache so new deploys show up immediately.
+ */
+const clientBuildPath = path.join(__dirname, '../../client/dist');
+if (serverConfig.isProduction) {
+  app.use(
+    express.static(clientBuildPath, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    })
+  );
+}
+
 app.use(sanitizeInput);
 
 /**
@@ -107,29 +130,25 @@ app.use('/api/summaries', summariesRoutes);
 app.use('/api/admin', adminRoutes);
 
 /**
- * Serve static files from React app in production
+ * Unknown API routes return JSON, never the React app's HTML
  */
+const notFound = (req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: 'Not Found',
+    message: `Route ${req.method} ${req.path} not found`,
+  });
+};
+app.use('/api', notFound);
+
 if (serverConfig.isProduction) {
-  const clientBuildPath = path.join(__dirname, '../../client/dist');
-
-  // Serve static files
-  app.use(express.static(clientBuildPath));
-
   // Handle React routing - return index.html for all other routes
   app.get('*', (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 } else {
-  /**
-   * 404 handler for development
-   */
-  app.use((req: Request, res: Response) => {
-    res.status(404).json({
-      success: false,
-      error: 'Not Found',
-      message: `Route ${req.method} ${req.path} not found`,
-    });
-  });
+  app.use(notFound);
 }
 
 /**

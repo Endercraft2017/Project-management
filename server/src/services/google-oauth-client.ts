@@ -6,19 +6,22 @@
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '@/database/client';
 import { googleOAuthConfig } from '@/config';
+import { decryptToken, encryptToken } from '@/lib/token-crypto';
+
+// Refresh a little before expiry so a token never expires mid-request
+const EXPIRY_MARGIN_MS = 60 * 1000;
 
 /**
- * Get OAuth2 client configured with user's tokens
+ * Get OAuth2 client configured with user's tokens, refreshing the access
+ * token first if it has expired
  * @param userId - User ID
  * @returns Configured OAuth2Client
  */
 export async function getOAuth2Client(userId: string): Promise<OAuth2Client> {
-  // Fetch user from database
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
-      email: true,
       googleRefreshToken: true,
       googleAccessToken: true,
       tokenExpiresAt: true,
@@ -29,47 +32,43 @@ export async function getOAuth2Client(userId: string): Promise<OAuth2Client> {
     throw new Error('User not found');
   }
 
-  if (!user.googleRefreshToken) {
+  const refreshToken = decryptToken(user.googleRefreshToken);
+  if (!refreshToken) {
     throw new Error('User has not granted Drive API access. Please re-authenticate.');
   }
 
-  // Create OAuth2 client
   const oauth2Client = new OAuth2Client(
     googleOAuthConfig.clientID,
     googleOAuthConfig.clientSecret,
     googleOAuthConfig.callbackURL
   );
 
-  // Set credentials
+  const accessToken = decryptToken(user.googleAccessToken);
+
   oauth2Client.setCredentials({
-    refresh_token: user.googleRefreshToken,
-    access_token: user.googleAccessToken || undefined,
+    refresh_token: refreshToken,
+    access_token: accessToken || undefined,
     expiry_date: user.tokenExpiresAt?.getTime(),
   });
 
-  // Check if token is expired
-  const now = new Date();
-  const tokenExpired = !user.tokenExpiresAt || user.tokenExpiresAt <= now;
+  const tokenExpired =
+    !accessToken ||
+    !user.tokenExpiresAt ||
+    user.tokenExpiresAt.getTime() - EXPIRY_MARGIN_MS <= Date.now();
 
   if (tokenExpired) {
-    console.log(`[OAuth2Client] Token expired for user ${user.email}, refreshing...`);
-
     try {
-      // Refresh the access token
       const { credentials } = await oauth2Client.refreshAccessToken();
 
-      // Update database with new token
       await prisma.user.update({
         where: { id: userId },
         data: {
-          googleAccessToken: credentials.access_token || undefined,
+          googleAccessToken: encryptToken(credentials.access_token) || undefined,
           tokenExpiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
         },
       });
-
-      console.log(`[OAuth2Client] Token refreshed successfully for user ${user.email}`);
     } catch (error: any) {
-      console.error(`[OAuth2Client] Failed to refresh token for user ${user.email}:`, error.message);
+      console.error(`[OAuth2Client] Failed to refresh token for user ${userId}:`, error.message);
       throw new Error('Failed to refresh access token. Please re-authenticate.');
     }
   }
@@ -78,35 +77,19 @@ export async function getOAuth2Client(userId: string): Promise<OAuth2Client> {
 }
 
 /**
- * Refresh access token for a user
+ * Get a valid access token for a user, refreshing it if needed
  * @param userId - User ID
- * @returns New access token
+ * @returns Access token
  */
 export async function refreshAccessToken(userId: string): Promise<string> {
   const oauth2Client = await getOAuth2Client(userId);
+  const accessToken = oauth2Client.credentials.access_token;
 
-  try {
-    const { credentials } = await oauth2Client.refreshAccessToken();
-
-    if (!credentials.access_token) {
-      throw new Error('No access token returned from refresh');
-    }
-
-    // Update database
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        googleAccessToken: credentials.access_token,
-        tokenExpiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : undefined,
-      },
-    });
-
-    console.log(`[OAuth2Client] Access token refreshed for user ${userId}`);
-    return credentials.access_token;
-  } catch (error: any) {
-    console.error(`[OAuth2Client] Failed to refresh access token:`, error.message);
+  if (!accessToken) {
     throw new Error('Failed to refresh access token');
   }
+
+  return accessToken;
 }
 
 /**

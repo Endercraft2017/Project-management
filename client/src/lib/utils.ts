@@ -74,6 +74,18 @@ export function truncate(text: string, length: number): string {
 }
 
 /**
+ * Escape text for safe insertion into innerHTML
+ */
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Up to two initials from a display name ("Ada Lovelace" -> "AL")
  */
 export function getInitials(name: string): string {

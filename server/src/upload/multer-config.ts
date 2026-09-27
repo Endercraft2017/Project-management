@@ -7,9 +7,16 @@ import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import { Request } from 'express';
 import fs from 'fs';
+import { fileUploadConfig } from '@/config';
+
+// UPLOAD_DIR may be absolute (e.g. a Railway Volume mount such as /data/uploads)
+// or relative to the server package root. Default: server/uploads.
+// Container disks are wiped on every deploy, so production needs a volume here.
+const UPLOADS_DIR = path.isAbsolute(fileUploadConfig.uploadDir)
+  ? fileUploadConfig.uploadDir
+  : path.join(__dirname, '../..', fileUploadConfig.uploadDir);
 
 // Ensure uploads directory exists
-const UPLOADS_DIR = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }

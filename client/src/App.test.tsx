@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 
@@ -34,7 +34,13 @@ vi.mock('@/components/chat/NotificationPanel', () => ({
 vi.mock('@/components/invites/InviteUserDialog', () => ({ default: () => null }));
 vi.mock('@/components/admin/AdminSettingsModal', () => ({ default: () => null }));
 
+// Sign out posts through the shared API client
+vi.mock('@/lib/api', () => ({
+  default: { post: vi.fn().mockResolvedValue({}) },
+}));
+
 import { useCurrentUser } from '@/hooks/useUsers';
+import api from '@/lib/api';
 
 const memberUser = {
   id: '1',
@@ -192,52 +198,55 @@ describe('Google Sign-In Button Tests', () => {
       );
     };
 
-    it('should not show sign-in button when user is authenticated', () => {
+    it('should not show sign-in button when user is authenticated', async () => {
       renderAs(memberUser);
 
       expect(screen.queryByText('Sign in with Google')).not.toBeInTheDocument();
       expect(screen.getAllByText('ServiceBay PM').length).toBeGreaterThan(0);
       expect(screen.getByText('Test User')).toBeInTheDocument();
+      // Let the lazily loaded dashboard settle before the test ends
+      expect(await screen.findByTestId('summary-view')).toBeInTheDocument();
     });
 
-    it('should show user info and a sign out action in the account menu', () => {
+    it('should show user info and sign out with a POST from the account menu', async () => {
       renderAs(memberUser);
 
       expect(screen.getByText('Test User')).toBeInTheDocument();
       expect(screen.getByText('Member')).toBeInTheDocument();
 
       fireEvent.keyDown(screen.getByRole('button', { name: 'Account menu' }), { key: 'Enter' });
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }));
 
-      const signOut = screen.getByText('Sign out').closest('a');
-      expect(signOut).toHaveAttribute('href', '/api/auth/logout');
+      // The server only ends the session on POST; a GET link would not sign out
+      await waitFor(() => expect(api.post).toHaveBeenCalledWith('/api/auth/logout'));
     });
 
-    it('should open on the dashboard and switch views from the sidebar', () => {
+    it('should open on the dashboard and switch views from the sidebar', async () => {
       renderAs(memberUser);
 
-      expect(screen.getByTestId('summary-view')).toBeInTheDocument();
+      expect(await screen.findByTestId('summary-view')).toBeInTheDocument();
 
       const [tasksLink] = screen.getAllByRole('button', { name: /^Tasks$/ });
       fireEvent.click(tasksLink);
 
-      expect(screen.getByTestId('task-tree')).toBeInTheDocument();
+      expect(await screen.findByTestId('task-tree')).toBeInTheDocument();
       expect(window.location.hash).toBe('#/tasks');
     });
 
-    it('should restore the view from the URL hash', () => {
+    it('should restore the view from the URL hash', async () => {
       window.location.hash = '#/tasks';
       renderAs(memberUser);
 
-      expect(screen.getByTestId('task-tree')).toBeInTheDocument();
+      expect(await screen.findByTestId('task-tree')).toBeInTheDocument();
     });
 
-    it('should hide the admin-only Team view from members', () => {
+    it('should hide the admin-only Team view from members', async () => {
       window.location.hash = '#/team';
       renderAs(memberUser);
 
       expect(screen.queryByRole('button', { name: /^Team$/ })).not.toBeInTheDocument();
       // Falls back to the dashboard instead of opening the admin view
-      expect(screen.getByTestId('summary-view')).toBeInTheDocument();
+      expect(await screen.findByTestId('summary-view')).toBeInTheDocument();
     });
 
     it('should show the Team view to admins', () => {

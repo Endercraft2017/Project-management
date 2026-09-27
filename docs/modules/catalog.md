@@ -30,10 +30,12 @@ dependencies were not installed when this inventory was taken, so
 
 | Area | Responsibility | Location | Status |
 |---|---|---|---|
-| App shell | Navigation, layout, theme, glass design system, auth screens | `client/src/App.tsx`, `client/src/components/layout/*`, `client/src/index.css`, `client/src/store/*` | working (`client/src/App.test.tsx`, 14 tests) |
-| UI primitives | Shared button, toast | `client/src/components/ui`, `components/common` | working |
+| App shell | Navigation, layout, theme, glass design system, auth screens, lazy-loaded views | `client/src/App.tsx`, `client/src/components/layout/*`, `client/src/index.css`, `client/src/store/*` | working (`client/src/App.test.tsx`, 14 tests) |
+| UI primitives | Shared button, toast, `escapeHtml` for any innerHTML sink | `client/src/components/ui`, `components/common`, `client/src/lib/utils.ts` | working (`client/src/lib/utils.test.ts`) |
 | Email | Nodemailer transport and helpers | `server/src/lib/email*.ts` | partial |
-| Security | Helmet CSP, rate limits | `server/src/middlewares/security.ts` | partial |
+| Security | Helmet CSP, rate limits, compression, static assets served before sessions | `server/src/middlewares/security.ts`, `server/src/app.ts` | partial |
+| Token encryption | AES-256-GCM for stored Google OAuth tokens (`TOKEN_ENCRYPTION_KEY`), reads legacy plaintext | `server/src/lib/token-crypto.ts` | working (`lib/__tests__/token-crypto.test.ts`) |
+| Drive proxy headers | Safe content type, disposition, and caching for Drive files served from our origin | `server/src/services/drive-file-headers.ts` | working (`services/__tests__/drive-file-headers.test.ts`) |
 
 ## Known connections
 
