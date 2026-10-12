@@ -38,6 +38,7 @@ jobs:
   test-server:
     name: Server tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -91,7 +92,7 @@ jobs:
         working-directory: server
         env:
           NODE_OPTIONS: --max-old-space-size=6144
-        run: npx jest --runInBand --coverage=false --reporters=default --reporters=github-actions --json --outputFile=jest-results.json
+        run: npx jest --runInBand --forceExit --detectOpenHandles --coverage=false --reporters=default --reporters=github-actions --json --outputFile=jest-results.json
 
       # GitHub shows at most 10 annotations per step, so list every failing
       # test in a single annotation as well.
