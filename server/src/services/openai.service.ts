@@ -32,12 +32,19 @@ export interface DailyUpdateData {
 }
 
 class OpenAIService {
-  private client: OpenAI;
+  private client: OpenAI | null = null;
   private readonly model = 'gpt-3.5-turbo';
   private readonly maxRetries = 3;
   private readonly temperature = 0.7;
 
-  constructor() {
+  /**
+   * Create the OpenAI client on first use, so the server (and anything that
+   * imports this module) starts without OPENAI_API_KEY. Only AI summaries
+   * need it, and they fail with a clear error when it's missing.
+   */
+  private getClient(): OpenAI {
+    if (this.client) return this.client;
+
     const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
@@ -51,6 +58,7 @@ class OpenAIService {
       maxRetries: this.maxRetries,
       timeout: 60000, // 60 seconds
     });
+    return this.client;
   }
 
   /**
@@ -101,7 +109,7 @@ Return your response in the following JSON format:
     ];
 
     try {
-      const response = await this.client.chat.completions.create({
+      const response = await this.getClient().chat.completions.create({
         model: this.model,
         messages,
         temperature: this.temperature,
@@ -173,7 +181,7 @@ Return your response in the following JSON format:
    */
   async testConnection(): Promise<boolean> {
     try {
-      const response = await this.client.chat.completions.create({
+      const response = await this.getClient().chat.completions.create({
         model: this.model,
         messages: [
           {
