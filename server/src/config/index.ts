@@ -48,6 +48,20 @@ const envSchema = z.object({
   // File Upload
   MAX_FILE_SIZE: z.string().transform(Number).default('5242880'), // 5MB
   UPLOAD_DIR: z.string().default('uploads'),
+
+  // Encrypts Google OAuth tokens at rest (format checked in lib/token-crypto)
+  TOKEN_ENCRYPTION_KEY: z.string().optional(),
+}).superRefine((env, ctx) => {
+  // Google refresh tokens grant access to users' Drive files, so production
+  // must never store them in plaintext.
+  if (env.NODE_ENV === 'production' && !env.TOKEN_ENCRYPTION_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['TOKEN_ENCRYPTION_KEY'],
+      message:
+        'Required in production. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+    });
+  }
 });
 
 // Parse and validate environment variables

@@ -9,7 +9,14 @@ import compression from 'compression';
 import path from 'path';
 import passport from './auth/passport-config';
 import { sessionMiddleware } from './middlewares/session';
-import { securityHeaders, apiLimiter, sanitizeInput } from './middlewares/security';
+import {
+  securityHeaders,
+  apiLimiter,
+  mutationLimiter,
+  authLimiter,
+  csrfProtection,
+  sanitizeInput,
+} from './middlewares/security';
 import { attachUser } from './auth/middleware';
 import authRoutes from './auth/routes';
 import userRoutes from './users/routes';
@@ -25,6 +32,8 @@ import notesRoutes from './notes/routes';
 import summariesRoutes from './summaries/routes';
 import adminRoutes from './admin/routes';
 import { corsConfig, serverConfig } from './config';
+import { requestContext } from './middlewares/request-context';
+import { logger, errorFields } from './lib/logger';
 
 const app: Express = express();
 
@@ -58,6 +67,11 @@ if (serverConfig.isProduction) {
     })
   );
 }
+
+/**
+ * Request id + one structured log line per API request
+ */
+app.use(requestContext);
 
 app.use(sanitizeInput);
 
@@ -96,9 +110,17 @@ app.use(passport.session());
 app.use(attachUser);
 
 /**
- * Rate limiting
+ * Rate limiting and CSRF protection
+ * - apiLimiter: overall budget per user (or IP when signed out)
+ * - mutationLimiter: 100 writes per minute per user
+ * - authLimiter: 5 failed invite-token checks per 15 minutes per IP,
+ *   to stop invite tokens being guessed
+ * - csrfProtection: rejects writes whose Origin isn't this app
  */
 app.use('/api', apiLimiter);
+app.use('/api', mutationLimiter);
+app.use(['/api/invites/accept', '/api/invites/validate'], authLimiter);
+app.use('/api', csrfProtection);
 
 /**
  * Health check endpoint
@@ -155,17 +177,32 @@ if (serverConfig.isProduction) {
  * Global error handler
  */
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
+  const status = err.status || 500;
+
+  logger.error('unhandled error', {
+    requestId: req.requestId,
+    method: req.method,
+    path: req.originalUrl.split('?')[0],
+    status,
+    userId: req.user?.id,
+    ...errorFields(err),
+  });
+
+  // A response that already started streaming can't be replaced
+  if (res.headersSent) {
+    return next(err);
+  }
 
   // Don't leak error details in production
   const message = serverConfig.isProduction
     ? 'An error occurred'
     : err.message || 'Internal server error';
 
-  res.status(err.status || 500).json({
+  res.status(status).json({
     success: false,
     error: err.name || 'Error',
     message,
+    requestId: req.requestId,
     ...(serverConfig.isDevelopment && { stack: err.stack }),
   });
 });

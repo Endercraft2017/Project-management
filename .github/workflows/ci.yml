@@ -1,0 +1,144 @@
+name: CI
+
+# Runs on every pull request and every push to main.
+# Production deploys only happen after build and tests pass on main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    name: Build and typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Builds every workspace. The server build is `tsc` and the client build
+      # is `tsc && vite build`, so this also typechecks both.
+      - name: Build
+        run: npm run build
+
+  test-server:
+    name: Server tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: pm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Dummy values that satisfy the server's config validation. No test talks
+    # to Google, OpenAI or SMTP.
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/pm_test
+      SESSION_SECRET: ci-session-secret-at-least-32-characters-long
+      GOOGLE_CLIENT_ID: ci-client-id
+      GOOGLE_CLIENT_SECRET: ci-client-secret
+      GOOGLE_CALLBACK_URL: http://localhost:3000/api/auth/google/callback
+      ADMIN_EMAILS: admin@servicebay.ai
+      CLIENT_URL: http://localhost:5173
+      CORS_ORIGIN: http://localhost:5173
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations
+        working-directory: server
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      # Coverage is reported but not enforced yet; jest.config.js has an 80%
+      # threshold that the suite has never been measured against.
+      - name: Run tests
+        working-directory: server
+        run: npx jest --runInBand --coverage --coverageThreshold='{}'
+
+  test-client:
+    name: Client tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test --workspace=client
+
+  lint:
+    name: Lint (advisory)
+    runs-on: ubuntu-latest
+    # Not blocking yet: the server has no ESLint config. Make this blocking
+    # once both workspaces lint cleanly.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  deploy:
+    name: Deploy to Railway
+    needs: [build, test-server, test-client]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy
+        run: railway up
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
