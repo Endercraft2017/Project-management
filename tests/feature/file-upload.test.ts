@@ -532,9 +532,9 @@ Task 1,No progress column
 
     it('should handle CSV with special characters in data', async () => {
       const specialCsv = path.join(TEST_FILES_DIR, 'special.csv');
-      const content = `Tasks,Progress %
-"Task with, comma",50
-"Task with ""quotes""",75
+      const content = `Tasks,Sprint,Progress %
+"Task with, comma",Test Sprint,50
+"Task with ""quotes""",Test Sprint,75
 `;
       fs.writeFileSync(specialCsv, content);
 
