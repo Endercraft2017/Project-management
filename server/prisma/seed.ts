@@ -71,6 +71,19 @@ async function main() {
 
   console.log('✅ Created member users');
 
+  // Every user belongs to the original organization, which the multi-tenancy
+  // migration creates with this fixed id
+  const DEFAULT_ORGANIZATION_ID = '00000000-0000-4000-8000-000000000001';
+  for (const user of [admin1, admin2, member1, member2, member3]) {
+    await prisma.membership.upsert({
+      where: { organizationId_userId: { organizationId: DEFAULT_ORGANIZATION_ID, userId: user.id } },
+      update: {},
+      create: { organizationId: DEFAULT_ORGANIZATION_ID, userId: user.id, role: user.role },
+    });
+  }
+
+  console.log('✅ Added users to the organization');
+
   // Create sprints
   const sprint1 = await prisma.sprint.create({
     data: {

@@ -35,6 +35,55 @@ enum InviteStatus {
 }
 
 // Models
+
+// ============================================
+// Multi-tenancy
+// ============================================
+
+// A customer workspace. Every tenant-owned row carries organizationId.
+model Organization {
+  id                  String   @id @default(uuid())
+  name                String
+  slug                String   @unique
+  allowedEmailDomains String[] @default([]) // e.g. ["servicebay.ai"]; empty = invite-only
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  memberships            Membership[]
+  sprints                Sprint[]
+  tasks                  Task[]
+  conversations          Conversation[]
+  messages               Message[]
+  syncLogs               SyncLog[]
+  files                  File[]
+  invites                TeamInvite[]
+  dailyUpdates           DailyUpdate[]
+  notes                  Note[]
+  weeklySummaries        WeeklySummary[]
+  memberWeeklySummaries  MemberWeeklySummary[]
+  settings               AdminSetting[]
+  notifications          Notification[]
+
+  @@map("organizations")
+}
+
+// A user's place in an organization. The role here is what authorization uses.
+model Membership {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  role           Role     @default(MEMBER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -62,6 +111,7 @@ model User {
   dailyUpdates         DailyUpdate[]         @relation("UserDailyUpdates")
   notes                Note[]                @relation("UserNotes")
   weeklySummaries      MemberWeeklySummary[] @relation("UserWeeklySummaries")
+  memberships          Membership[]
 
   @@index([email])
   @@index([role])
@@ -70,6 +120,7 @@ model User {
 
 model Sprint {
   id          String        @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   name        String
   startDate   DateTime
   endDate     DateTime
@@ -84,6 +135,9 @@ model Sprint {
   createdBy User   @relation("SprintCreator", fields: [createdById], references: [id], onDelete: Restrict)
   tasks     Task[]
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([createdById])
   @@index([status])
   @@index([isActive])
@@ -93,6 +147,7 @@ model Sprint {
 
 model Task {
   id             String    @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   taskName       String
   sprintId       String
   parentTaskId   String?
@@ -113,6 +168,9 @@ model Task {
   parentTask   Task?   @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: Cascade)
   subtasks     Task[]  @relation("TaskHierarchy")
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([sprintId])
   @@index([parentTaskId])
   @@index([assignedToId])
@@ -123,6 +181,7 @@ model Task {
 
 model Conversation {
   id          String            @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   type        ConversationType
   name        String?           // Null for DM, required for GROUP
   description String?           @db.Text
@@ -135,6 +194,9 @@ model Conversation {
   messages Message[]
   files    File[]
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([type])
   @@index([createdById])
   @@map("conversations")
@@ -160,6 +222,7 @@ model ConversationMember {
 
 model Message {
   id             String   @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   conversationId String
   senderId       String
   content        String   @db.Text
@@ -188,6 +251,9 @@ model Message {
   parentMessage Message?  @relation("MessageThread", fields: [parentMessageId], references: [id], onDelete: Cascade)
   replies       Message[] @relation("MessageThread")
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([conversationId])
   @@index([senderId])
   @@index([createdAt])
@@ -218,6 +284,7 @@ model MessageAttachment {
 
 model SyncLog {
   id              String   @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   spreadsheetId   String
   sheetName       String
   syncType        String   // 'export', 'import', 'bidirectional'
@@ -235,6 +302,9 @@ model SyncLog {
   // Relations
   performedBy     User     @relation(fields: [performedById], references: [id], onDelete: Restrict)
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([spreadsheetId])
   @@index([performedById])
   @@index([createdAt])
@@ -243,6 +313,7 @@ model SyncLog {
 
 model File {
   id              String    @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   filename        String    // Original filename (sanitized)
   storedFilename  String    // Generated unique filename
   mimeType        String
@@ -257,6 +328,9 @@ model File {
   conversation    Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   message         Message?      @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([uploadedById])
   @@index([conversationId])
   @@index([messageId])
@@ -266,6 +340,7 @@ model File {
 
 model TeamInvite {
   id          String        @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   email       String
   token       String        @unique @default(uuid())
   role        Role          @default(MEMBER)
@@ -277,6 +352,9 @@ model TeamInvite {
 
   invitedBy   User          @relation("InviteCreator", fields: [invitedById], references: [id], onDelete: Cascade)
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([email])
   @@index([token])
   @@index([status])
@@ -286,6 +364,7 @@ model TeamInvite {
 
 model DailyUpdate {
   id        String   @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   date      DateTime @db.Date // Date only (YYYY-MM-DD)
   content   String   @db.Text
   userId    String
@@ -295,6 +374,9 @@ model DailyUpdate {
   user      User     @relation("UserDailyUpdates", fields: [userId], references: [id], onDelete: Cascade)
 
   // Constraint: One update per user per day
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@unique([userId, date])
   @@index([date])
   @@index([userId])
@@ -304,6 +386,7 @@ model DailyUpdate {
 // Personal Notes with Reminders
 model Note {
   id        String    @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   title     String
   content   String    @db.Text // Markdown content
   tags      String[]  @default([]) // Array of tags for organization
@@ -315,6 +398,9 @@ model Note {
   user      User      @relation("UserNotes", fields: [userId], references: [id], onDelete: Cascade)
   reminders Reminder[]
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([userId])
   @@index([userId, isPinned])
   @@index([createdAt])
@@ -339,6 +425,7 @@ model Reminder {
 // Weekly Summary with AI-powered impact assessment
 model WeeklySummary {
   id             String              @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   weekStartDate  DateTime            @db.Date // Monday of the week
   weekEndDate    DateTime            @db.Date // Sunday of the week
   generatedAt    DateTime            @default(now())
@@ -348,6 +435,9 @@ model WeeklySummary {
 
   memberSummaries MemberWeeklySummary[]
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@unique([weekStartDate, weekEndDate])
   @@index([weekStartDate])
   @@index([weekEndDate])
@@ -357,6 +447,7 @@ model WeeklySummary {
 // Individual member's weekly summary with AI-generated content
 model MemberWeeklySummary {
   id               String         @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   weeklySummaryId  String
   userId           String
   summary          String         @db.Text // AI-generated summary
@@ -367,6 +458,9 @@ model MemberWeeklySummary {
   weeklySummary    WeeklySummary  @relation(fields: [weeklySummaryId], references: [id], onDelete: Cascade)
   user             User           @relation("UserWeeklySummaries", fields: [userId], references: [id], onDelete: Cascade)
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@unique([weeklySummaryId, userId])
   @@index([weeklySummaryId])
   @@index([userId])
@@ -377,12 +471,16 @@ model MemberWeeklySummary {
 // Admin settings for system configuration
 model AdminSetting {
   id        String   @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   key       String   @unique // e.g., "weekly_summary_email"
   value     String   @db.Text // JSON-encoded value
   updatedBy String   // User ID of admin who last updated
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([key])
   @@map("admin_settings")
 }
@@ -403,6 +501,7 @@ enum NotificationType {
 // Persistent notifications for the bell icon
 model Notification {
   id          String            @id @default(uuid())
+  organizationId String @default("00000000-0000-4000-8000-000000000001") // tenant; the default is transitional (see migration)
   type        NotificationType
   userId      String            // Who should receive this notification
   title       String
@@ -413,6 +512,9 @@ model Notification {
   readAt      DateTime?
   createdAt   DateTime          @default(now())
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
   @@index([userId, isRead])
   @@index([userId, createdAt])
   @@index([type])

@@ -85,6 +85,28 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
+      # Fails if the migrations don't produce exactly what schema.prisma
+      # describes (a hand-written migration that drifted, or a schema change
+      # with no migration).
+      - name: Check migrations match the schema
+        working-directory: server
+        run: |
+          echo 'CREATE DATABASE pm_shadow;' | npx prisma db execute --stdin --url "$DATABASE_URL"
+          set +e
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url postgresql://test_user:test_password@localhost:5432/pm_shadow \
+            --script --exit-code > drift.sql 2>&1
+          code=$?
+          set -e
+          if [ "$code" != "0" ]; then
+            # Show the SQL needed to reach the schema (or the error) on the PR
+            msg=$(head -c 3800 drift.sql | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Migrations don't match schema.prisma::$msg"
+            exit 1
+          fi
+
       # Coverage is off for now (it isn't enforced and ts-jest + coverage can
       # exhaust memory). The github-actions reporter turns each failing test
       # into an annotation on the PR.
