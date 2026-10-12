@@ -5,7 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import prisma from '@/database/client';
-import { getSocketServer } from '@/chat/socket-server';
+import { getSocketServerIfRunning } from '@/chat/socket-server';
 
 export class UpdatesService {
   /**
@@ -84,7 +84,7 @@ export class UpdatesService {
     });
 
     // Emit WebSocket event for real-time updates
-    const io = getSocketServer();
+    const io = getSocketServerIfRunning();
     if (io) {
       io.emit('daily_update_changed', {
         date: normalizedDate,
@@ -138,7 +138,7 @@ export class UpdatesService {
     });
 
     // Emit WebSocket event
-    const io = getSocketServer();
+    const io = getSocketServerIfRunning();
     if (io) {
       io.emit('daily_update_changed', {
         date: existing.date,

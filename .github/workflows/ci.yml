@@ -91,7 +91,28 @@ jobs:
         working-directory: server
         env:
           NODE_OPTIONS: --max-old-space-size=6144
-        run: npx jest --runInBand --coverage=false --reporters=default --reporters=github-actions
+        run: npx jest --runInBand --coverage=false --reporters=default --reporters=github-actions --json --outputFile=jest-results.json
+
+      # GitHub shows at most 10 annotations per step, so list every failing
+      # test in a single annotation as well.
+      - name: Summarise failing tests
+        if: failure()
+        working-directory: server
+        run: |
+          node -e '
+            const fs = require("fs");
+            if (!fs.existsSync("jest-results.json")) { console.log("::error title=Server tests::Jest produced no results file"); process.exit(0); }
+            const r = JSON.parse(fs.readFileSync("jest-results.json", "utf8"));
+            const lines = [`${r.numFailedTests} failed, ${r.numPassedTests} passed, ${r.numFailedTestSuites} failed suites`];
+            for (const s of r.testResults) {
+              const file = s.name.split("/project-management/").pop();
+              const failed = s.assertionResults.filter(a => a.status === "failed");
+              if (s.status === "failed" && failed.length === 0) lines.push(`${file}: suite failed: ${(s.message || "").split("\n").find(l => l.trim()) || ""}`);
+              for (const a of failed) lines.push(`${file}: ${a.fullName}: ${(a.failureMessages[0] || "").split("\n")[0]}`);
+            }
+            const msg = lines.join("\n").slice(0, 60000).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+            console.log(`::error title=Failing tests::${msg}`);
+          '
 
   test-client:
     name: Client tests
