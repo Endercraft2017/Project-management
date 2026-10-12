@@ -4,6 +4,12 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/../tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  // These are React component tests for the client. They can't run under the
+  // server's Node/ts-jest setup and should move to the client's Vitest suite.
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    'tests/feature/(chat-view|gantt-view|summary-view|tasks-view|theme-toggle)\\.test\\.ts$',
+  ],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },

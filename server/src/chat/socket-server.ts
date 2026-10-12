@@ -50,6 +50,14 @@ export function getSocketServer(): SocketServer {
 }
 
 /**
+ * Get the Socket.IO server if it is running, or null (scripts, tests, workers).
+ * Use this where a real-time event is optional and must not fail the request.
+ */
+export function getSocketServerIfRunning(): SocketServer | null {
+  return io;
+}
+
+/**
  * Close Socket.IO server
  */
 export async function closeSocketServer(): Promise<void> {

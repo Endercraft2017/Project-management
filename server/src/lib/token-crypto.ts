@@ -3,6 +3,7 @@
  * AES-256-GCM encryption for Google OAuth tokens stored in the database.
  *
  * Enabled when TOKEN_ENCRYPTION_KEY is set (32 bytes as 64 hex chars or base64).
+ * The key is required in production; config/index.ts refuses to start without it.
  * Values are stored as "enc:v1:<iv>:<tag>:<ciphertext>" (base64 parts).
  * Legacy plaintext values are still read, and are re-encrypted the next time
  * they are written (sign-in or token refresh).
@@ -24,10 +25,6 @@ function loadKey(): Buffer | null {
 }
 
 const key = loadKey();
-
-if (!key && process.env.NODE_ENV === 'production') {
-  console.warn('[TokenCrypto] TOKEN_ENCRYPTION_KEY is not set; Google tokens are stored unencrypted');
-}
 
 export function encryptToken(value: string): string;
 export function encryptToken(value: string | null | undefined): string | null | undefined;

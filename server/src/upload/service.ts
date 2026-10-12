@@ -148,6 +148,11 @@ export async function importTasksFromFile(
     const rows = await parseFile(file.path);
     console.log(`[Import] Parsed ${rows.length} rows`);
 
+    // An empty file would otherwise be reported as "Missing required columns: No data"
+    if (rows.length === 0) {
+      throw new Error('File is empty. No rows to import.');
+    }
+
     // Validate headers
     const headerValidation = validateHeaders(rows);
     if (!headerValidation.valid) {

@@ -14,6 +14,7 @@ import { authenticateSocket } from './chat/socket-middleware';
 import { startReminderScheduler, stopReminderScheduler } from './notes/reminder-scheduler';
 import { startScheduler as startWeeklySummaryScheduler, stopScheduler as stopWeeklySummaryScheduler } from './summaries/scheduler';
 import { startDailyReminderScheduler, stopDailyReminderScheduler } from './admin/daily-reminder-scheduler';
+import { logger, errorFields } from './lib/logger';
 
 const PORT = serverConfig.port;
 
@@ -27,7 +28,7 @@ async function startServer() {
     const dbConnected = await checkDatabaseConnection();
 
     if (!dbConnected) {
-      console.error('❌ Database connection failed');
+      logger.error('Database connection failed');
       process.exit(1);
     }
 
@@ -58,6 +59,7 @@ async function startServer() {
 
     // Start server (bind to :: for Railway IPv6 compatibility)
     server.listen(PORT, '::', () => {
+      logger.info('Server started', { port: PORT, environment: serverConfig.nodeEnv });
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Environment: ${serverConfig.nodeEnv}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
@@ -96,14 +98,14 @@ async function startServer() {
           console.log('👋 Graceful shutdown completed');
           process.exit(0);
         } catch (error) {
-          console.error('❌ Error during shutdown:', error);
+          logger.error('Error during shutdown', errorFields(error));
           process.exit(1);
         }
       });
 
       // Force shutdown after 10 seconds
       setTimeout(() => {
-        console.error('⚠️  Forced shutdown after timeout');
+        logger.error('Forced shutdown after timeout');
         process.exit(1);
       }, 10000);
     };
@@ -114,16 +116,16 @@ async function startServer() {
 
     // Handle uncaught errors
     process.on('uncaughtException', (error) => {
-      console.error('❌ Uncaught Exception:', error);
+      logger.error('Uncaught exception', errorFields(error));
       gracefulShutdown('uncaughtException');
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-      console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+      logger.error('Unhandled promise rejection', errorFields(reason));
       gracefulShutdown('unhandledRejection');
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('Failed to start server', errorFields(error));
     process.exit(1);
   }
 }

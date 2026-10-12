@@ -1,0 +1,179 @@
+name: CI
+
+# Runs on every pull request and every push to main.
+# Production deploys only happen after build and tests pass on main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    name: Build and typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Builds every workspace. The server build is `tsc` and the client build
+      # is `tsc && vite build`, so this also typechecks both.
+      - name: Build
+        run: npm run build
+
+  test-server:
+    name: Server tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: pm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Dummy values that satisfy the server's config validation. No test talks
+    # to Google, OpenAI or SMTP.
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/pm_test
+      SESSION_SECRET: ci-session-secret-at-least-32-characters-long
+      GOOGLE_CLIENT_ID: ci-client-id
+      GOOGLE_CLIENT_SECRET: ci-client-secret
+      GOOGLE_CALLBACK_URL: http://localhost:3000/api/auth/google/callback
+      ADMIN_EMAILS: admin@servicebay.ai
+      CLIENT_URL: http://localhost:5173
+      CORS_ORIGIN: http://localhost:5173
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations
+        working-directory: server
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      # Coverage is off for now (it isn't enforced and ts-jest + coverage can
+      # exhaust memory). The github-actions reporter turns each failing test
+      # into an annotation on the PR.
+      - name: Run tests
+        working-directory: server
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npx jest --runInBand --forceExit --detectOpenHandles --coverage=false --reporters=default --reporters=github-actions --json --outputFile=jest-results.json
+
+      # GitHub shows at most 10 annotations per step, so list every failing
+      # test in a single annotation as well.
+      - name: Summarise failing tests
+        if: failure()
+        working-directory: server
+        run: |
+          node -e '
+            const fs = require("fs");
+            if (!fs.existsSync("jest-results.json")) { console.log("::error title=Server tests::Jest produced no results file"); process.exit(0); }
+            const r = JSON.parse(fs.readFileSync("jest-results.json", "utf8"));
+            const lines = [`${r.numFailedTests} failed, ${r.numPassedTests} passed, ${r.numFailedTestSuites} failed suites`];
+            for (const s of r.testResults) {
+              const file = s.name.replace(/^.*?\/Project-management\/Project-management\//, "");
+              const failed = s.assertionResults.filter(a => a.status === "failed");
+              if (s.status === "failed" && failed.length === 0) lines.push(`${file}: suite failed: ${(s.message || "").replace(/\u001b\[[0-9;]*m/g, "").split("\n").map(l => l.trim()).filter(l => l && !l.includes("Test suite failed to run")).slice(0, 4).join(" / ")}`);
+              for (const a of failed) lines.push(`${file}: ${a.fullName}: ${(a.failureMessages[0] || "").replace(/\u001b\[[0-9;]*m/g, "").split("\n").filter(l => l.trim()).slice(0, 3).join(" / ")}`);
+            }
+            // Annotations hold about 4,000 characters and a step shows 10
+            const chunks = [];
+            let cur = "";
+            for (const l of lines.map(l => l.slice(0, 300))) {
+              if (cur.length + l.length + 1 > 3900) { chunks.push(cur); cur = ""; }
+              cur += (cur ? "\n" : "") + l;
+            }
+            if (cur) chunks.push(cur);
+            chunks.slice(0, 10).forEach((c, i) => {
+              const msg = c.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+              console.log(`::error title=Failing tests ${i + 1}/${Math.min(chunks.length, 10)}::${msg}`);
+            });
+          '
+
+  test-client:
+    name: Client tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test --workspace=client
+
+  lint:
+    name: Lint (advisory)
+    runs-on: ubuntu-latest
+    # Not blocking yet: the server has no ESLint config. Make this blocking
+    # once both workspaces lint cleanly.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  deploy:
+    name: Deploy to Railway
+    needs: [build, test-server, test-client]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy
+        run: railway up
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

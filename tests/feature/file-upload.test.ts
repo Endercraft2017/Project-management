@@ -70,7 +70,7 @@ describe('File Upload Tests', () => {
     // Create test conversation
     testConversation = await prisma.conversation.create({
       data: {
-        type: 'group',
+        type: 'GROUP',
         name: 'Test Group',
         createdById: testUser.id,
         members: {
@@ -115,9 +115,9 @@ describe('File Upload Tests', () => {
     fs.writeFileSync(TEST_IMAGE, jpegBuffer);
 
     // Create test CSV
-    const csvContent = `Task Name,Details,Progress,Sprint,Assigned To,Start Date,Deadline,Nesting Level,Parent ID
-Task 1,Details for task 1,50,Test Sprint,${testUser.email},2025-01-01,2025-01-31,0,
-Task 2,Details for task 2,25,,${testAdmin.email},2025-01-01,2025-01-15,0,
+    const csvContent = `Tasks,Subtasks,Sprint,Details,Progress %,Assigned to,Deadline
+Task 1,,Test Sprint,Details for task 1,50,${testUser.email},2025-01-31
+Task 2,,,Details for task 2,25,${testAdmin.email},2025-01-15
 `;
     fs.writeFileSync(TEST_CSV, csvContent);
   });
@@ -239,9 +239,10 @@ Task 2,Details for task 2,25,,${testAdmin.email},2025-01-01,2025-01-15,0,
     it('should handle CSV with validation errors', async () => {
       // Create CSV with invalid data
       const invalidCsv = path.join(TEST_FILES_DIR, 'invalid.csv');
-      const content = `Task Name,Progress,Nesting Level
-Task 1,150,0
-Task 2,-10,5
+      const content = `Tasks,Progress %
+Task 1,150
+Task 2,-10
+Task 3,40
 `;
       fs.writeFileSync(invalidCsv, content);
 
@@ -258,8 +259,8 @@ Task 2,-10,5
 
     it('should reject import with missing required columns', async () => {
       const invalidCsv = path.join(TEST_FILES_DIR, 'missing-columns.csv');
-      const content = `Task Name,Progress
-Task 1,50
+      const content = `Tasks,Details
+Task 1,No progress column
 `;
       fs.writeFileSync(invalidCsv, content);
 
@@ -531,9 +532,9 @@ Task 1,50
 
     it('should handle CSV with special characters in data', async () => {
       const specialCsv = path.join(TEST_FILES_DIR, 'special.csv');
-      const content = `Task Name,Progress,Nesting Level
-"Task with, comma",50,0
-"Task with ""quotes""",75,0
+      const content = `Tasks,Sprint,Progress %
+"Task with, comma",Test Sprint,50
+"Task with ""quotes""",Test Sprint,75
 `;
       fs.writeFileSync(specialCsv, content);
 

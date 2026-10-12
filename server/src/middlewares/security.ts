@@ -6,7 +6,7 @@
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
-import { rateLimitConfig, serverConfig } from '@/config';
+import { corsConfig, rateLimitConfig, serverConfig } from '@/config';
 
 /**
  * Security headers using Helmet
@@ -113,7 +113,8 @@ export const mutationLimiter = rateLimit({
     const user = (req as any).user;
     return user?.id || req.ip || 'unknown';
   },
-  skip: (req) => serverConfig.isTest,
+  // Only writes count toward this limit
+  skip: (req) => serverConfig.isTest || ['GET', 'HEAD', 'OPTIONS'].includes(req.method),
 });
 
 /**
@@ -136,21 +137,46 @@ export const authLimiter = rateLimit({
 });
 
 /**
- * CSRF token validation middleware
- * For now, we rely on SameSite cookies
- * Can be enhanced with csurf package if needed
+ * Reduce a URL to its origin ("https://host:port"), or null if it isn't a URL
+ */
+function toOrigin(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+}
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * CSRF protection by Origin check, on top of SameSite=lax session cookies.
+ *
+ * Browsers send an Origin header on cross-site requests that change state.
+ * A request is allowed when it has no Origin (same-origin form posts from
+ * older browsers, server-to-server calls, tests), or when its Origin is the
+ * configured client URL, the CORS origin, or this server's own origin
+ * (the app is served same-origin in production, possibly on a custom domain).
  */
 export function csrfProtection(req: Request, res: Response, next: NextFunction): void {
-  // In development, skip CSRF
-  if (serverConfig.isDevelopment) {
+  // Reads can't change state; in development the client runs on another port
+  if (SAFE_METHODS.has(req.method) || serverConfig.isDevelopment) {
     return next();
   }
 
-  // Check if request has valid origin
   const origin = req.get('origin');
-  const allowedOrigins = [process.env.CLIENT_URL, process.env.CORS_ORIGIN];
+  if (!origin) {
+    return next();
+  }
 
-  if (origin && !allowedOrigins.includes(origin)) {
+  const allowedOrigins = [
+    toOrigin(corsConfig.clientUrl),
+    toOrigin(corsConfig.origin),
+    toOrigin(`${req.protocol}://${req.get('host')}`),
+  ];
+
+  if (!allowedOrigins.includes(toOrigin(origin))) {
     res.status(403).json({
       success: false,
       error: 'Forbidden',

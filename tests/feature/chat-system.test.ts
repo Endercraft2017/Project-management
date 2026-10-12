@@ -46,7 +46,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-user1@servicebay.ai',
         name: 'Chat User 1',
-        role: 'member',
+        role: 'MEMBER',
         isActive: true,
       },
     });
@@ -55,7 +55,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-user2@servicebay.ai',
         name: 'Chat User 2',
-        role: 'member',
+        role: 'MEMBER',
         isActive: true,
       },
     });
@@ -64,7 +64,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-user3@servicebay.ai',
         name: 'Chat User 3',
-        role: 'member',
+        role: 'MEMBER',
         isActive: true,
       },
     });
@@ -73,7 +73,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-admin@servicebay.ai',
         name: 'Chat Admin',
-        role: 'admin',
+        role: 'ADMIN',
         isActive: true,
       },
     });
@@ -147,7 +147,7 @@ describe('Chat System Tests', () => {
 
         expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
-        expect(response.body.data.type).toBe('dm');
+        expect(response.body.data.type).toBe('DM');
         expect(response.body.data.members.length).toBe(2);
 
         testConversation = response.body.data;
@@ -203,13 +203,13 @@ describe('Chat System Tests', () => {
 
         expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
-        expect(response.body.data.type).toBe('group');
+        expect(response.body.data.type).toBe('GROUP');
         expect(response.body.data.name).toBe('Test Group');
         expect(response.body.data.members.length).toBe(3);
 
         // Creator should be admin
-        const creator = response.body.data.members.find((m: any) => m.id === testUser1.id);
-        expect(creator.role).toBe('admin');
+        const creator = response.body.data.members.find((m: any) => m.user.id === testUser1.id);
+        expect(creator.isAdmin).toBe(true);
 
         testGroupConversation = response.body.data;
       });
@@ -259,17 +259,17 @@ describe('Chat System Tests', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
-        expect(Array.isArray(response.body.data.conversations)).toBe(true);
-        expect(response.body.data.conversations.length).toBeGreaterThanOrEqual(2);
+        expect(Array.isArray(response.body.data)).toBe(true);
+        expect(response.body.data.length).toBeGreaterThanOrEqual(2);
       });
 
       it('should filter conversations by type', async () => {
         const response = await request(app)
-          .get('/api/conversations?type=dm')
+          .get('/api/conversations?type=DM')
           .set('x-test-user-id', testUser1.id);
 
         expect(response.status).toBe(200);
-        expect(response.body.data.conversations.every((c: any) => c.type === 'dm')).toBe(true);
+        expect(response.body.data.every((c: any) => c.type === 'DM')).toBe(true);
       });
 
       it('should paginate results', async () => {
@@ -278,9 +278,9 @@ describe('Chat System Tests', () => {
           .set('x-test-user-id', testUser1.id);
 
         expect(response.status).toBe(200);
-        expect(response.body.data.conversations.length).toBeLessThanOrEqual(1);
-        expect(response.body.data.pagination.page).toBe(1);
-        expect(response.body.data.pagination.limit).toBe(1);
+        expect(response.body.data.length).toBeLessThanOrEqual(1);
+        expect(response.body.pagination.page).toBe(1);
+        expect(response.body.pagination.limit).toBe(1);
       });
 
       it('should fail without authentication', async () => {
@@ -335,7 +335,8 @@ describe('Chat System Tests', () => {
           .get('/api/conversations/invalid-uuid/messages')
           .set('x-test-user-id', testUser1.id);
 
-        expect(response.status).toBe(400);
+        // Unknown or malformed IDs are treated as "not a member" so existence isn't revealed
+        expect(response.status).toBe(403);
       });
     });
 
@@ -349,7 +350,7 @@ describe('Chat System Tests', () => {
         expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
         expect(response.body.data.userId).toBe(testAdmin.id);
-        expect(response.body.data.role).toBe('member');
+        expect(response.body.data.isAdmin).toBe(false);
       });
 
       it('should fail if non-admin tries to add member', async () => {
@@ -357,7 +358,7 @@ describe('Chat System Tests', () => {
           data: {
             email: 'non-admin-test@servicebay.ai',
             name: 'Non Admin',
-            role: 'member',
+            role: 'MEMBER',
             isActive: true,
           },
         });
@@ -367,7 +368,7 @@ describe('Chat System Tests', () => {
           data: {
             conversationId: testGroupConversation.id,
             userId: nonAdminUser.id,
-            role: 'member',
+            isAdmin: false,
           },
         });
 
@@ -424,7 +425,7 @@ describe('Chat System Tests', () => {
           data: {
             conversationId: testGroupConversation.id,
             userId: testAdmin.id,
-            role: 'member',
+            isAdmin: false,
           },
         });
 
@@ -571,7 +572,7 @@ describe('Chat System Tests', () => {
         .get('/api/conversations/not-a-uuid/messages')
         .set('x-test-user-id', testUser1.id);
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(403);
     });
   });
 
@@ -580,7 +581,7 @@ describe('Chat System Tests', () => {
       // Soft delete a message
       await prisma.message.update({
         where: { id: testMessage.id },
-        data: { deletedAt: new Date() },
+        data: { isDeleted: true },
       });
 
       const response = await request(app)
@@ -597,12 +598,12 @@ describe('Chat System Tests', () => {
     it('should handle empty conversations', async () => {
       const emptyConv = await prisma.conversation.create({
         data: {
-          type: 'dm',
+          type: 'DM',
           createdById: testUser1.id,
           members: {
             create: [
-              { userId: testUser1.id, role: 'member' },
-              { userId: testUser2.id, role: 'member' },
+              { userId: testUser1.id, isAdmin: false },
+              { userId: testUser2.id, isAdmin: false },
             ],
           },
         },

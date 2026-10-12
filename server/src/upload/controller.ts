@@ -327,8 +327,12 @@ export function handleMulterError(
     });
   }
 
-  // File filter error
-  if (error.message && error.message.includes('Unsupported')) {
+  // File filter errors: "Unsupported file type: ..." (general uploads) and
+  // "Only CSV and Excel files ..." (task import)
+  if (
+    error.message &&
+    (error.message.includes('Unsupported') || error.message.startsWith('Only CSV and Excel'))
+  ) {
     return res.status(400).json({
       success: false,
       error: 'Bad Request',
