@@ -109,10 +109,20 @@ jobs:
               const file = s.name.replace(/^.*?\/Project-management\/Project-management\//, "");
               const failed = s.assertionResults.filter(a => a.status === "failed");
               if (s.status === "failed" && failed.length === 0) lines.push(`${file}: suite failed: ${(s.message || "").replace(/\u001b\[[0-9;]*m/g, "").split("\n").map(l => l.trim()).filter(l => l && !l.includes("Test suite failed to run")).slice(0, 4).join(" / ")}`);
-              for (const a of failed) lines.push(`${file}: ${a.fullName}: ${(a.failureMessages[0] || "").split("\n")[0]}`);
+              for (const a of failed) lines.push(`${file}: ${a.fullName}: ${(a.failureMessages[0] || "").replace(/\u001b\[[0-9;]*m/g, "").split("\n").filter(l => l.trim()).slice(0, 3).join(" / ")}`);
             }
-            const msg = lines.join("\n").slice(0, 60000).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-            console.log(`::error title=Failing tests::${msg}`);
+            // Annotations hold about 4,000 characters and a step shows 10
+            const chunks = [];
+            let cur = "";
+            for (const l of lines.map(l => l.slice(0, 300))) {
+              if (cur.length + l.length + 1 > 3900) { chunks.push(cur); cur = ""; }
+              cur += (cur ? "\n" : "") + l;
+            }
+            if (cur) chunks.push(cur);
+            chunks.slice(0, 10).forEach((c, i) => {
+              const msg = c.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+              console.log(`::error title=Failing tests ${i + 1}/${Math.min(chunks.length, 10)}::${msg}`);
+            });
           '
 
   test-client:
