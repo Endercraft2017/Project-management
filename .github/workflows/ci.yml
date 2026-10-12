@@ -105,9 +105,9 @@ jobs:
             const r = JSON.parse(fs.readFileSync("jest-results.json", "utf8"));
             const lines = [`${r.numFailedTests} failed, ${r.numPassedTests} passed, ${r.numFailedTestSuites} failed suites`];
             for (const s of r.testResults) {
-              const file = s.name.split("/project-management/").pop();
+              const file = s.name.replace(/^.*?\/Project-management\/Project-management\//, "");
               const failed = s.assertionResults.filter(a => a.status === "failed");
-              if (s.status === "failed" && failed.length === 0) lines.push(`${file}: suite failed: ${(s.message || "").split("\n").find(l => l.trim()) || ""}`);
+              if (s.status === "failed" && failed.length === 0) lines.push(`${file}: suite failed: ${(s.message || "").replace(/\u001b\[[0-9;]*m/g, "").split("\n").map(l => l.trim()).filter(l => l && !l.includes("Test suite failed to run")).slice(0, 4).join(" / ")}`);
               for (const a of failed) lines.push(`${file}: ${a.fullName}: ${(a.failureMessages[0] || "").split("\n")[0]}`);
             }
             const msg = lines.join("\n").slice(0, 60000).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
