@@ -210,7 +210,9 @@ passport.use(
           }
         }
 
-        return done(null, user);
+        // Only the id is stored in the session (serializeUser); the session
+        // user with its organization and role is built by deserializeUser.
+        return done(null, user as unknown as Express.User);
       } catch (error) {
         console.error('OAuth callback error:', error);
         return done(error as Error);
