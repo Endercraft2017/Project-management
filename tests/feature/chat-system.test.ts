@@ -11,6 +11,7 @@ import { initializeSocketServer, closeSocketServer } from '../../server/src/chat
 import { registerSocketHandlers } from '../../server/src/chat/socket-handlers';
 import { authenticateSocket } from '../../server/src/chat/socket-middleware';
 import http from 'http';
+import { DEFAULT_ORGANIZATION_ID } from '../../server/src/tenancy/context';
 
 // Test data
 let server: http.Server;
@@ -76,6 +77,15 @@ describe('Chat System Tests', () => {
         role: 'ADMIN',
         isActive: true,
       },
+    });
+
+    // Users belong to the original organization, as the migration and sign-in ensure
+    await prisma.membership.createMany({
+      data: [testUser1, testUser2, testUser3, testAdmin].map((u) => ({
+        organizationId: DEFAULT_ORGANIZATION_ID,
+        userId: u.id,
+        role: u.role,
+      })),
     });
 
     // Initialize Socket.IO server for tests
@@ -360,6 +370,7 @@ describe('Chat System Tests', () => {
             name: 'Non Admin',
             role: 'MEMBER',
             isActive: true,
+            memberships: { create: { organizationId: DEFAULT_ORGANIZATION_ID } },
           },
         });
 
