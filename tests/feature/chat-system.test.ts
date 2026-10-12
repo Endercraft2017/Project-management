@@ -580,7 +580,7 @@ describe('Chat System Tests', () => {
       // Soft delete a message
       await prisma.message.update({
         where: { id: testMessage.id },
-        data: { deletedAt: new Date() },
+        data: { isDeleted: true },
       });
 
       const response = await request(app)

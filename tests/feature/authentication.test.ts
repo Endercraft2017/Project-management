@@ -98,11 +98,11 @@ describe('Authentication Tests', () => {
   });
 
   describe('Session Management', () => {
-    it('should have session middleware configured', async () => {
-      const response = await request(app).get('/health');
+    it('should not create a session for anonymous requests', async () => {
+      // saveUninitialized is false: no session row or cookie until sign-in
+      const response = await request(app).get('/api/auth/check');
 
-      // Check for session cookie in response
-      expect(response.headers['set-cookie']).toBeDefined();
+      expect(response.headers['set-cookie']).toBeUndefined();
     });
   });
 

@@ -8,16 +8,20 @@ import { isAuthenticated, isAdmin } from '@/auth/middleware';
 import { upload, uploadCSV } from './multer-config';
 import * as uploadController from './controller';
 import rateLimit from 'express-rate-limit';
+import { serverConfig } from '@/config';
 
 const router = Router();
 
-// Rate limiter for uploads (10 uploads per 15 minutes)
+// Rate limiter for uploads (10 uploads per 15 minutes per user).
+// Keyed by user, not IP, so a team behind one office IP doesn't share a budget.
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   message: 'Too many file uploads. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip || 'unknown',
+  skip: () => serverConfig.isTest,
 });
 
 /**
