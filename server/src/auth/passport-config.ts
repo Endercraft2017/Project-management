@@ -10,6 +10,8 @@ import { googleOAuthConfig, adminConfig } from '@/config';
 import { User, Role } from '@prisma/client';
 import { normalizeEmail, isValidDomain as validateDomain } from '@/lib/email-utils';
 import { encryptToken } from '@/lib/token-crypto';
+import { DEFAULT_ORGANIZATION_ID } from '@/tenancy/context';
+import { ensureMembership } from '@/tenancy/membership';
 
 /**
  * Validate email domain
@@ -111,6 +113,9 @@ passport.use(
               },
             });
 
+            // Join the inviting organization with the invited role
+            await ensureMembership(invitation.organizationId, user.id, invitation.role);
+
             // Mark invitation as accepted
             await prisma.teamInvite.update({
               where: { id: invitation.id },
@@ -156,6 +161,8 @@ passport.use(
                 tokenExpiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
               },
             });
+            // Platform admins from ADMIN_EMAILS administer the original organization
+            await ensureMembership(DEFAULT_ORGANIZATION_ID, user.id, Role.ADMIN);
             console.log('OAuth: Created designated admin user:', normalizedEmail);
           } else {
             // Regular user - check for pending invitation (case-insensitive)
@@ -188,6 +195,8 @@ passport.use(
                 tokenExpiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
               },
             });
+            // Join the inviting organization with the invited role
+            await ensureMembership(invitation.organizationId, user.id, invitation.role);
             console.log('OAuth: Created new user from invitation:', normalizedEmail, 'with role:', invitation.role);
 
             // Mark invitation as accepted
@@ -233,6 +242,13 @@ passport.deserializeUser(async (id: string, done) => {
         picture: true,
         role: true,
         isActive: true,
+        // The oldest membership is the working organization until users can
+        // switch between organizations
+        memberships: {
+          select: { organizationId: true, role: true },
+          orderBy: { createdAt: 'asc' },
+          take: 1,
+        },
       },
     });
 
@@ -242,7 +258,18 @@ passport.deserializeUser(async (id: string, done) => {
       return done(null, false);
     }
 
-    done(null, user);
+    // Every user was given a membership by the multi-tenancy migration, and
+    // sign-in creates one. Falling back to the original organization keeps a
+    // user created some other way (seed data, tests) inside it rather than
+    // unscoped.
+    const membership = user.memberships[0];
+    const { memberships: _memberships, ...rest } = user;
+
+    done(null, {
+      ...rest,
+      organizationId: membership?.organizationId ?? DEFAULT_ORGANIZATION_ID,
+      role: membership?.role ?? user.role,
+    });
   } catch (error) {
     console.error('Deserialize user error:', error);
     done(error);

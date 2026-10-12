@@ -4,6 +4,8 @@
  */
 
 import { prisma } from '@/database/client';
+import { currentOrganizationId } from '@/tenancy/context';
+import { isMemberOf } from '@/tenancy/membership';
 import { Role } from '@prisma/client';
 import { ListUsersQuery, UpdateUserInput, UpdateRoleInput } from './validators';
 
@@ -66,9 +68,28 @@ export class UserService {
   }
 
   /**
+   * Users are shared across organizations, so lookups by id check that the
+   * user belongs to the caller's organization.
+   */
+  private async isInCurrentOrganization(userId: string): Promise<boolean> {
+    const organizationId = currentOrganizationId();
+    return organizationId ? isMemberOf(organizationId, userId) : true;
+  }
+
+  private async assertInCurrentOrganization(userId: string): Promise<void> {
+    if (!(await this.isInCurrentOrganization(userId))) {
+      throw Object.assign(new Error('User not found'), { status: 404, name: 'Not Found' });
+    }
+  }
+
+  /**
    * Get user by ID with stats
    */
   async getUserById(userId: string, includeStats = false) {
+    if (!(await this.isInCurrentOrganization(userId))) {
+      return null;
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -147,6 +168,8 @@ export class UserService {
    * Update user profile
    */
   async updateUser(userId: string, data: UpdateUserInput) {
+    await this.assertInCurrentOrganization(userId);
+
     return await prisma.user.update({
       where: { id: userId },
       data,
@@ -166,6 +189,15 @@ export class UserService {
    * Update user role (admin only)
    */
   async updateUserRole(userId: string, data: UpdateRoleInput) {
+    await this.assertInCurrentOrganization(userId);
+
+    // Authorization reads the role from the membership. User.role is kept in
+    // step until it is removed.
+    await prisma.membership.updateMany({
+      where: { userId },
+      data: { role: data.role },
+    });
+
     return await prisma.user.update({
       where: { id: userId },
       data: { role: data.role },
@@ -182,6 +214,8 @@ export class UserService {
    * Deactivate user (soft delete)
    */
   async deactivateUser(userId: string) {
+    await this.assertInCurrentOrganization(userId);
+
     return await prisma.user.update({
       where: { id: userId },
       data: { isActive: false },
@@ -197,6 +231,8 @@ export class UserService {
    * Activate user
    */
   async activateUser(userId: string) {
+    await this.assertInCurrentOrganization(userId);
+
     return await prisma.user.update({
       where: { id: userId },
       data: { isActive: true },

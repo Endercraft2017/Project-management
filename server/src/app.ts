@@ -33,6 +33,7 @@ import summariesRoutes from './summaries/routes';
 import adminRoutes from './admin/routes';
 import { corsConfig, serverConfig } from './config';
 import { requestContext } from './middlewares/request-context';
+import { tenantContext } from './tenancy/context';
 import { logger, errorFields } from './lib/logger';
 
 const app: Express = express();
@@ -108,6 +109,11 @@ app.use(passport.session());
  * Attach user to response locals
  */
 app.use(attachUser);
+
+/**
+ * Scope every database query in the request to the user's organization
+ */
+app.use(tenantContext);
 
 /**
  * Rate limiting and CSRF protection

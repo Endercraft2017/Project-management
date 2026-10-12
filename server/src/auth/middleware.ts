@@ -16,8 +16,11 @@ declare global {
       email: string;
       name: string;
       picture: string | null;
+      /** Role in the current organization (from Membership) */
       role: Role;
       isActive: boolean;
+      /** The organization this session is working in */
+      organizationId: string;
     }
   }
 }

@@ -203,6 +203,15 @@ export async function acceptInvite(
       },
     });
 
+    // Join the inviting organization with the invited role
+    await tx.membership.create({
+      data: {
+        organizationId: invite.organizationId,
+        userId: user.id,
+        role: invite.role,
+      },
+    });
+
     // Mark invitation as accepted
     const updatedInvite = await tx.teamInvite.update({
       where: { id: invite.id },

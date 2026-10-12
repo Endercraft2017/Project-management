@@ -5,6 +5,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { withTenantScope } from '@/tenancy/prisma-scope';
 
 // Prisma Client options for development
 const prismaClientOptions = {
@@ -19,13 +20,18 @@ const globalForPrisma = global as unknown as {
 };
 
 // Create Prisma Client instance or reuse existing one
-export const prisma =
-  globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
+const baseClient = globalForPrisma.prisma ?? new PrismaClient(prismaClientOptions);
 
 // In development, store instance globally to prevent hot reload issues
 if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = baseClient;
 }
+
+/**
+ * The client every service uses. Queries are scoped to the organization of
+ * the current request (see tenancy/prisma-scope.ts).
+ */
+export const prisma = withTenantScope(baseClient);
 
 /**
  * Graceful shutdown handler
