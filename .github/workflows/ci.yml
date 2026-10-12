@@ -84,11 +84,14 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
-      # Coverage is reported but not enforced yet; jest.config.js has an 80%
-      # threshold that the suite has never been measured against.
+      # Coverage is off for now (it isn't enforced and ts-jest + coverage can
+      # exhaust memory). The github-actions reporter turns each failing test
+      # into an annotation on the PR.
       - name: Run tests
         working-directory: server
-        run: npx jest --runInBand --coverage --coverageThreshold='{}'
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npx jest --runInBand --coverage=false --reporters=default --reporters=github-actions
 
   test-client:
     name: Client tests
