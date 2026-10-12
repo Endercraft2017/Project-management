@@ -46,7 +46,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-user1@servicebay.ai',
         name: 'Chat User 1',
-        role: 'member',
+        role: 'MEMBER',
         isActive: true,
       },
     });
@@ -55,7 +55,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-user2@servicebay.ai',
         name: 'Chat User 2',
-        role: 'member',
+        role: 'MEMBER',
         isActive: true,
       },
     });
@@ -64,7 +64,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-user3@servicebay.ai',
         name: 'Chat User 3',
-        role: 'member',
+        role: 'MEMBER',
         isActive: true,
       },
     });
@@ -73,7 +73,7 @@ describe('Chat System Tests', () => {
       data: {
         email: 'chat-admin@servicebay.ai',
         name: 'Chat Admin',
-        role: 'admin',
+        role: 'ADMIN',
         isActive: true,
       },
     });
@@ -357,7 +357,7 @@ describe('Chat System Tests', () => {
           data: {
             email: 'non-admin-test@servicebay.ai',
             name: 'Non Admin',
-            role: 'member',
+            role: 'MEMBER',
             isActive: true,
           },
         });
@@ -367,7 +367,7 @@ describe('Chat System Tests', () => {
           data: {
             conversationId: testGroupConversation.id,
             userId: nonAdminUser.id,
-            role: 'member',
+            isAdmin: false,
           },
         });
 
@@ -424,7 +424,7 @@ describe('Chat System Tests', () => {
           data: {
             conversationId: testGroupConversation.id,
             userId: testAdmin.id,
-            role: 'member',
+            isAdmin: false,
           },
         });
 
@@ -597,12 +597,12 @@ describe('Chat System Tests', () => {
     it('should handle empty conversations', async () => {
       const emptyConv = await prisma.conversation.create({
         data: {
-          type: 'dm',
+          type: 'DM',
           createdById: testUser1.id,
           members: {
             create: [
-              { userId: testUser1.id, role: 'member' },
-              { userId: testUser2.id, role: 'member' },
+              { userId: testUser1.id, isAdmin: false },
+              { userId: testUser2.id, isAdmin: false },
             ],
           },
         },

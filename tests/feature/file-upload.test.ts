@@ -70,7 +70,7 @@ describe('File Upload Tests', () => {
     // Create test conversation
     testConversation = await prisma.conversation.create({
       data: {
-        type: 'group',
+        type: 'GROUP',
         name: 'Test Group',
         createdById: testUser.id,
         members: {

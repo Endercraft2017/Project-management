@@ -57,7 +57,7 @@ describe('Authentication Tests', () => {
 
   describe('Auth Check Endpoint', () => {
     it('should return unauthenticated for no session', async () => {
-      const response = await request(app).get('/auth/check');
+      const response = await request(app).get('/api/auth/check');
 
       expect(response.status).toBe(200);
       expect(response.body.authenticated).toBe(false);
@@ -67,7 +67,7 @@ describe('Authentication Tests', () => {
 
   describe('Protected Routes', () => {
     it('should deny access without authentication', async () => {
-      const response = await request(app).get('/auth/me');
+      const response = await request(app).get('/api/auth/me');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -75,7 +75,7 @@ describe('Authentication Tests', () => {
     });
 
     it('should allow logout attempt to fail gracefully without auth', async () => {
-      const response = await request(app).post('/auth/logout');
+      const response = await request(app).post('/api/auth/logout');
 
       expect(response.status).toBe(401);
     });
@@ -83,14 +83,14 @@ describe('Authentication Tests', () => {
 
   describe('OAuth Flow', () => {
     it('should redirect to Google OAuth', async () => {
-      const response = await request(app).get('/auth/google');
+      const response = await request(app).get('/api/auth/google');
 
       expect(response.status).toBe(302);
       expect(response.header.location).toContain('accounts.google.com');
     });
 
     it('should have callback endpoint', async () => {
-      const response = await request(app).get('/auth/google/callback');
+      const response = await request(app).get('/api/auth/google/callback');
 
       // Without valid OAuth params, should redirect to failure
       expect(response.status).toBe(302);
@@ -111,7 +111,7 @@ describe('Authentication Tests', () => {
       // Make multiple requests
       const requests = Array(10)
         .fill(null)
-        .map(() => request(app).get('/auth/check'));
+        .map(() => request(app).get('/api/auth/check'));
 
       const responses = await Promise.all(requests);
 
@@ -154,7 +154,7 @@ describe('Authentication Tests', () => {
   describe('Input Sanitization', () => {
     it('should sanitize script tags from input', async () => {
       const response = await request(app)
-        .post('/auth/logout')
+        .post('/api/auth/logout')
         .send({
           test: '<script>alert("xss")</script>',
         });
@@ -176,7 +176,7 @@ describe('Authentication Tests', () => {
     it('should handle errors gracefully', async () => {
       // Test with malformed JSON
       const response = await request(app)
-        .post('/auth/logout')
+        .post('/api/auth/logout')
         .set('Content-Type', 'application/json')
         .send('malformed json{');
 
@@ -198,7 +198,7 @@ describe('Authentication Tests', () => {
 describe('Middleware Tests', () => {
   describe('isAuthenticated middleware', () => {
     it('should block unauthenticated requests', async () => {
-      const response = await request(app).get('/auth/me');
+      const response = await request(app).get('/api/auth/me');
 
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('Authentication required');

@@ -888,11 +888,11 @@ describe('Task Management Tests', () => {
     });
   });
 
-  describe('PATCH /api/tasks/:id/progress - Update Progress', () => {
+  describe('PATCH /api/tasks/:id - Update Progress', () => {
     describe('Authorization', () => {
       it('should deny access without authentication', async () => {
         const response = await request(app)
-          .patch(`/api/tasks/${level3Task.id}/progress`)
+          .patch(`/api/tasks/${level3Task.id}`)
           .send({
             progress: 50,
           });
@@ -917,7 +917,7 @@ describe('Task Management Tests', () => {
     describe('Validation', () => {
       it('should validate task ID UUID', async () => {
         const response = await request(app)
-          .patch('/api/tasks/invalid-uuid/progress')
+          .patch('/api/tasks/invalid-uuid')
           .send({
             progress: 50,
           });
@@ -927,7 +927,7 @@ describe('Task Management Tests', () => {
 
       it('should require progress field', async () => {
         const response = await request(app)
-          .patch(`/api/tasks/${level3Task.id}/progress`)
+          .patch(`/api/tasks/${level3Task.id}`)
           .send({});
 
         expect(response.status).toBe(401);
@@ -935,7 +935,7 @@ describe('Task Management Tests', () => {
 
       it('should validate progress is integer', async () => {
         const response = await request(app)
-          .patch(`/api/tasks/${level3Task.id}/progress`)
+          .patch(`/api/tasks/${level3Task.id}`)
           .send({
             progress: 50.5,
           });
@@ -945,7 +945,7 @@ describe('Task Management Tests', () => {
 
       it('should validate progress >= 0', async () => {
         const response = await request(app)
-          .patch(`/api/tasks/${level3Task.id}/progress`)
+          .patch(`/api/tasks/${level3Task.id}`)
           .send({
             progress: -10,
           });
@@ -955,7 +955,7 @@ describe('Task Management Tests', () => {
 
       it('should validate progress <= 100', async () => {
         const response = await request(app)
-          .patch(`/api/tasks/${level3Task.id}/progress`)
+          .patch(`/api/tasks/${level3Task.id}`)
           .send({
             progress: 150,
           });
@@ -966,7 +966,7 @@ describe('Task Management Tests', () => {
       it('should return 404 for non-existent task', async () => {
         const fakeId = '00000000-0000-0000-0000-000000000000';
         const response = await request(app)
-          .patch(`/api/tasks/${fakeId}/progress`)
+          .patch(`/api/tasks/${fakeId}`)
           .send({
             progress: 50,
           });

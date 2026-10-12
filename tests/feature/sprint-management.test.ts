@@ -41,7 +41,7 @@ describe('Sprint Management Tests', () => {
     // Clean up test data
     await prisma.sprint.deleteMany({
       where: {
-        sprintName: {
+        name: {
           startsWith: 'Test Sprint',
         },
       },
@@ -160,7 +160,7 @@ describe('Sprint Management Tests', () => {
         const response = await request(app)
           .post('/api/sprints')
           .send({
-            sprintName: 'Test Sprint',
+            name: 'Test Sprint',
             startDate: '2025-03-01T00:00:00Z',
             endDate: '2025-03-14T23:59:59Z',
           });
@@ -179,7 +179,7 @@ describe('Sprint Management Tests', () => {
     });
 
     describe('Validation', () => {
-      it('should require sprintName', async () => {
+      it('should require name', async () => {
         const response = await request(app).post('/api/sprints').send({
           startDate: '2025-03-01T00:00:00Z',
           endDate: '2025-03-14T23:59:59Z',
@@ -190,7 +190,7 @@ describe('Sprint Management Tests', () => {
 
       it('should require startDate', async () => {
         const response = await request(app).post('/api/sprints').send({
-          sprintName: 'Test Sprint',
+          name: 'Test Sprint',
           endDate: '2025-03-14T23:59:59Z',
         });
 
@@ -199,7 +199,7 @@ describe('Sprint Management Tests', () => {
 
       it('should require endDate', async () => {
         const response = await request(app).post('/api/sprints').send({
-          sprintName: 'Test Sprint',
+          name: 'Test Sprint',
           startDate: '2025-03-01T00:00:00Z',
         });
 
@@ -208,7 +208,7 @@ describe('Sprint Management Tests', () => {
 
       it('should validate endDate > startDate', async () => {
         const response = await request(app).post('/api/sprints').send({
-          sprintName: 'Test Sprint',
+          name: 'Test Sprint',
           startDate: '2025-03-15T00:00:00Z',
           endDate: '2025-03-01T23:59:59Z',
         });
@@ -216,10 +216,10 @@ describe('Sprint Management Tests', () => {
         expect(response.status).toBe(401);
       });
 
-      it('should validate sprintName length (max 100)', async () => {
+      it('should validate name length (max 100)', async () => {
         const longName = 'a'.repeat(101);
         const response = await request(app).post('/api/sprints').send({
-          sprintName: longName,
+          name: longName,
           startDate: '2025-03-01T00:00:00Z',
           endDate: '2025-03-14T23:59:59Z',
         });
@@ -230,7 +230,7 @@ describe('Sprint Management Tests', () => {
       it('should validate goal length (max 1000)', async () => {
         const longGoal = 'a'.repeat(1001);
         const response = await request(app).post('/api/sprints').send({
-          sprintName: 'Test Sprint',
+          name: 'Test Sprint',
           startDate: '2025-03-01T00:00:00Z',
           endDate: '2025-03-14T23:59:59Z',
           goal: longGoal,
@@ -294,7 +294,7 @@ describe('Sprint Management Tests', () => {
       it('should deny access without authentication', async () => {
         const response = await request(app)
           .put('/api/sprints/00000000-0000-0000-0000-000000000000')
-          .send({ sprintName: 'Updated' });
+          .send({ name: 'Updated' });
 
         expect(response.status).toBe(401);
       });
@@ -320,7 +320,7 @@ describe('Sprint Management Tests', () => {
       it('should validate UUID format', async () => {
         const response = await request(app)
           .put('/api/sprints/invalid')
-          .send({ sprintName: 'Updated' });
+          .send({ name: 'Updated' });
 
         expect(response.status).toBe(401);
       });
