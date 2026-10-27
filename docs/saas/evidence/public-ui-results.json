@@ -1,0 +1,36 @@
+[
+  {
+    "title": "ServiceBay PM",
+    "heading": "Welcome to ServiceBay PM",
+    "overflow": false,
+    "links": [
+      {
+        "label": "Sign in with Google",
+        "href": "/api/auth/google"
+      }
+    ],
+    "visibleErrors": [],
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "pageErrors": []
+  },
+  {
+    "title": "ServiceBay PM",
+    "heading": "Welcome to ServiceBay PM",
+    "overflow": false,
+    "links": [
+      {
+        "label": "Sign in with Google",
+        "href": "/api/auth/google"
+      }
+    ],
+    "visibleErrors": [],
+    "viewport": {
+      "width": 360,
+      "height": 800
+    },
+    "pageErrors": []
+  }
+]

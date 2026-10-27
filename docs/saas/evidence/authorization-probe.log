@@ -1,0 +1,2 @@
+CONFIRMED: adding actor userId in JSON passes middleware for a different :id; the update schema strips userId while controller uses params.id.
+Scope: synthetic middleware/schema reproduction only; no HTTP request or database mutation performed.

@@ -1,0 +1,217 @@
+{
+  "checked_date": "2026-10-27",
+  "method": "Official public HTTPS sources, normal TLS verification; raw excerpts retained in audit workspace.",
+  "sources": [
+    {
+      "key": "supabase-pricing",
+      "url": "https://supabase.com/pricing",
+      "bytes": 387378,
+      "characters": 92963,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "neon-pricing",
+      "url": "https://neon.com/pricing",
+      "bytes": 672986,
+      "characters": 326117,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "render-free",
+      "url": "https://render.com/docs/free",
+      "bytes": 374503,
+      "characters": 240179,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "render-websockets",
+      "url": "https://render.com/docs/websocket",
+      "bytes": 638919,
+      "characters": 429178,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "railway-pricing",
+      "url": "https://railway.com/pricing",
+      "bytes": 327075,
+      "characters": 41546,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "workers-pricing",
+      "url": "https://developers.cloudflare.com/workers/platform/pricing/",
+      "bytes": 284992,
+      "characters": 81883,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "r2-pricing",
+      "url": "https://developers.cloudflare.com/r2/pricing/",
+      "bytes": 146948,
+      "characters": 38929,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "resend-pricing",
+      "url": "https://resend.com/pricing",
+      "bytes": 534757,
+      "characters": 266119,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "paddle-pricing",
+      "url": "https://www.paddle.com/pricing",
+      "bytes": 791447,
+      "characters": 706845,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "stripe-pricing",
+      "url": "https://stripe.com/pricing",
+      "bytes": 977580,
+      "characters": 269708,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "stripe-global",
+      "url": "https://stripe.com/global",
+      "bytes": 498337,
+      "characters": 164192,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "posthog-pricing",
+      "url": "https://posthog.com/pricing",
+      "bytes": 1517222,
+      "characters": 842471,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "sentry-pricing",
+      "url": "https://sentry.io/pricing/",
+      "bytes": 1118012,
+      "characters": 57765,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "vercel-hobby",
+      "url": "https://vercel.com/docs/plans/hobby",
+      "bytes": 11501,
+      "characters": 11440,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "github-codeql",
+      "url": "https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql",
+      "bytes": 575848,
+      "characters": 143443,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "playwright-axe",
+      "url": "https://playwright.dev/docs/accessibility-testing",
+      "bytes": 140153,
+      "characters": 19287,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "storybook",
+      "url": "https://storybook.js.org/docs/writing-tests/accessibility-testing",
+      "bytes": 2096317,
+      "characters": 1833301,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "zap",
+      "url": "https://www.zaproxy.org/docs/docker/baseline-scan/",
+      "bytes": 25130,
+      "characters": 12215,
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "google-drive-scopes",
+      "url": "https://developers.google.com/workspace/drive/api/guides/api-specific-auth",
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "google-oauth-production",
+      "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "google-oauth-incremental",
+      "url": "https://developers.google.com/identity/protocols/oauth2/web-server#incrementalAuth",
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "supabase-commercial",
+      "url": "https://supabase.com/docs/guides/platform/billing-on-supabase",
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "semgrep-license",
+      "url": "https://semgrep.dev/docs/licensing",
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "turnstile",
+      "url": "https://developers.cloudflare.com/turnstile/plans/",
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    },
+    {
+      "key": "betterauth",
+      "url": "https://www.better-auth.com/docs/introduction",
+      "status": "retrieved",
+      "checked_at": "2026-10-27",
+      "method": "HTTPS retrieval with inherited proxy and TLS verification; read-only documentation"
+    }
+  ]
+}

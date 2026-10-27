@@ -1,0 +1,14 @@
+{
+  "baseline_commit": "fb1a9c757e76d3414c8dbe66d888a9088c5ca2ce",
+  "audit_date": "2026-10-27",
+  "handbook_name": "production-audit-guide.md",
+  "handbook_sha256": "efbf422e30d6b8dcaf7e3d723a9b6df52171ea5c1191ad6cc47f2d4cba564633",
+  "checklist_count": 233,
+  "statuses": {
+    "PASS": 13,
+    "N/A": 41,
+    "FAIL": 107,
+    "UNVERIFIED": 72
+  },
+  "scope": "Source audit, local build/typecheck/lint/frontend tests/npm advisory queries, synthetic middleware/schema test, read-only local database metadata and public frontend browser inspection; not a production penetration test."
+}

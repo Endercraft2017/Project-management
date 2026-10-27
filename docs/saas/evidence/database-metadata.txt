@@ -1,0 +1,3 @@
+completed_migrations=11
+task_check_constraints=0
+sprintId_nullable=NO

@@ -1,0 +1,93 @@
+{
+ "version": 1,
+ "created": "2026-10-27 07:48:10",
+ "seed": 271026,
+ "agents_n": 2,
+ "cards_available": 2160,
+ "wave": 2,
+ "dir": "/workspace/saas-audit-work/.arena/run-20261027-074810-s271026",
+ "has_baseline": false,
+ "agents": {
+  "a001": {
+   "card": {
+    "reasoning": {
+     "id": "analogy",
+     "name": "Analogy",
+     "how": "Find a problem in a different field that has already been solved and has the same shape. Port its solution over, then fix every place where the analogy breaks."
+    },
+    "workflow": {
+     "id": "write-then-restructure",
+     "name": "Write, then restructure",
+     "how": "Write freely and fast. Then outline what you actually wrote, fix the structure, and rewrite it to the new outline."
+    },
+    "strategy": {
+     "id": "maximal-rigour",
+     "name": "Maximal rigour",
+     "how": "Be exhaustive and exact. Check every step, verify every claim, and leave no hand-waving anywhere."
+    }
+   },
+   "solution": "/workspace/saas-audit-work/.arena/run-20261027-074810-s271026/r1/r1-m01.a001.solution.md",
+   "alive": false,
+   "eliminated_in": 1,
+   "eliminated_by": "a002",
+   "byes": 0
+  },
+  "a002": {
+   "card": {
+    "reasoning": {
+     "id": "constraint-first",
+     "name": "Constraint first",
+     "how": "List every hard constraint, stated and implied: time, budget, tools, format, audience, platform. Solve strictly inside that box and let the tightest constraint drive the design."
+    },
+    "workflow": {
+     "id": "open-questions-first",
+     "name": "Open questions first",
+     "how": "List every open question the task leaves. Resolve each one with reasoning or a stated assumption, then answer."
+    },
+    "strategy": {
+     "id": "explicit-trade-offs",
+     "name": "Explicit trade-offs",
+     "how": "Name the real trade-offs, choose for the user's most likely constraints, and say plainly what that choice gives up."
+    }
+   },
+   "solution": "/workspace/saas-audit-work/.arena/run-20261027-074810-s271026/r1/r1-m01.a002.solution.md",
+   "alive": true,
+   "eliminated_in": null,
+   "eliminated_by": null,
+   "byes": 0
+  }
+ },
+ "rounds": [
+  {
+   "n": 1,
+   "alive": [
+    "a001",
+    "a002"
+   ],
+   "matches": [
+    {
+     "id": "r1-m01",
+     "a": "a002",
+     "b": "a001",
+     "winner": "a002",
+     "loser": "a001",
+     "reason": "Both proposals fix their received attacks, but a002 also provides an explicit repair and concurrent regression gate for retained chat's verified reaction lost updates and more concrete enforcement of the checked-artifact deployment boundary.",
+     "survived": [
+      "FIXED: tenant invitations require verified intended identity and atomic membership acceptance, including second-workspace and replay/revocation tests",
+      "FIXED: deployment depends on exact-commit validation, immutable artifacts, protected branches and pinned tooling",
+      "FIXED: normalized atomic reactions, reconciled backfill and concurrent two-user regression gates"
+     ],
+     "scores": {
+      "a002": 98.5,
+      "a001": 90.0
+     },
+     "source": "judge"
+    }
+   ],
+   "bye": null,
+   "closed": true
+  }
+ ],
+ "champion": "a002",
+ "final": null
+}

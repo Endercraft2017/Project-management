@@ -1,0 +1,20 @@
+{
+  "match": "r1-m01",
+  "scores": {
+    "a002": {"correctness": 10, "completeness": 10, "specificity": 9, "robustness": 10, "clarity": 10, "fatal": false},
+    "a001": {"correctness": 10, "completeness": 9, "specificity": 9, "robustness": 7, "clarity": 10, "fatal": false}
+  },
+  "winner": "a002",
+  "reason": "Both proposals fix their received attacks, but a002 also provides an explicit repair and concurrent regression gate for retained chat's verified reaction lost updates and more concrete enforcement of the checked-artifact deployment boundary.",
+  "survived": [
+    "FIXED: tenant invitations require verified intended identity and atomic membership acceptance, including second-workspace and replay/revocation tests",
+    "FIXED: deployment depends on exact-commit validation, immutable artifacts, protected branches and pinned tooling",
+    "FIXED: normalized atomic reactions, reconciled backfill and concurrent two-user regression gates"
+  ],
+  "standing": {
+    "a002": [],
+    "a001": [
+      "MINOR, judge-found: retained chat's reaction JSON read-modify-write lost updates have no explicit repair task or concurrent regression gate; verified in server/src/chat/message-service.ts:386-401 and :436-452."
+    ]
+  }
+}
