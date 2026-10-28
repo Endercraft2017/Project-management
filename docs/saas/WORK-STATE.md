@@ -1,5 +1,9 @@
 # Work state and handoff
 
+Active 2026-10-28 update: owner choices are recorded in DECISIONS.md. Branch: saas/foundation-and-product-tour. Exact-ID owner and task-read authorization repairs were reviewed and pushed as 96dc163. The isolated /tour carousel and pinned design guidance passed lead/independent review. No reset, purchase or deployment was performed.
+
+Latest verification: full workspace build exit 0; changed client source/config/browser-test ESLint exit 0; 20 focused backend tests and 19 existing frontend tests pass; four retained Playwright browser tests pass. Frozen dependency install passes with a minimal lockfile update for pinned Swiper and Playwright. Screenshots, regression output and review limits are in evidence/ and IMPLEMENTATION-UPDATE.md. Existing repository-wide lint/advisory findings remain open; no claim of complete Phase 0 or SaaS readiness.
+
 As of 2026-10-27. This file is the short entry point for implementation agents; follow the linked contracts rather than relying on chat history.
 
 ## Completed in the audit phase
@@ -10,7 +14,7 @@ As of 2026-10-27. This file is the short entry point for implementation agents; 
 - Official-source free-tier/tooling research; bounded Arena architecture decision and provenance are retained with this package when finalized.
 - Ordered implementation plan, target architecture, global design specification and one owner-decision register.
 
-## Product implementation status
+## Original audit implementation status (2026-10-27; superseded by active update above)
 
 No product implementation task is complete in this change. Existing authorization, startup, CI, tenancy and UX findings remain in the application. No paid account, production deployment, destructive migration, real customer messaging or billing activation was performed.
 

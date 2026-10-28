@@ -1,0 +1,130 @@
+{
+  "reviewed_at_utc": "2026-10-28T01:51:01.746353+00:00",
+  "brag_commit": "669ab9286aa28b6c3ee30e75f181ee74319d012a",
+  "swiper_head": "92342323cc69dc9f6d4af219b3774de14fdfa7da",
+  "swiper_npm_version": "14.3.0",
+  "swiper_release_gitHead": "e043db5462adc8cae0751ec148f5cd5cfb92f098",
+  "npm_integrity_verified": true,
+  "executed_remote_code": false,
+  "source_urls": [
+    "https://github.com/latent-spaces/brag/tree/669ab9286aa28b6c3ee30e75f181ee74319d012a",
+    "https://github.com/nolimits4web/swiper/tree/e043db5462adc8cae0751ec148f5cd5cfb92f098",
+    "https://registry.npmjs.org/swiper/latest",
+    "https://registry.npmjs.org/swiper/-/swiper-14.3.0.tgz",
+    "https://swiperjs.com/react",
+    "https://swiperjs.com/swiper-api",
+    "https://www.w3.org/WAI/ARIA/apg/patterns/carousel/"
+  ],
+  "artifacts": [
+    {
+      "file": "brag-README.md",
+      "size_bytes": 6248,
+      "sha256": "358ec9523d269a88a9570bc0dc304f562d6f696a20cae36a157a246dae95e9cb"
+    },
+    {
+      "file": "brag-skills-brag-SKILL.md",
+      "size_bytes": 9440,
+      "sha256": "db8e65608a61a28ac051eec42d4c23ef2a01bae92112d0735f1b08cd45569711"
+    },
+    {
+      "file": "brag-skills-brag-references-step-1-inspect.md",
+      "size_bytes": 6057,
+      "sha256": "08dabe706f2c3834a08a8cf475dd17094259cc73d40529b6886cd2085cc0d00d"
+    },
+    {
+      "file": "brag-skills-brag-references-step-2-plan.md",
+      "size_bytes": 13151,
+      "sha256": "2caec3b2f21626174683804961dc7f2b1c4bf439827cca9b1423f7ebd805e7db"
+    },
+    {
+      "file": "brag-skills-brag-references-step-3-compose.md",
+      "size_bytes": 15600,
+      "sha256": "4e3277cc3d1242d05f77e35170a0f7fb747ad9fcabd2b48f03a8ca582b772829"
+    },
+    {
+      "file": "brag-skills-brag-references-step-4-deliver.md",
+      "size_bytes": 6827,
+      "sha256": "2c14bc385433021ccab8dcc2a41bd89d5c6e3e4b283b5b4a832e066f82f05852"
+    },
+    {
+      "file": "brag-tree.json",
+      "size_bytes": 127475,
+      "sha256": "d406c0a56a2ca054a7fcdde71932e88edaf603309f974bba6e054d42af07c9f3"
+    },
+    {
+      "file": "swiper-14.3.0.tgz",
+      "size_bytes": 875640,
+      "sha256": "3a1ebe9d5959b0752dbe0afa6827b1bf34b6e685cce872c211d0f50cc5150172"
+    },
+    {
+      "file": "swiper-README.md",
+      "size_bytes": 56010,
+      "sha256": "39c32abed431c1afdd86513a51577f4d8c351e2cd9aa2f59c3103f6461e2d39c"
+    },
+    {
+      "file": "swiper-api.html",
+      "size_bytes": 448384,
+      "sha256": "3d293c6f95574bfe14549f4af6dcb095d81e4b47ef51fd4b74f6287efdbbc333"
+    },
+    {
+      "file": "swiper-api.txt",
+      "size_bytes": 111406,
+      "sha256": "a40ad3a64ae93736a39e393e278e0032e0ddadcab59b158ad7d6a48e97e88076"
+    },
+    {
+      "file": "swiper-npm-latest.json",
+      "size_bytes": 8301,
+      "sha256": "f076c3773f5fb5aa146318afbf1c8fd0744b233ba3f8e30a720a6afda230d54d"
+    },
+    {
+      "file": "swiper-react.html",
+      "size_bytes": 98407,
+      "sha256": "7addfc2c3adf0e89bba629f4abdd3f39c6ddd568ee806638b92f03289fc02725"
+    },
+    {
+      "file": "swiper-react.txt",
+      "size_bytes": 17868,
+      "sha256": "d37080781762e96434e6ee8e9181a43049ba5adb095da0e9937df018736428d8"
+    },
+    {
+      "file": "swiper-release-tree.json",
+      "size_bytes": 111466,
+      "sha256": "d286f4cfe5d28d7a9cd8741363bc34280fde0656d9ef57ba4d6dc298f45543cb"
+    },
+    {
+      "file": "swiper-src-modules-a11y-a11y.ts",
+      "size_bytes": 20003,
+      "sha256": "1e79cca07ce3f824dc9b3eb4d4bb72921a60829cc7324c00eb84728ad449edd3"
+    },
+    {
+      "file": "swiper-src-modules-autoplay-autoplay.ts",
+      "size_bytes": 13999,
+      "sha256": "ed617aaa1b73b8817c63550fa192f393d1e2832c01958a076f2877a6a0086e07"
+    },
+    {
+      "file": "swiper-src-modules-effect-coverflow-effect-coverflow.ts",
+      "size_bytes": 6385,
+      "sha256": "3b34b9839239a4a95a958d6c6300eab4508aa3f92f3678a729319c334d543f44"
+    },
+    {
+      "file": "swiper-src-modules-navigation-navigation.ts",
+      "size_bytes": 12289,
+      "sha256": "4ef4282b85b6cbd4849a614a3bf74d0f42d55f261655c0d9ddca5a1c7fcc8ff5"
+    },
+    {
+      "file": "swiper-src-modules-pagination-pagination.ts",
+      "size_bytes": 28931,
+      "sha256": "8e21f2cf035eec55c277031fac56ae700f9d762077249cb3191d6f2d33ea4fa0"
+    },
+    {
+      "file": "wai-carousel.html",
+      "size_bytes": 47287,
+      "sha256": "b0adf62393c8fd7c400e6211f8a7a863ab2d58f96d273c7b5577c715888c144a"
+    },
+    {
+      "file": "wai-carousel.txt",
+      "size_bytes": 13093,
+      "sha256": "92a327a8c2924ae5dc53ea8aae2adcaa6540e77867fbf1aeaceccd5a0212f75c"
+    }
+  ]
+}

@@ -1,0 +1,308 @@
+{
+  "checked_at": "2026-10-28",
+  "method": "Public HTTPS with normal TLS verification; no install scripts executed",
+  "files": [
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/README.md",
+      "sha256": "11b2fb371fa4b70c4c91d572c4b6b2af629ab801aafdf39a633ed727629297ca",
+      "bytes": 28270,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/README.md",
+      "read_status": "reviewed",
+      "read_coverage": "README sections: purpose/install/scales/examples/preservation/audit/credits/license; no commands executed"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/LICENSE",
+      "sha256": "19fd36b46fd5b393c6d58ad1ac26afd436bdce6951a9952094eff70366e5b314",
+      "bytes": 1617,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/LICENSE",
+      "read_status": "reviewed",
+      "read_coverage": "full license"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "PLATFORM-CONTRACT.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/PLATFORM-CONTRACT.md",
+      "sha256": "7050aa473270ec6f37832aaa9f928a538ab9e2aac6c11f293fab1be4c6cc7752",
+      "bytes": 14701,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/PLATFORM-CONTRACT.md",
+      "read_status": "fetched_not_read"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/paint/SKILL.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/paint/SKILL.md",
+      "sha256": "9148768085ab837042a17a6311108081ec9694d940e91908a6698aa88a8fa5d7",
+      "bytes": 66665,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/paint/SKILL.md",
+      "read_status": "reviewed",
+      "read_coverage": "selected sections: lines1-210,495-655,758-828,870-1043; resolver/install boilerplate not loaded/executed"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/cast/SKILL.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/cast/SKILL.md",
+      "sha256": "8c5e760d930f7475f28b9312af5a654f9100b26004646b11bec6272994e3be67",
+      "bytes": 45998,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/cast/SKILL.md",
+      "read_status": "fetched_not_read"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/_jutsu/motion-principles/SKILL.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/_jutsu/motion-principles/SKILL.md",
+      "sha256": "da789e4612bf6b8e192769f2e766a10c54ca2648341a6d067e91999d878fa0f9",
+      "bytes": 9104,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/_jutsu/motion-principles/SKILL.md",
+      "read_status": "reviewed",
+      "read_coverage": "full module"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/_jutsu/motion-principles/references/easing-guide.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/_jutsu/motion-principles/references/easing-guide.md",
+      "sha256": "ea03e1289e8adec19cfaaa6d7d4328cf31bead89650d4b4dffb9ecc6dce37065",
+      "bytes": 7728,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/_jutsu/motion-principles/references/easing-guide.md",
+      "read_status": "reviewed",
+      "read_coverage": "full reference"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/_jutsu/motion-principles/references/enter-exit-recipes.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/_jutsu/motion-principles/references/enter-exit-recipes.md",
+      "sha256": "bb2d3e08a13f12ec7e864cfd1a6cbbe217a2f32837c9f0620f0dee27bf0e42e1",
+      "bytes": 10942,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/_jutsu/motion-principles/references/enter-exit-recipes.md",
+      "read_status": "fetched_not_read"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/_jutsu/design-audit/SKILL.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/_jutsu/design-audit/SKILL.md",
+      "sha256": "2fece54e0d0cd005afa36bb259beaead511ebb8a5edbfbd3ec9213f9cf3b3b16",
+      "bytes": 6325,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/_jutsu/design-audit/SKILL.md",
+      "read_status": "reviewed",
+      "read_coverage": "full module; referenced audit.py not fetched or executed"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/_jutsu/css-native/SKILL.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/_jutsu/css-native/SKILL.md",
+      "sha256": "9390d0239f23e2dfc9314e147c19e30088d9501d7490a72a100d7977a5a3f95a",
+      "bytes": 8973,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/_jutsu/css-native/SKILL.md",
+      "read_status": "reviewed",
+      "read_coverage": "full module; dated compatibility claims not independently verified"
+    },
+    {
+      "repo": "AThevon/genjutsu",
+      "commit": "1f518a71378b15d423389e546e767cffc86e14c3",
+      "path": "skills/_jutsu/tells/SKILL.md",
+      "url": "https://raw.githubusercontent.com/AThevon/genjutsu/1f518a71378b15d423389e546e767cffc86e14c3/skills/_jutsu/tells/SKILL.md",
+      "sha256": "df447924dafeeb58120c75680ee6c7c48ef3ccd97d91355c2682ce31d5de7392",
+      "bytes": 7522,
+      "local_path": "/workspace/saas-design-work/vendor/AThevon/genjutsu/skills/_jutsu/tells/SKILL.md",
+      "read_status": "fetched_not_read"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/README.md",
+      "sha256": "a3e3735d1bd37553801bc09918804f93b8f0a98448f3cb58001332832bb89357",
+      "bytes": 15088,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/README.md",
+      "read_status": "reviewed",
+      "read_coverage": "README including framework/app support, dependencies, license, preservation branch"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/LICENSE",
+      "sha256": "4575a543ab88dad12ccea7d97e563d0bce5b448b06072e65d3264497dad326df",
+      "bytes": 1065,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/LICENSE",
+      "read_status": "reviewed",
+      "read_coverage": "full license"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "skills/taste-skill/SKILL.md",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/skills/taste-skill/SKILL.md",
+      "sha256": "3435ed963b15a1b6447746ec8844ab2cd38d8d2e8ead3451937f42df01e408c4",
+      "bytes": 39537,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/skills/taste-skill/SKILL.md",
+      "read_status": "reviewed",
+      "read_coverage": "main skill sections including page/app split, run, gate, house rules, existing-brand and existing-project branches; read across bounded excerpts"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "skills/taste-skill/references/motion.md",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/skills/taste-skill/references/motion.md",
+      "sha256": "79f94d8469898d2bf6186c198ad86ddf691a67c6536eaec36a4ec101285d9a37",
+      "bytes": 55400,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/skills/taste-skill/references/motion.md",
+      "read_status": "reviewed",
+      "read_coverage": "selected sections1-4,press/hover,accordion/menu,reduced-motion/performance; remaining scroll-scene recipes not loaded"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "skills/taste-skill/references/app-screens.md",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/skills/taste-skill/references/app-screens.md",
+      "sha256": "55e937ec30de605b53a11310b446f328a3ce7403de24fff008920a00be1a5ed4",
+      "bytes": 85358,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/skills/taste-skill/references/app-screens.md",
+      "read_status": "reviewed",
+      "read_coverage": "selected introduction,2.3-2.8,9.1-9.4,11-14; table/chart/detailed layout chapters not loaded as no implementation requested"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "skills/taste-skill/references/critique.md",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/skills/taste-skill/references/critique.md",
+      "sha256": "9c2f4392674530b3f02ac529fba53d82ab37b85f401c4c1989fbe98d6217f0b4",
+      "bytes": 11157,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/skills/taste-skill/references/critique.md",
+      "read_status": "reviewed",
+      "read_coverage": "full reference; marketing-only caps do not apply to app screens"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "skills/taste-skill/references/colour.md",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/skills/taste-skill/references/colour.md",
+      "sha256": "6556bcc7eed48b7bc2d0d281c28bf57c1b75e94d7ca0bde49f5d9df8c6a09351",
+      "bytes": 6853,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/skills/taste-skill/references/colour.md",
+      "read_status": "fetched_not_read"
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "commit": "12af471f627f866411b4bd785b19646d3672784c",
+      "path": "skills/taste-skill/references/layout.md",
+      "url": "https://raw.githubusercontent.com/Leonxlnx/taste-skill/12af471f627f866411b4bd785b19646d3672784c/skills/taste-skill/references/layout.md",
+      "sha256": "40080640719b07737afb94a8868afef87767a1ab4892814d9b6882e2d283453b",
+      "bytes": 18315,
+      "local_path": "/workspace/saas-design-work/vendor/Leonxlnx/taste-skill/skills/taste-skill/references/layout.md",
+      "read_status": "fetched_not_read"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/README.md",
+      "sha256": "785ff305d05e90cac94b2ef72aee499c8408510b2206bcfb796a8288950bef68",
+      "bytes": 8125,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/README.md",
+      "read_status": "reviewed",
+      "read_coverage": "full README"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "LICENSE",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/LICENSE",
+      "sha256": "06088a8b94598626f27612dea42300154bf7be967c85d9d3eee4490cb056af7d",
+      "bytes": 1078,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/LICENSE",
+      "read_status": "reviewed",
+      "read_coverage": "full license"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "skills/hallmark/SKILL.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/skills/hallmark/SKILL.md",
+      "sha256": "25a1ff92d925b2389e8409f42fb8ad7e033fceca8b5d1f07ed4ca4c28da53dc3",
+      "bytes": 18239,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/skills/hallmark/SKILL.md",
+      "read_status": "reviewed",
+      "read_coverage": "full skill"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "skills/hallmark/references/review-finish.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/skills/hallmark/references/review-finish.md",
+      "sha256": "9d00de59e71ee2516212140b0512d6d2e90a120d4a328eeba9cb12396ff38d64",
+      "bytes": 3865,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/skills/hallmark/references/review-finish.md",
+      "read_status": "reviewed",
+      "read_coverage": "full reference"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "skills/hallmark/references/review-hero.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/skills/hallmark/references/review-hero.md",
+      "sha256": "e84702982bcad34fc8ef4aaf032a5482356912992ce72d84b12e05cd4a519fb2",
+      "bytes": 2548,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/skills/hallmark/references/review-hero.md",
+      "read_status": "reviewed",
+      "read_coverage": "full reference; hero rules not selected for app work"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "skills/hallmark/references/flow.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/skills/hallmark/references/flow.md",
+      "sha256": "45565a78e3c7fdc33791c5074c8640199e2f711e62131cd4ef1cb337010b6e85",
+      "bytes": 16739,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/skills/hallmark/references/flow.md",
+      "read_status": "reviewed",
+      "read_coverage": "selected Component scope,App screens,The sweep,Harnesses branches"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "skills/hallmark/references/redesign.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/skills/hallmark/references/redesign.md",
+      "sha256": "cd3fc1dd10af22bb0374b41340fbab8f2b3be997ea5b63716da3d44ba0bb0552",
+      "bytes": 12231,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/skills/hallmark/references/redesign.md",
+      "read_status": "reviewed",
+      "read_coverage": "full reference"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "skills/hallmark/references/gates.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/skills/hallmark/references/gates.md",
+      "sha256": "63ad234a1acab5e081dfe8ecf2331518a43cbf42760dc5c6ababfb24d7b3e50c",
+      "bytes": 39061,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/skills/hallmark/references/gates.md",
+      "read_status": "fetched_not_read"
+    },
+    {
+      "repo": "Nutlope/hallmark",
+      "commit": "6033bab2a8051b5454552d2e8e6cb8f27c483a42",
+      "path": "skills/hallmark/references/microinteractions.md",
+      "url": "https://raw.githubusercontent.com/Nutlope/hallmark/6033bab2a8051b5454552d2e8e6cb8f27c483a42/skills/hallmark/references/microinteractions.md",
+      "sha256": "e7ec31f08e58edcdb8986fc57d276466c1f7b08445756f3a7cf6f46e8b5a8c8e",
+      "bytes": 6484,
+      "local_path": "/workspace/saas-design-work/vendor/Nutlope/hallmark/skills/hallmark/references/microinteractions.md",
+      "read_status": "reviewed",
+      "read_coverage": "selected interaction patterns,optimistic update,search,palette,motion character; no code executed"
+    }
+  ],
+  "application": "Guidance review only; no full skill pipeline/plugin installation, scripts or product changes"
+}

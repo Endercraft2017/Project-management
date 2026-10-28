@@ -1,4 +1,27 @@
-# Owner decisions, collected in one place
+# Owner decisions, selected 2026-10-28
+
+## Accepted choices
+
+This table overrides the proposed defaults below and conflicting historical Arena recommendations. It records direction, not implemented controls.
+
+| ID | Owner selection | Consequence |
+|---|---|---|
+| D1 C | Full scope, including chat, notes, updates, Gantt and advanced reports. | Keep every product module in the phased backlog, except connectors excluded by D8. |
+| D2 B | Projects visible to workspace members by default. | Users can join multiple workspaces. This never grants cross-tenant/public access or overrides private conversation/personal-note rules. |
+| D3 B | Email/password plus Google login. | Vetted identity and verified linking; one platform Google app. No Drive scopes at login. |
+| D4 B | Existing app data is disposable; reset permitted. | A clean schema/reset is allowed for identified app test data when needed. No reset executed in this update; unrelated stores are excluded. |
+| D5 custom | Railway primary data, backup in a file/object bucket. | Railway PostgreSQL is source of truth; private encrypted bucket backups, not several unsynchronized live databases. Account/provider/region and legal geography remain open. |
+| D6 A | $0 development/limited pilot. | No purchases, paid upgrades or automatic overages. Stop at free quotas; no always-on production or unlimited inference promise. |
+| D7 B | Free tier plus per-active-member plans; AI and storage capped. | Server-side entitlements and atomic usage reservations. Exact prices, numeric quotas and payment eligibility remain open. |
+| D8 custom | AI with limits; no Google Drive/Sheets integration. | Basic Google login stays. AI is optional at boot; remote calls stay off until usable free allowance/provider and numeric limits are configured. |
+| D9 C | Rebrand using supplied design tools and evaluate Swiper. | Preserve current palette pending exact branding; name/carousel placement remain open. Video cannot delay carousel delivery. |
+| D10 A | Email support; 30-day deletion recovery; daily backups/seven copies; one-business-day restore target. | Implement retention, encrypted backups and restore drills; these are targets, not verified SLAs. Support owner/calendar remain open. |
+
+The 30-day deletion-recovery window and seven daily backup copies are separate retention targets. Seven backup copies alone cannot supply 30 days of deleted-item recovery; implementation must define a compatible soft-delete/retention mechanism and verify that behavior before making the promise to customers.
+
+Still needed: actual seller country/customer markets; product name/colors and carousel placement; numeric caps/prices; provider accounts/regions; support owner. Secrets belong in secure settings, not chat. Continue Phase 0 independently of unresolved preferences.
+
+## Historical proposal (superseded where selections above differ)
 
 These are the business/product choices needed for the full SaaS. The audit does not infer incorporation, budget, customer promises or permission policy from your timezone or the existing internal company domain. Answer by ID; a short combined reply is enough. Technical defects in Phase 0 can be fixed independently of most choices.
 

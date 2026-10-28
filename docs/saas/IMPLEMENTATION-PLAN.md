@@ -1,5 +1,7 @@
 # SaaS restructuring plan
 
+Owner scope (2026-10-28): follow DECISIONS.md over historical defaults. Retain full collaboration/Gantt/report scope. Email/password and Google login stay; Drive/Sheets is excluded. AI is included with hard limits, optional at boot, and remote calls disabled without a usable free allowance/configured budget. Use Railway primary data plus encrypted bucket backups within the $0 pilot ceiling. Identified existing data is disposable; a clean schema may replace legacy backfill. Design/carousel work can run alongside Phase 0; customer/tenant enablement still requires all security gates.
+
 Status: proposed implementation sequence; audit completed against `fb1a9c757e76d3414c8dbe66d888a9088c5ca2ce` on 2026-10-27. No product fixes are included in this audit change. Read [the audit](README.md), [architecture](TARGET-ARCHITECTURE.md), [design system](DESIGN-SYSTEM.md), and [owner decisions](DECISIONS.md) together.
 
 ## Delivery rules
@@ -71,7 +73,7 @@ Depends on Phase 3 and the identity-provider decision.
 - P4.1 Deliver sign-up, verification/recovery as supported by the provider, sign-in/out, session expiry/revocation, and clear failure states. Remove the hardcoded company-domain gate. Keep account linking based on verified provider identities, never on unverified email alone.
 - P4.2 Add workspace creation/switching, invitations with hashed tokens at rest and verified intended identity at acceptance, role changes, invitation expiry/replay prevention, owner transfer and safeguards against deleting the last owner. Define what happens to subscriptions/data when owners or members leave.
 - P4.2a Let existing verified identities join a second workspace without creating another global account. Atomically consume the pending invite and create membership/seat reservation; test concurrent acceptance/revocation, wrong-account, expiry and replay. Retire global-role invitation paths and revoke/reissue legacy pending invitations under the migration policy. Preserve IDs and require verified reauthentication for identity linking; never merge accounts from unverified email.
-- P4.3 Separate basic Google sign-in from an optional Drive connector. One platform OAuth client normally serves all tenants; tenants do not supply credentials merely to sign in. Request minimal scopes incrementally; encrypted refresh tokens belong to the relevant workspace/user connection.
+- P4.3 Implement email/password plus basic Google sign-in with verified linking. One platform Google client serves ordinary tenants. Remove Drive/Sheets consent and connector surfaces from the selected product; revoke unused grants safely. Login needs identity scopes only.
 - P4.4 Add onboarding: create workspace → create first project → invite team → create/complete first task. Provide usable defaults without automatically importing or sending customer data.
 
 Exit: a new customer outside the original company can reach the first useful task; a user can join two workspaces safely; role change/revocation is enforced across active sessions and sockets. Credentials are configured through secure settings.
@@ -99,7 +101,7 @@ Depends on Phase 3; screen integration follows Phase 5.
 - P6.2 Make email delivery observable and retryable; never mark invites delivered on a mock response. Configure sender DNS/verification, unsubscribe and suppression as applicable. Test with a local mailbox or provider sandbox before real sends.
 - P6.3 Put uploads in private object storage. Authorize upload intent before allocating/writing bytes; enforce quotas and size limits, sniff actual content rather than trust supplied MIME/extension, and clean up failed writes. Authorize signed URL issuance; define retention and quarantine/scanning as needed. Ensure URLs cannot bypass membership revocation indefinitely.
 - P6.3a Make imports preview→validate→confirm idempotent batches with stable source keys, per-row status, retry and compensation. A partial import retried by the browser cannot duplicate previously committed rows. Clean up failed uploads and external sharing side effects.
-- P6.4 Make Drive/Sheets explicit, scoped, revocable connections with quota/error handling. AI stays disabled by default until budget, data disclosure, prompt/output evaluation and owner settings are implemented. Do not overwrite valid summaries with fallback or partial generation.
+- P6.4 Deliver AI with atomic per-workspace spend/token/concurrency reservations, hard quotas and cost visibility. Keep execution disabled until a usable free allowance/provider and explicit numeric limits are configured, preserving the $0 pilot ceiling. Validate disclosures/output quality and never overwrite valid summaries with fallback/partial generation. Drive/Sheets integrations are excluded from the chosen scope.
 
 Exit: duplicate jobs and retries do not duplicate external effects; two app replicas do not double-send scheduled work; retries recover after upstream failure; disconnecting an integration revokes access; costs and usage are attributed to the workspace.
 

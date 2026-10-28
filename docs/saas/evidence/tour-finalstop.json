@@ -1,0 +1,23 @@
+{
+  "natural6500msFinal": {
+    "active": 3,
+    "running": false,
+    "label": "Play tour",
+    "live": "polite",
+    "delay": 6500
+  },
+  "manualRestart": {
+    "active": 0,
+    "running": true,
+    "label": "Pause tour",
+    "live": "off",
+    "delay": 6500
+  },
+  "simulatedHiddenAfterFlush": {
+    "active": 0,
+    "running": false,
+    "label": "Play tour",
+    "live": "polite",
+    "delay": 6500
+  }
+}

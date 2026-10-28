@@ -1,5 +1,7 @@
 # One design system for the SaaS
 
+2026-10-28 implementation: shared motion timing/easing tokens now live in client/src/index.css. The isolated /tour page uses the existing semantic palette and scoped Swiper styles. Reviewed guidance and provenance for Genjutsu, Taste, Hallmark, Brag and Swiper are in design-research/. Final product name/palette and the wider app rebrand remain pending; this page is a reviewed product-preview slice, not a completed redesign of every authenticated screen.
+
 This is the proposed global UI specification. Existing CSS already has semantic light/dark tokens and shared glass surfaces; preserve useful foundations while replacing inconsistent feature-level controls. Authenticated screens have only been reviewed statically in this audit; do not claim their contrast or accessibility has been validated.
 
 ## Ownership and source of truth

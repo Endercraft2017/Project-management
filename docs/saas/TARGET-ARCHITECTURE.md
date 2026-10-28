@@ -1,5 +1,7 @@
 # Target architecture and invariants
 
+Owner update (2026-10-28): DECISIONS.md overrides historical proposals below. Use Railway PostgreSQL with private encrypted bucket backups, a $0 pilot, per-active-member plans and capped AI/storage. Keep email/password + basic Google login, exclude Drive/Sheets, include bounded AI. Projects are workspace-visible by default; tenant and personal-content boundaries remain enforced. Historical Supabase-primary/paid-plan recommendations are not selected.
+
 Proposed baseline, supported by the focused [Arena decision](arena/DECISION.md) and pending owner choices recorded in DECISIONS.md. The aim is a coherent SaaS, with a migration that preserves existing data. Keep the working React/Vite, Express/TypeScript, Prisma/PostgreSQL and Socket.IO foundations unless a measured constraint justifies a change. Avoid changing framework, database, identity and tenant semantics in the same release.
 
 ## System boundaries
@@ -81,6 +83,6 @@ Hosting recommendations and current vendor limits belong in RESEARCH.md. The imp
 
 ## Proposed initial providers, subject to owner requirements
 
-The independently judged proposal selects Railway for the long-running same-origin frontend/API and worker, Supabase for PostgreSQL/managed Auth/private Storage, Resend for platform mail, and Sentry for scrubbed errors. Paddle is a conditional merchant-of-record candidate; compare Stripe after seller eligibility/tax responsibilities are known. Do not deploy both primary databases or redundant identity stacks. Use an explicit verified-identity exchange into one backend-owned session authority; the provider and application cannot have divergent revocation/account-linking rules.
+The owner selected Railway for primary PostgreSQL and private bucket backups; the API/worker can use the same platform subject to its free allowance. Evaluate managed identity independently of database hosting; Supabase Auth remains a candidate, not a selected replacement database. Resend and Sentry remain candidates within their free allowances. Paddle/Stripe selection awaits seller eligibility. Use one verified session authority and never enable paid overages implicitly.
 
-Use free/local tiers for development and a deliberately limited pilot. The champion illustrates Railway Pro + Supabase Pro minimums totaling $45/month before usage/extras; this is a recommendation for those tiers, **not a required budget, complete bill, or evidence that all SaaS must pay that amount**. D6 decides the actual ceiling. Evaluate suitable lower tiers and self-managed backup controls against measurable recovery/runtime requirements rather than buying plans solely for their names. No account, subscription or provider migration was activated by this audit.
+The selected incremental-spending ceiling is $0 for development/pilot. Hard-stop AI, storage and provider work at configured free limits. Daily encrypted backups with seven copies and a one-business-day restore target must be measured within this constraint; bucket storage alone does not provide database consistency or recovery. Paid-tier figures in historical research are comparisons only. No account, subscription or deployment was activated.
