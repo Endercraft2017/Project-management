@@ -1,5 +1,7 @@
 # SaaS audit and restructuring package
 
+Latest E-Z slice: see [landing and ERP alignment](EZ-TENANT-AND-LANDING-PLAN.md). The public root is designed for ez.afkcube.com with official branding, actual app screens/demo labels and contact/login actions; code publication does not deploy that domain. ERP reuse, control-plane blockers and PH market evidence are under erp-reference/. Accepted choices are updated; tenant-code authentication and shared-console provisioning remain implementation work.
+
 Implementation update (2026-10-28): accepted choices are in [DECISIONS.md](DECISIONS.md). Branch `saas/foundation-and-product-tour` contains the first narrow authorization repairs and an isolated product-tour slice. The findings/counts below describe the original audit baseline. Phase 0 and the SaaS overhaul remain incomplete; see WORK-STATE.md for progress.
 
 Audited 2026-10-27 against commit `fb1a9c757e76d3414c8dbe66d888a9088c5ca2ce`. This repository is an internal single-company collaboration app with useful foundations. It is **not ready to open signup to independent customer organizations**. This change contains the audit, decision research and implementation plan, not completed SaaS product fixes.

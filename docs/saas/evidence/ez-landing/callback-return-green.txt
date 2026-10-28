@@ -1,0 +1,17 @@
+PASS src/auth/__tests__/callback-return.test.ts (10.635 s)
+  Google callback return route
+    ✓ waits for the session save before returning to the app entry (3 ms)
+    ✓ preserves the configured session-failure redirect (1 ms)
+    ✓ does not take a return destination from callback query parameters (1 ms)
+    ✓ keeps the authentication-failure path registered with Passport
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        10.848 s, estimated 12 s
+Ran all test suites within paths "src/auth/__tests__/callback-return.test.ts".
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

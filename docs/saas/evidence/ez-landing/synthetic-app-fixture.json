@@ -1,0 +1,1010 @@
+{
+  "users": [
+    {
+      "id": "demo-user-1",
+      "name": "Maya Chen",
+      "email": "demo1@example.invalid",
+      "role": "ADMIN",
+      "isActive": true,
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z"
+    },
+    {
+      "id": "demo-user-2",
+      "name": "Jordan Reed",
+      "email": "demo2@example.invalid",
+      "role": "MEMBER",
+      "isActive": true,
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z"
+    },
+    {
+      "id": "demo-user-3",
+      "name": "Avery Patel",
+      "email": "demo3@example.invalid",
+      "role": "MEMBER",
+      "isActive": true,
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z"
+    },
+    {
+      "id": "demo-user-4",
+      "name": "Sam Torres",
+      "email": "demo4@example.invalid",
+      "role": "MEMBER",
+      "isActive": true,
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z"
+    }
+  ],
+  "sprints": [
+    {
+      "id": "demo-sprint-1",
+      "name": "Launch preparation",
+      "startDate": "2026-10-19",
+      "endDate": "2026-11-06",
+      "status": "ACTIVE",
+      "createdById": "demo-user-1",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z"
+    },
+    {
+      "id": "demo-sprint-2",
+      "name": "Next iteration",
+      "startDate": "2026-11-09",
+      "endDate": "2026-11-20",
+      "status": "PLANNED",
+      "createdById": "demo-user-1",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "demo-task-1",
+      "taskName": "Map the customer journey",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 100,
+      "assignedToId": "demo-user-1",
+      "assignedTo": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-10-19",
+      "deadline": "2026-11-02",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 1
+      }
+    },
+    {
+      "id": "demo-task-2",
+      "taskName": "Build the shared components",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 80,
+      "assignedToId": "demo-user-2",
+      "assignedTo": {
+        "id": "demo-user-2",
+        "name": "Jordan Reed",
+        "email": "demo2@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-10-21",
+      "deadline": "2026-11-03",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 1
+      }
+    },
+    {
+      "id": "demo-task-3",
+      "taskName": "Review the mobile experience",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 55,
+      "assignedToId": "demo-user-3",
+      "assignedTo": {
+        "id": "demo-user-3",
+        "name": "Avery Patel",
+        "email": "demo3@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-10-23",
+      "deadline": "2026-11-04",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 1
+      }
+    },
+    {
+      "id": "demo-task-4",
+      "taskName": "Prepare the release notes",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 30,
+      "assignedToId": "demo-user-4",
+      "assignedTo": {
+        "id": "demo-user-4",
+        "name": "Sam Torres",
+        "email": "demo4@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-10-25",
+      "deadline": "2026-11-05",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    },
+    {
+      "id": "demo-task-5",
+      "taskName": "Verify invitation flow",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 100,
+      "assignedToId": "demo-user-1",
+      "assignedTo": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-10-19",
+      "deadline": "2026-11-06",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    },
+    {
+      "id": "demo-task-6",
+      "taskName": "Review accessibility findings",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 100,
+      "assignedToId": "demo-user-2",
+      "assignedTo": {
+        "id": "demo-user-2",
+        "name": "Jordan Reed",
+        "email": "demo2@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-10-21",
+      "deadline": "2026-11-02",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    },
+    {
+      "id": "demo-task-7",
+      "taskName": "Write the onboarding checklist",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 100,
+      "assignedToId": "demo-user-3",
+      "assignedTo": {
+        "id": "demo-user-3",
+        "name": "Avery Patel",
+        "email": "demo3@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-10-23",
+      "deadline": "2026-11-03",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 1
+      }
+    },
+    {
+      "id": "demo-task-8",
+      "taskName": "Plan the next iteration",
+      "sprintId": "demo-sprint-2",
+      "parentTaskId": null,
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 0,
+      "assignedToId": "demo-user-4",
+      "assignedTo": {
+        "id": "demo-user-4",
+        "name": "Sam Torres",
+        "email": "demo4@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 0,
+      "startDate": "2026-11-09",
+      "deadline": "2026-11-19",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-2",
+        "name": "Next iteration",
+        "startDate": "2026-11-09",
+        "endDate": "2026-11-20",
+        "status": "PLANNED",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    },
+    {
+      "id": "demo-task-9",
+      "taskName": "Confirm page structure",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": "demo-task-1",
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 100,
+      "assignedToId": "demo-user-1",
+      "assignedTo": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 1,
+      "startDate": "2026-10-19",
+      "deadline": "2026-11-05",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    },
+    {
+      "id": "demo-task-10",
+      "taskName": "Review form states",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": "demo-task-2",
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 100,
+      "assignedToId": "demo-user-2",
+      "assignedTo": {
+        "id": "demo-user-2",
+        "name": "Jordan Reed",
+        "email": "demo2@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 1,
+      "startDate": "2026-10-21",
+      "deadline": "2026-11-06",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    },
+    {
+      "id": "demo-task-11",
+      "taskName": "Check keyboard navigation",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": "demo-task-3",
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 0,
+      "assignedToId": "demo-user-3",
+      "assignedTo": {
+        "id": "demo-user-3",
+        "name": "Avery Patel",
+        "email": "demo3@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 1,
+      "startDate": "2026-10-23",
+      "deadline": "2026-11-02",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    },
+    {
+      "id": "demo-task-12",
+      "taskName": "Review support handoff",
+      "sprintId": "demo-sprint-1",
+      "parentTaskId": "demo-task-7",
+      "details": "Synthetic demonstration task. Local browser fixture.",
+      "progress": 0,
+      "assignedToId": "demo-user-4",
+      "assignedTo": {
+        "id": "demo-user-4",
+        "name": "Sam Torres",
+        "email": "demo4@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "createdById": "demo-user-1",
+      "createdBy": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "nestingLevel": 1,
+      "startDate": "2026-10-25",
+      "deadline": "2026-11-03",
+      "createdAt": "2026-10-28T09:00:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "sprint": {
+        "id": "demo-sprint-1",
+        "name": "Launch preparation",
+        "startDate": "2026-10-19",
+        "endDate": "2026-11-06",
+        "status": "ACTIVE",
+        "createdById": "demo-user-1",
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "_count": {
+        "subtasks": 0
+      }
+    }
+  ],
+  "stats": {
+    "totalTasks": 12,
+    "completedTasks": 6,
+    "completionPercentage": 50,
+    "overdueTasks": 0,
+    "inProgressTasks": 3,
+    "notStartedTasks": 3,
+    "tasksBySprint": [
+      {
+        "sprintId": "demo-sprint-1",
+        "sprintName": "Launch preparation",
+        "taskCount": 11,
+        "completedCount": 6,
+        "completionPercentage": 55
+      },
+      {
+        "sprintId": "demo-sprint-2",
+        "sprintName": "Next iteration",
+        "taskCount": 1,
+        "completedCount": 0,
+        "completionPercentage": 0
+      }
+    ],
+    "tasksByUser": [
+      {
+        "userId": "demo-user-1",
+        "userName": "Maya Chen",
+        "userEmail": "demo1@example.invalid",
+        "assignedCount": 3,
+        "completedCount": 3,
+        "completionPercentage": 50
+      },
+      {
+        "userId": "demo-user-2",
+        "userName": "Jordan Reed",
+        "userEmail": "demo2@example.invalid",
+        "assignedCount": 3,
+        "completedCount": 2,
+        "completionPercentage": 50
+      },
+      {
+        "userId": "demo-user-3",
+        "userName": "Avery Patel",
+        "userEmail": "demo3@example.invalid",
+        "assignedCount": 3,
+        "completedCount": 1,
+        "completionPercentage": 50
+      },
+      {
+        "userId": "demo-user-4",
+        "userName": "Sam Torres",
+        "userEmail": "demo4@example.invalid",
+        "assignedCount": 3,
+        "completedCount": 0,
+        "completionPercentage": 50
+      }
+    ],
+    "progressDistribution": [
+      {
+        "range": "0%",
+        "count": 3,
+        "percentage": 25
+      },
+      {
+        "range": "1-25%",
+        "count": 0,
+        "percentage": 0
+      },
+      {
+        "range": "26-50%",
+        "count": 1,
+        "percentage": 8
+      },
+      {
+        "range": "51-75%",
+        "count": 1,
+        "percentage": 8
+      },
+      {
+        "range": "76-99%",
+        "count": 1,
+        "percentage": 8
+      },
+      {
+        "range": "100%",
+        "count": 6,
+        "percentage": 50
+      }
+    ],
+    "completionTrend": [
+      {
+        "date": "2026-10-17",
+        "created": 1,
+        "completed": 0
+      },
+      {
+        "date": "2026-10-18",
+        "created": 2,
+        "completed": 1
+      },
+      {
+        "date": "2026-10-19",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-10-20",
+        "created": 1,
+        "completed": 0
+      },
+      {
+        "date": "2026-10-21",
+        "created": 2,
+        "completed": 1
+      },
+      {
+        "date": "2026-10-22",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-10-23",
+        "created": 1,
+        "completed": 1
+      },
+      {
+        "date": "2026-10-24",
+        "created": 1,
+        "completed": 0
+      },
+      {
+        "date": "2026-10-25",
+        "created": 0,
+        "completed": 1
+      },
+      {
+        "date": "2026-10-26",
+        "created": 2,
+        "completed": 0
+      },
+      {
+        "date": "2026-10-27",
+        "created": 1,
+        "completed": 1
+      },
+      {
+        "date": "2026-10-28",
+        "created": 1,
+        "completed": 1
+      }
+    ]
+  },
+  "conversations": [
+    {
+      "id": "demo-conversation-1",
+      "type": "GROUP",
+      "name": "Launch team",
+      "members": [
+        {
+          "user": {
+            "id": "demo-user-1",
+            "name": "Maya Chen",
+            "email": "demo1@example.invalid",
+            "role": "ADMIN",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          },
+          "isAdmin": true
+        },
+        {
+          "user": {
+            "id": "demo-user-2",
+            "name": "Jordan Reed",
+            "email": "demo2@example.invalid",
+            "role": "MEMBER",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          },
+          "isAdmin": false
+        },
+        {
+          "user": {
+            "id": "demo-user-3",
+            "name": "Avery Patel",
+            "email": "demo3@example.invalid",
+            "role": "MEMBER",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          },
+          "isAdmin": false
+        },
+        {
+          "user": {
+            "id": "demo-user-4",
+            "name": "Sam Torres",
+            "email": "demo4@example.invalid",
+            "role": "MEMBER",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          },
+          "isAdmin": false
+        }
+      ],
+      "lastMessage": {
+        "content": "The mobile review is ready for feedback.",
+        "createdAt": "2026-10-28T09:00:00Z"
+      },
+      "unreadCount": 0
+    },
+    {
+      "id": "demo-conversation-2",
+      "type": "GROUP",
+      "name": "Design review",
+      "members": [
+        {
+          "user": {
+            "id": "demo-user-1",
+            "name": "Maya Chen",
+            "email": "demo1@example.invalid",
+            "role": "ADMIN",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          }
+        },
+        {
+          "user": {
+            "id": "demo-user-2",
+            "name": "Jordan Reed",
+            "email": "demo2@example.invalid",
+            "role": "MEMBER",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          }
+        },
+        {
+          "user": {
+            "id": "demo-user-3",
+            "name": "Avery Patel",
+            "email": "demo3@example.invalid",
+            "role": "MEMBER",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          }
+        },
+        {
+          "user": {
+            "id": "demo-user-4",
+            "name": "Sam Torres",
+            "email": "demo4@example.invalid",
+            "role": "MEMBER",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          }
+        }
+      ],
+      "lastMessage": {
+        "content": "Shared form states are ready to review.",
+        "createdAt": "2026-10-28T09:00:00Z"
+      },
+      "unreadCount": 0
+    },
+    {
+      "id": "demo-conversation-3",
+      "type": "DM",
+      "members": [
+        {
+          "user": {
+            "id": "demo-user-1",
+            "name": "Maya Chen",
+            "email": "demo1@example.invalid",
+            "role": "ADMIN",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          }
+        },
+        {
+          "user": {
+            "id": "demo-user-2",
+            "name": "Jordan Reed",
+            "email": "demo2@example.invalid",
+            "role": "MEMBER",
+            "isActive": true,
+            "createdAt": "2026-10-28T09:00:00Z",
+            "updatedAt": "2026-10-28T09:00:00Z"
+          }
+        }
+      ],
+      "lastMessage": {
+        "content": "I added the onboarding checklist.",
+        "createdAt": "2026-10-28T09:00:00Z"
+      },
+      "unreadCount": 0
+    }
+  ],
+  "messages": [
+    {
+      "id": "demo-message-4",
+      "conversationId": "demo-conversation-1",
+      "senderId": "demo-user-4",
+      "sender": {
+        "id": "demo-user-4",
+        "name": "Sam Torres",
+        "email": "demo4@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "content": "Great — let’s finish the review before we plan the next sprint.",
+      "threadRepliesCount": 0,
+      "isEdited": false,
+      "isDeleted": false,
+      "createdAt": "2026-10-28T09:44:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "reactions": {}
+    },
+    {
+      "id": "demo-message-3",
+      "conversationId": "demo-conversation-1",
+      "senderId": "demo-user-3",
+      "sender": {
+        "id": "demo-user-3",
+        "name": "Avery Patel",
+        "email": "demo3@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "content": "The mobile review is ready for feedback. We can collect the final notes here.",
+      "threadRepliesCount": 0,
+      "isEdited": false,
+      "isDeleted": false,
+      "createdAt": "2026-10-28T09:41:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "reactions": {
+        "👍": [
+          "demo-user-1",
+          "demo-user-2"
+        ]
+      }
+    },
+    {
+      "id": "demo-message-2",
+      "conversationId": "demo-conversation-1",
+      "senderId": "demo-user-2",
+      "sender": {
+        "id": "demo-user-2",
+        "name": "Jordan Reed",
+        "email": "demo2@example.invalid",
+        "role": "MEMBER",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "content": "Thanks! I’ll check keyboard navigation and the small-screen layout this morning.",
+      "threadRepliesCount": 0,
+      "isEdited": false,
+      "isDeleted": false,
+      "createdAt": "2026-10-28T09:38:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "reactions": {}
+    },
+    {
+      "id": "demo-message-1",
+      "conversationId": "demo-conversation-1",
+      "senderId": "demo-user-1",
+      "sender": {
+        "id": "demo-user-1",
+        "name": "Maya Chen",
+        "email": "demo1@example.invalid",
+        "role": "ADMIN",
+        "isActive": true,
+        "createdAt": "2026-10-28T09:00:00Z",
+        "updatedAt": "2026-10-28T09:00:00Z"
+      },
+      "content": "The shared components are ready for review. I added the form and empty states to the task.",
+      "threadRepliesCount": 2,
+      "isEdited": false,
+      "isDeleted": false,
+      "createdAt": "2026-10-28T09:35:00Z",
+      "updatedAt": "2026-10-28T09:00:00Z",
+      "reactions": {}
+    }
+  ]
+}

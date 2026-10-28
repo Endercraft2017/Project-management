@@ -1,0 +1,55 @@
+FAIL src/auth/__tests__/callback-return.test.ts (11.538 s)
+  Google callback return route
+    ✕ waits for the session save before returning to the app entry (4 ms)
+    ✓ preserves the configured session-failure redirect (1 ms)
+    ✕ does not take a return destination from callback query parameters (1 ms)
+    ✓ keeps the authentication-failure path registered with Passport (1 ms)
+
+  ● Google callback return route › waits for the session save before returning to the app entry
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "https://client.example/app"
+    Received: "https://client.example/"
+
+    Number of calls: 1
+
+      46 |     expect(redirect).not.toHaveBeenCalled();
+      47 |     finishSave();
+    > 48 |     expect(redirect).toHaveBeenCalledWith('https://client.example/app');
+         |                      ^
+      49 |   });
+      50 |
+      51 |   it('preserves the configured session-failure redirect', () => {
+
+      at Object.<anonymous> (src/auth/__tests__/callback-return.test.ts:48:22)
+
+  ● Google callback return route › does not take a return destination from callback query parameters
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "https://client.example/app"
+    Received: "https://client.example/"
+
+    Number of calls: 1
+
+      71 |
+      72 |     expect(redirect).toHaveBeenCalledTimes(1);
+    > 73 |     expect(redirect).toHaveBeenCalledWith('https://client.example/app');
+         |                      ^
+      74 |   });
+      75 |
+      76 |   it('keeps the authentication-failure path registered with Passport', () => {
+
+      at Object.<anonymous> (src/auth/__tests__/callback-return.test.ts:73:22)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 2 passed, 4 total
+Snapshots:   0 total
+Time:        11.799 s
+Ran all test suites within paths "src/auth/__tests__/callback-return.test.ts".
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

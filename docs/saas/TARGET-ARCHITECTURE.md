@@ -1,5 +1,7 @@
 # Target architecture and invariants
 
+ERP alignment: the selected tenant-code + email/password flow and existing-console reuse are specified in [EZ-TENANT-AND-LANDING-PLAN.md](EZ-TENANT-AND-LANDING-PLAN.md). Codes select workspaces; authenticated membership/product grants authorize access. The reference's SQLite/username/browser-token model is not copied into shared PostgreSQL. Extend its console with product grants and an authenticated E-Z adapter before claiming live integration.
+
 Owner update (2026-10-28): DECISIONS.md overrides historical proposals below. Use Railway PostgreSQL with private encrypted bucket backups, a $0 pilot, per-active-member plans and capped AI/storage. Keep email/password + basic Google login, exclude Drive/Sheets, include bounded AI. Projects are workspace-visible by default; tenant and personal-content boundaries remain enforced. Historical Supabase-primary/paid-plan recommendations are not selected.
 
 Proposed baseline, supported by the focused [Arena decision](arena/DECISION.md) and pending owner choices recorded in DECISIONS.md. The aim is a coherent SaaS, with a migration that preserves existing data. Keep the working React/Vite, Express/TypeScript, Prisma/PostgreSQL and Socket.IO foundations unless a measured constraint justifies a change. Avoid changing framework, database, identity and tenant semantics in the same release.

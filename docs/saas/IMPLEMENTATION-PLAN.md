@@ -1,5 +1,7 @@
 # SaaS restructuring plan
 
+Latest E-Z alignment: public root at ez.afkcube.com, official brand and actual-screen carousel; /login and /app retain app entry. Primary future auth is tenant code + email/password, adapting the reviewed ERP branch. Reuse its existing operator-console direction through product grants and an E-Z adapter, not direct SQLite/token transport. Philippines business/PH-US-UK-EU markets are confirmed. Follow EZ-TENANT-AND-LANDING-PLAN.md for the cross-repository contract, implementation order and live binding prerequisites. No new tenant authentication or console provisioning is enabled by the landing change.
+
 Owner scope (2026-10-28): follow DECISIONS.md over historical defaults. Retain full collaboration/Gantt/report scope. Email/password and Google login stay; Drive/Sheets is excluded. AI is included with hard limits, optional at boot, and remote calls disabled without a usable free allowance/configured budget. Use Railway primary data plus encrypted bucket backups within the $0 pilot ceiling. Identified existing data is disposable; a clean schema may replace legacy backfill. Design/carousel work can run alongside Phase 0; customer/tenant enablement still requires all security gates.
 
 Status: proposed implementation sequence; audit completed against `fb1a9c757e76d3414c8dbe66d888a9088c5ca2ce` on 2026-10-27. No product fixes are included in this audit change. Read [the audit](README.md), [architecture](TARGET-ARCHITECTURE.md), [design system](DESIGN-SYSTEM.md), and [owner decisions](DECISIONS.md) together.

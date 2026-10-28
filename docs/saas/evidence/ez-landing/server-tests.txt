@@ -1,0 +1,43 @@
+PASS src/auth/__tests__/callback-return.test.ts (10.535 s)
+  Google callback return route
+    ✓ waits for the session save before returning to the app entry (3 ms)
+    ✓ preserves the configured session-failure redirect
+    ✓ does not take a return destination from callback query parameters (1 ms)
+    ✓ keeps the authentication-failure path registered with Passport
+
+PASS src/auth/__tests__/owner-authorization.test.ts
+  user route owner authorization
+    ✓ allows the authenticated owner of the actual :id route without a body (1 ms)
+    ✓ denies another user even when the body claims the authenticated user ID (1 ms)
+    ✓ does not let a second route parameter override the handler target
+    ✓ ignores a body identity that disagrees with the legitimate route owner
+    ✓ allows an authenticated admin to reach the target handler
+    ✓ rejects an unauthenticated request before considering ownership or admin role (1 ms)
+    ✓ denies missing or empty ownership context 0
+    ✓ denies missing or empty ownership context 1
+    ✓ denies missing or empty ownership context 2
+    ✓ does not dispatch a forged owner request to the real update handler
+    ✓ dispatches an allowed owner update using the same route ID (2 ms)
+
+PASS src/tasks/__tests__/read-authorization.test.ts
+  task read authorization
+    ✓ denies unrelated members regardless of client-selected presentation mode {} (1 ms)
+    ✓ denies unrelated members regardless of client-selected presentation mode {"viewMode":"mention"} (1 ms)
+    ✓ denies unrelated members regardless of client-selected presentation mode {"viewMode":"mention","includeSubtasks":"true"}
+    ✓ allows a legitimate creator without weakening the normal policy (1 ms)
+    ✓ allows a legitimate assignee without weakening the normal policy
+    ✓ allows a legitimate admin without weakening the normal policy
+    ✓ returns not found for an absent task (1 ms)
+    ✓ validates the route ID before loading a task
+    ✓ passes dependency failures to the normal error handler (1 ms)
+
+Test Suites: 3 passed, 3 total
+Tests:       24 passed, 24 total
+Snapshots:   0 total
+Time:        10.923 s, estimated 21 s
+Ran all test suites within paths "src/auth/__tests__/owner-authorization.test.ts", "src/auth/__tests__/callback-return.test.ts", "src/tasks/__tests__/read-authorization.test.ts".
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

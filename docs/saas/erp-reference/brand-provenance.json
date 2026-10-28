@@ -1,0 +1,60 @@
+{
+  "review_date": "2026-10-28",
+  "retrieval": "Public HTTPS; TLS verification enabled. No forms submitted. Browser navigation failed CA trust, not verification bypassed.",
+  "sources": [
+    {
+      "path": "afkcube.html",
+      "url": "https://afkcube.com/",
+      "sha256": "56a711389a60fcd18e6aa6abf9304264e0a4d5a7ef044b22d36419c8982eba53",
+      "bytes": 26455
+    },
+    {
+      "path": "afkcube-ez-product.html",
+      "url": "https://afkcube.com/products/e-z",
+      "sha256": "d4a6c42a6637fe222db294353ca8bbf9a8bf5c44b32762f4fe7d39778d9bd4f7",
+      "bytes": 15340
+    },
+    {
+      "path": "afkcube-style.css",
+      "url": "https://afkcube.com/style.css",
+      "sha256": "8418321f0323c651ac19121503beb5a8a7a65c4f0abb31c248328b8233b909f9",
+      "bytes": 81881
+    },
+    {
+      "path": "ez-current.html",
+      "url": "https://ez.afkcube.com/",
+      "sha256": "831a3dea971d09e47a833dc4061d800d153364c89388f81f022072b6acd3c4a4",
+      "bytes": 1598
+    },
+    {
+      "path": "ez-live-style.css",
+      "url": "https://ez.afkcube.com/assets/index-BiEmkiyJ.css",
+      "sha256": "db59812c757a2f7d72630972236b21f48b9d29f1dee69fe77a782faab27925b8",
+      "bytes": 64084
+    },
+    {
+      "path": "ez-parent-logo.webp",
+      "url": "https://afkcube.com/assets/ez-logo.webp",
+      "sha256": "f00cb8f923b30ca169e2eda8e3453e392d999d7d04abe6ee0351672d070c9be0",
+      "bytes": 29266
+    },
+    {
+      "path": "ez-live-logo-180.png",
+      "url": "https://ez.afkcube.com/brand/ez-logo-180.png",
+      "sha256": "2fb98ea0b5b43ad7b480f4260d029200d060362d2f4f9ab87e2494f3f8409668",
+      "bytes": 31660
+    },
+    {
+      "path": "afk-lead-context.js",
+      "url": "https://afkcube.com/assets/lead-context.js",
+      "sha256": "67fbaa7579834e5390133faa68f1239bb750c17556a1fbcdeed39f2f3fe4ff1e",
+      "bytes": 3710
+    },
+    {
+      "path": "afkcube-contact.html",
+      "url": "https://afkcube.com/contact",
+      "sha256": "d87883be2e28c7116042eea85f3075bb1c567cb13d1d7bfd4af392ba4bf699ed",
+      "bytes": 14666
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 # Work state and handoff
 
+Current E-Z alignment update (2026-10-28): branch saas/ez-landing-and-tenant-alignment. Brand, seller/markets and public-root routing are clarified in DECISIONS.md. The landing now uses official E-Z assets and actual UI captures with demo data; existing app/legacy links and Google return to /app are preserved. ERP branch 5b974e0 was reviewed read-only. EZ-TENANT-AND-LANDING-PLAN.md defines reuse of the existing operator console through product grants/adapter; tenant-code/password login and that adapter are not implemented. No live-domain deployment, DNS edit, reset, purchase or ERP modification occurred.
+
+Verification for this slice: full workspace build passes; 19 frontend tests, 24 focused backend tests and six retained browser tests pass. Changed client lint exits 0 with two existing AcceptInvite warnings. Independent mobile/tablet/desktop and reduced-motion review passed. Broader SaaS/production/authentication checks remain open.
+
 Active 2026-10-28 update: owner choices are recorded in DECISIONS.md. Branch: saas/foundation-and-product-tour. Exact-ID owner and task-read authorization repairs were reviewed and pushed as 96dc163. The isolated /tour carousel and pinned design guidance passed lead/independent review. No reset, purchase or deployment was performed.
 
 Latest verification: full workspace build exit 0; changed client source/config/browser-test ESLint exit 0; 20 focused backend tests and 19 existing frontend tests pass; four retained Playwright browser tests pass. Frozen dependency install passes with a minimal lockfile update for pinned Swiper and Playwright. Screenshots, regression output and review limits are in evidence/ and IMPLEMENTATION-UPDATE.md. Existing repository-wide lint/advisory findings remain open; no claim of complete Phase 0 or SaaS readiness.

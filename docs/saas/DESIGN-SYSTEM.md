@@ -1,5 +1,7 @@
 # One design system for the SaaS
 
+Current brand clarification: E-Z, “Skip the basic” / “skip the basic choices,” using the official AFK³/E-Z logo, dark surfaces and orange→blue→cyan accent direction. The public root/landing uses these verified assets; shared BRAND constants also update app identity. The earlier provisional indigo/unnamed-tour notes below describe the first slice, not an outstanding owner branding decision. Full authenticated work-surface restyling remains a later reviewed phase. See EZ-TENANT-AND-LANDING-PLAN.md and erp-reference/brand-review.md.
+
 2026-10-28 implementation: shared motion timing/easing tokens now live in client/src/index.css. The isolated /tour page uses the existing semantic palette and scoped Swiper styles. Reviewed guidance and provenance for Genjutsu, Taste, Hallmark, Brag and Swiper are in design-research/. Final product name/palette and the wider app rebrand remain pending; this page is a reviewed product-preview slice, not a completed redesign of every authenticated screen.
 
 This is the proposed global UI specification. Existing CSS already has semantic light/dark tokens and shared glass surfaces; preserve useful foundations while replacing inconsistent feature-level controls. Authenticated screens have only been reviewed statically in this audit; do not claim their contrast or accessibility has been validated.

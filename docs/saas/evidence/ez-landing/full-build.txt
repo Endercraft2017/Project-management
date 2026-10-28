@@ -1,0 +1,201 @@
+
+> servicebay-pm@1.0.0 build
+> npm run prisma:generate && npm run build --workspaces
+
+
+> servicebay-pm@1.0.0 prisma:generate
+> cd server && npx prisma generate
+
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./../node_modules/@prisma/client in 142ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+> server@1.0.0 build
+> tsc && tsc-alias
+
+
+> client@1.0.0 build
+> tsc && vite build
+
+vite v5.4.21 building for production...
+transforming...
+Deprecation [legacy-js-api]: The legacy JS API is deprecated and will be removed in Dart Sass 2.0.0.
+
+More info: https://sass-lang.com/d/legacy-js-api
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+96 │                 fill: darken($bar-color, 5);
+   │                       ^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 96:11  root stylesheet
+
+DEPRECATION WARNING [color-functions]: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -6.5721649485%)
+color.adjust($color, $lightness: -5%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+96 │                 fill: darken($bar-color, 5);
+   │                       ^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 96:11  root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+    ╷
+100 │                 fill: darken($blue, 5);
+    │                       ^^^^^^^^^^^^^^^^
+    ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 100:11  root stylesheet
+
+DEPRECATION WARNING [color-functions]: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -6.1004784689%)
+color.adjust($color, $lightness: -5%)
+
+More info: https://sass-lang.com/d/color-functions
+
+    ╷
+100 │                 fill: darken($blue, 5);
+    │                       ^^^^^^^^^^^^^^^^
+    ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 100:11  root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+    ╷
+111 │                 fill: darken($bar-color, 5);
+    │                       ^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 111:11  root stylesheet
+
+DEPRECATION WARNING [color-functions]: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -6.5721649485%)
+color.adjust($color, $lightness: -5%)
+
+More info: https://sass-lang.com/d/color-functions
+
+    ╷
+111 │                 fill: darken($bar-color, 5);
+    │                       ^^^^^^^^^^^^^^^^^^^^^
+    ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 111:11  root stylesheet
+
+DEPRECATION WARNING [global-builtin]: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+    ╷
+115 │                 fill: darken($blue, 5);
+    │                       ^^^^^^^^^^^^^^^^
+    ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 115:11  root stylesheet
+
+DEPRECATION WARNING [color-functions]: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -6.1004784689%)
+color.adjust($color, $lightness: -5%)
+
+More info: https://sass-lang.com/d/color-functions
+
+    ╷
+115 │                 fill: darken($blue, 5);
+    │                       ^^^^^^^^^^^^^^^^
+    ╵
+    file:///workspace/Project-management/node_modules/frappe-gantt/src/gantt.scss 115:11  root stylesheet
+
+✓ 3476 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                1.81 kB │ gzip:   0.78 kB
+dist/assets/GanttView-BtTic4D1.css             4.69 kB │ gzip:   1.26 kB
+dist/assets/ProductTour-C9qiBDSE.css          24.81 kB │ gzip:   4.90 kB
+dist/assets/index-CUDWe9OD.css                63.29 kB │ gzip:  11.34 kB
+dist/assets/chevron-right-OJN8RalZ.js          0.30 kB │ gzip:   0.24 kB
+dist/assets/loader-circle-C6IJTJId.js          0.31 kB │ gzip:   0.26 kB
+dist/assets/arrow-left-od1NozpY.js             0.33 kB │ gzip:   0.26 kB
+dist/assets/send-H0-nqzf2.js                   0.34 kB │ gzip:   0.27 kB
+dist/assets/clock-CIipBtJy.js                  0.35 kB │ gzip:   0.27 kB
+dist/assets/user-DpXaq5u1.js                   0.37 kB │ gzip:   0.28 kB
+dist/assets/mail-CnNOV6fE.js                   0.38 kB │ gzip:   0.30 kB
+dist/assets/copy-C36PM7FV.js                   0.40 kB │ gzip:   0.31 kB
+dist/assets/calendar-CutK6QO2.js               0.43 kB │ gzip:   0.30 kB
+dist/assets/download-C3ilGjVO.js               0.43 kB │ gzip:   0.32 kB
+dist/assets/refresh-cw-XovNFujj.js             0.49 kB │ gzip:   0.32 kB
+dist/assets/trash-2-GrQvhMGr.js                0.53 kB │ gzip:   0.35 kB
+dist/assets/useSprints-aVu-Zkag.js             0.61 kB │ gzip:   0.37 kB
+dist/assets/search-CUTcFKW6.js                 0.61 kB │ gzip:   0.32 kB
+dist/assets/useInvites-5J6eVXQG.js             1.12 kB │ gzip:   0.48 kB
+dist/assets/useMissingUpdates-DDZbkop9.js      1.23 kB │ gzip:   0.57 kB
+dist/assets/upload-BPpIC_mw.js                 1.23 kB │ gzip:   0.51 kB
+dist/assets/useTasks-oAcO7hDm.js               2.10 kB │ gzip:   0.74 kB
+dist/assets/useSummaries-Bbb9DxU-.js           2.12 kB │ gzip:   0.68 kB
+dist/assets/UsersList-537Q8WO6.js              5.68 kB │ gzip:   1.88 kB
+dist/assets/InviteUserDialog-C5Pk0zNT.js       6.20 kB │ gzip:   2.14 kB
+dist/assets/InvitesList-Bo_ZrNY6.js            6.99 kB │ gzip:   2.16 kB
+dist/assets/AcceptInvitePage-B0nEEep1.js       8.57 kB │ gzip:   2.82 kB
+dist/assets/NotesView-WRLcW9Xh.js             11.64 kB │ gzip:   3.32 kB
+dist/assets/UpdatesView-fL2dR4U_.js           16.62 kB │ gzip:   4.89 kB
+dist/assets/AdminSettingsModal-EzgrmHbz.js    17.96 kB │ gzip:   4.06 kB
+dist/assets/WeeklySummariesView-Bs-4k5fv.js   18.07 kB │ gzip:   4.39 kB
+dist/assets/GanttView-BSAuXZF5.js             41.12 kB │ gzip:  12.14 kB
+dist/assets/socket-rg1qAiuj.js                41.70 kB │ gzip:  13.06 kB
+dist/assets/TaskTree-DPRJT4LF.js              46.17 kB │ gzip:  11.17 kB
+dist/assets/query-tOq_N8AS.js                 49.88 kB │ gzip:  15.15 kB
+dist/assets/types-vdFjl27t.js                 78.10 kB │ gzip:  21.32 kB
+dist/assets/index-DjfGl_MG.js                117.65 kB │ gzip:  36.16 kB
+dist/assets/ProductTour-s4eeXYRX.js          118.61 kB │ gzip:  36.71 kB
+dist/assets/index-ssaRrbP8.js                144.67 kB │ gzip:  48.44 kB
+dist/assets/radix-D3b87VWM.js                228.65 kB │ gzip:  73.36 kB
+dist/assets/SummaryView-CfVYJBQz.js          440.91 kB │ gzip: 118.58 kB
+dist/assets/ChatView-_kBslq24.js             573.61 kB │ gzip: 149.99 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.58s
+
+> shared@1.0.0 build
+> echo "Shared workspace - no build needed (TypeScript only)"
+
+Shared workspace - no build needed (TypeScript only)
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
