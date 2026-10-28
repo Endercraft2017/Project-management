@@ -84,6 +84,11 @@ export default function TenantLogin() {
           administrator.
         </Notice>
       )}
+      {params.get("error") === "google_disabled" && (
+        <Notice>
+          Use your company code, email and password below to log in.
+        </Notice>
+      )}
       {error && <Notice>{error}</Notice>}
       {capabilities?.passwordEnabled === false && (
         <Notice>

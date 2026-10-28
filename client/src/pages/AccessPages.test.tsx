@@ -72,6 +72,19 @@ beforeEach(() => {
 });
 
 describe("company and operator sign-in", () => {
+  it("explains the native sign-in path after a legacy Google link", async () => {
+    window.history.replaceState({}, "", "/login?error=google_disabled");
+    render(<TenantLogin />);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Use your company code, email and password",
+    );
+    expect(screen.getByLabelText("Company code")).toBeVisible();
+    await waitFor(() => expect(accessApi.capabilities).toHaveBeenCalled());
+    expect(
+      screen.queryByRole("button", { name: "Sign in with Google" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("submits normalized company credentials to the real login boundary before navigating", async () => {
     vi.mocked(accessApi.login).mockResolvedValue({
       tenant: company,

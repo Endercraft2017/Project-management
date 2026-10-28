@@ -57,7 +57,7 @@ app.use(compression());
  * Serve the built React app in production.
  * Registered before sessions so asset requests never touch the session store
  * or the database. Hashed assets are immutable; index.html is served by the
- * SPA fallback below with no-cache so new deploys show up immediately.
+ * SPA fallback below with no-store so new deploys show up immediately.
  */
 const clientBuildPath = path.join(__dirname, '../../client/dist');
 if (serverConfig.isProduction) {
@@ -65,7 +65,9 @@ if (serverConfig.isProduction) {
     express.static(clientBuildPath, {
       index: false,
       setHeaders: (res, filePath) => {
-        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-store');
+        } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
       },
@@ -161,7 +163,7 @@ app.use('/api', notFound);
 if (serverConfig.isProduction) {
   // Handle React routing - return index.html for all other routes
   app.get('*', (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 } else {

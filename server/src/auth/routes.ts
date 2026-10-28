@@ -25,6 +25,13 @@ const unavailable = (_req: Request, res: Response) => res.status(503).json({
 router.get('/capabilities', (_req, res) => res.json({
   success: true, passwordEnabled: true, googleEnabled: false, driveEnabled: false, aiEnabled: false,
 }));
+// Old tabs/bookmarks can still navigate to Google after a release. Send browser
+// navigations to password login; API clients keep the disabled-capability JSON.
+router.get(['/google', '/google/callback'], (req, res, next) => {
+  if (req.accepts(['json', 'html']) !== 'html') return next();
+  res.setHeader('Cache-Control', 'no-store');
+  res.redirect(303, '/login?error=google_disabled');
+});
 router.use('/google', unavailable);
 router.use('/drive', unavailable);
 

@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
 import authRoutes from '../routes';
+import express from 'express';
+import request from 'supertest';
 
 jest.mock('@/config', () => ({
   corsConfig: { clientUrl: 'https://client.example', origin: 'https://client.example' },
@@ -25,5 +27,25 @@ describe('disabled external login capability', () => {
     layer.handle({ query: { returnTo: 'https://untrusted.example' } } as unknown as Request, res as unknown as Response, jest.fn());
     expect(res.status).toHaveBeenCalledWith(503);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({ success: false, error: 'CAPABILITY_DISABLED' }));
+  });
+});
+
+
+describe('legacy Google browser navigation', () => {
+  const app = express();
+  app.use('/api/auth', authRoutes);
+
+  it.each(['/api/auth/google', '/api/auth/google/callback'])('redirects %s HTML navigation to native login and discards old query data', async (path) => {
+    const response = await request(app).get(`${path}?code=synthetic-code&state=synthetic-state&returnTo=https://untrusted.example`).set('Accept', 'text/html');
+    expect(response.status).toBe(303);
+    expect(response.headers.location).toBe('/login?error=google_disabled');
+    expect(response.headers['cache-control']).toBe('no-store');
+  });
+
+  it.each(['application/json', '*/*'])('keeps the disabled-capability JSON contract for Accept %s', async (accept) => {
+    const response = await request(app).get('/api/auth/google').set('Accept', accept);
+    expect(response.status).toBe(503);
+    expect(response.body.error).toBe('CAPABILITY_DISABLED');
+    expect(response.headers.location).toBeUndefined();
   });
 });

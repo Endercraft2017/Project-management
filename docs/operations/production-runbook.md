@@ -120,3 +120,18 @@ Set and monitor the daily schedule, seven-copy retention and restore alerts only
 Confirm the authoritative Railway/domain/PWA source and preserve `/`, `/login`, `/activate`, `/console/*`, `/app`, `/api/*` and `/socket.io` routing. Inspect fresh and previously installed clients; an old root-scoped service worker can serve a cached app shell. Do not blindly purge unrelated offline data.
 
 Run the final gates on the exact reviewed commit/artifact, inspect staging and recovery evidence, then request the authorized release action. No documentation change or branch publication applies external settings. After deployment verify readiness, login/provisioning/isolation, quota failures, worker heartbeat/queues, file access and backup schedule from the actual instance. Stop admission if capacity, spending or recovery requirements exceed the approved pilot envelope.
+
+## Old Google sign-in page or CAPABILITY_DISABLED in the browser
+
+The supported company login is `/login`, using company code, email and password. No Google OAuth credentials are needed. Old tabs/bookmarks can still point to `/api/auth/google`; browser HTML navigation now redirects to `/login?error=google_disabled`. API requests asking for JSON keep the honest 503 disabled-capability response. HTML entry documents use `Cache-Control: no-store`; hashed assets remain immutable.
+
+If the hosted page still shows only Google login, verify the Railway deployment source and build:
+
+1. Source branch: `production`, at the latest reviewed commit.
+2. Root directory: repository root, not `server` or `client` alone.
+3. Build command: `npm run build`; start command: `npm start`; production environment: `NODE_ENV=production`.
+4. Redeploy that commit so the frontend and API are rebuilt together. Open `/login` in a fresh tab or hard-refresh. Purge an older cached HTML document if an external CDN overrides origin cache headers.
+
+A Git push does not itself switch a Railway service's configured branch or guarantee a successful deployment. Check the deployment commit/build logs in Railway. `/api/auth/capabilities` should report password login enabled and Google disabled; the `/login` form should show company code, email and password. Do not enable Google to compensate for an old frontend.
+
+After a full repository build, `npm run test:built-ui --workspace=server` exercises the compiled frontend served by production Express, including old-link redirects, native fields, JSON API behavior and HTML cache headers. It requires the guarded local test-database variable and installed Playwright Chromium, and uses no customer credentials or provider calls.

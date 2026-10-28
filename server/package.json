@@ -22,7 +22,8 @@
     "test:browser": "tsx ../scripts/production-browser.ts",
     "test:chat": "tsx ../scripts/chat-atomicity-smoke.ts",
     "test:operations": "tsx ../scripts/production-operations-smoke.ts",
-    "test:hierarchy": "tsx ../scripts/task-hierarchy-smoke.ts"
+    "test:hierarchy": "tsx ../scripts/task-hierarchy-smoke.ts",
+    "test:built-ui": "node ../scripts/production-ui-smoke.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

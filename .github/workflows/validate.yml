@@ -78,6 +78,8 @@ jobs:
         run: npm run test --workspace=client -- --maxWorkers=2
       - name: Install pinned browser
         run: npm exec --workspace=client -- playwright install --with-deps chromium
+      - name: Compiled production login and legacy Google links
+        run: npm run test:built-ui --workspace=server
       - name: Browser journeys with real operator and tenant API
         run: npm run test:browser --workspace=server
       - name: Durable jobs and encrypted backup/restore rehearsal

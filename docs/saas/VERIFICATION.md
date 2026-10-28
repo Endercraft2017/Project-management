@@ -2,6 +2,8 @@
 
 Verified locally on 2026-10-28, on branch `production`, based on `f3cd5ed44714b939ad62fd83602c1c346427491c`. These results describe the reviewed source candidate. Hosted GitHub checks, live provider accounts and production deployment have not been verified by these local runs.
 
+Follow-up for the reported old Google sign-in link: the full build, **136 backend tests**, **56 frontend tests** and **6 checks against compiled production login pages** pass. Browser HTML navigation to the disabled Google entry/callback redirects to native login; JSON callers retain 503. HTML entry documents are not stored. The 84 database/recovery checks and 7 broader browser journeys below are the preceding pilot baseline, not a claim they were all rerun for this small follow-up. Live `ez.afkcube.com` requests returned 403 from the work environment, so its deployed commit/cache could not be inspected. See the [deployment troubleshooting guide](../operations/production-runbook.md#old-google-sign-in-page-or-capability_disabled-in-the-browser).
+
 | Check | Result and scope |
 |---|---|
 | Frozen dependencies | `npm ci` passed; Node 24/npm 11, committed lockfile. No TLS/integrity/audit bypass or forced major downgrade. |
