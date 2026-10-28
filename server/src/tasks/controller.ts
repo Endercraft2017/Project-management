@@ -61,10 +61,6 @@ export class TaskController {
       const userId = req.user!.id;
       const isAdmin = req.user!.role === Role.ADMIN;
 
-      // Check if this is a chat mention view (read-only access from chat)
-      const viewMode = req.query.viewMode as string;
-      const isChatMention = viewMode === 'mention';
-
       const task = await taskService.getTaskById(
         taskId,
         includeSubtasks,
@@ -79,10 +75,8 @@ export class TaskController {
         });
       }
 
-      // Verify permission
-      // For chat mentions, allow all authenticated users to view (read-only)
+      // Presentation hints, including chat mentions, never grant resource access.
       const hasPermission =
-        isChatMention || // Allow viewing from chat mentions
         isAdmin ||
         task.assignedToId === userId ||
         task.createdById === userId;

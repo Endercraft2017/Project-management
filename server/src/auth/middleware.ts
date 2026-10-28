@@ -69,7 +69,7 @@ export function isAdmin(req: Request, res: Response, next: NextFunction): void {
 
 /**
  * Check if user is admin or the resource owner
- * Requires userId parameter or body field
+ * Uses the same :id route parameter as the user handlers.
  */
 export function isAdminOrOwner(req: Request, res: Response, next: NextFunction): void {
   if (!req.isAuthenticated()) {
@@ -82,7 +82,7 @@ export function isAdminOrOwner(req: Request, res: Response, next: NextFunction):
   }
 
   const currentUserId = req.user?.id;
-  const targetUserId = req.params.userId || req.body.userId;
+  const targetUserId = req.params.id;
 
   // Admin can access anything
   if (req.user?.role === Role.ADMIN) {
@@ -90,7 +90,7 @@ export function isAdminOrOwner(req: Request, res: Response, next: NextFunction):
   }
 
   // User can access their own resources
-  if (currentUserId === targetUserId) {
+  if (currentUserId && currentUserId === targetUserId) {
     return next();
   }
 
