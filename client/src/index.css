@@ -31,6 +31,13 @@
     --ring: 245 75% 60%;
     --radius: 0.75rem;
 
+    /* Shared interaction timing; features must respect reduced-motion preferences. */
+    --motion-press: 120ms;
+    --motion-fast: 150ms;
+    --motion-standard: 200ms;
+    --motion-overlay: 250ms;
+    --motion-ease-enter: cubic-bezier(0.2, 0, 0, 1);
+
     /* Glass material */
     --app-bg: #eef0fb;
     --glass-bg: rgba(255, 255, 255, 0.55);

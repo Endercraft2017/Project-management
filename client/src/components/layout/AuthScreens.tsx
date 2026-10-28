@@ -70,6 +70,13 @@ export function SignInScreen() {
           Sign in with Google
         </a>
 
+        <a
+          href="/tour"
+          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+        >
+          Explore the product tour
+        </a>
+
         <ul className="mt-8 space-y-2.5 text-left text-sm text-muted-foreground">
           {HIGHLIGHTS.map(({ icon: Icon, text }) => (
             <li key={text} className="flex items-center gap-3">
