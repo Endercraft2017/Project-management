@@ -1,17 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  CheckCheck,
-  Circle,
-  Layers3,
-  MessageSquare,
-  Pause,
-  Play,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Pause, Play } from "lucide-react";
+import { BRAND } from "@/lib/brand";
 import { Swiper, SwiperSlide } from "swiper/react";
 import {
   A11y,
@@ -33,7 +22,7 @@ const slides = [
     key: "tasks",
     eyebrow: "01 / MAKE A PLAN",
     title: "A place for every next step.",
-    body: "Bring projects, sprints and the details that matter into one clear view.",
+    body: "Bring sprints, tasks and the details that matter into one clear view.",
   },
   {
     key: "timeline",
@@ -51,7 +40,7 @@ const slides = [
     key: "review",
     eyebrow: "04 / CLOSE THE LOOP",
     title: "Turn updates into perspective.",
-    body: "Review progress together. Optional AI summaries are designed around clear usage limits.",
+    body: "See progress across the team. AI summaries and usage controls remain part of the staged rollout.",
   },
 ];
 
@@ -70,178 +59,49 @@ function useReducedMotion() {
   return reduced;
 }
 
-function Preview({ kind }: { kind: string }) {
+function Preview({ kind, first }: { kind: string; first: boolean }) {
+  const screens: Record<string, { source: string; alt: string }> = {
+    tasks: {
+      source: "/screens/ez-tasks-demo.png",
+      alt: "E-Z task list with demo project data.",
+    },
+    timeline: {
+      source: "/screens/ez-gantt-demo.png",
+      alt: "E-Z Gantt timeline with demo sprint data.",
+    },
+    chat: {
+      source: "/screens/ez-chat-demo.png",
+      alt: "E-Z conversation with demo team messages.",
+    },
+    review: {
+      source: "/screens/ez-dashboard-demo.png",
+      alt: "E-Z progress dashboard with demo statistics.",
+    },
+  };
+  const screen = screens[kind];
   return (
-    <div className={`tour-preview tour-preview--${kind}`} aria-hidden="true">
-      <div className="tour-preview-top">
-        <span className="tour-preview-dots">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span>Northstar / Product team</span>
-        <span className="tour-avatar">N</span>
-      </div>
-      <div className="tour-preview-body">
-        <aside className="tour-mini-nav">
-          <Layers3 size={17} />
-          <span />
-          <span />
-          <span />
-          <span />
-        </aside>
-        <div className="tour-preview-work">
-          <div className="tour-preview-heading">
-            <span>
-              {kind === "chat"
-                ? "# product-team"
-                : kind === "timeline"
-                  ? "Launch timeline"
-                  : kind === "review"
-                    ? "The week in focus"
-                    : "Website refresh"}
-            </span>
-            <span className="tour-preview-pill">Sample data</span>
-          </div>
-          {kind === "tasks" && (
-            <>
-              <div className="tour-tabs">
-                <b>All tasks</b>
-                <span>Board</span>
-                <span>Activity</span>
-              </div>
-              <div className="tour-task-head">
-                <span>THIS SPRINT</span>
-                <span>OWNER</span>
-              </div>
-              {[
-                "Map the customer journey",
-                "Build the shared components",
-                "Review the mobile experience",
-                "Prepare the release notes",
-              ].map((task, i) => (
-                <div className="tour-task" key={task}>
-                  {i === 0 ? (
-                    <span className="tour-task-done">
-                      <Check size={12} />
-                    </span>
-                  ) : (
-                    <Circle size={15} />
-                  )}
-                  <span>{task}</span>
-                  <span className={`tour-person tour-person--${i}`}>
-                    {["JL", "AK", "MR", "TS"][i]}
-                  </span>
-                </div>
-              ))}
-              <div className="tour-mini-footer">
-                <CheckCheck size={14} /> A little more clarity. A little less
-                chasing.
-              </div>
-            </>
-          )}
-          {kind === "timeline" && (
-            <>
-              <div className="tour-week">
-                <span>MON</span>
-                <span>TUE</span>
-                <span>WED</span>
-                <span>THU</span>
-                <span>FRI</span>
-              </div>
-              <div className="tour-timeline">
-                {[
-                  "Discovery",
-                  "Design system",
-                  "Implementation",
-                  "Team review",
-                ].map((label, i) => (
-                  <div className="tour-timeline-row" key={label}>
-                    <span>{label}</span>
-                    <div className={`tour-bar tour-bar--${i}`}>
-                      {i === 1 ? "In progress" : ""}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="tour-timeline-note">
-                <span className="tour-status-dot" /> One shared view of what
-                comes next
-              </div>
-            </>
-          )}
-          {kind === "chat" && (
-            <>
-              <div className="tour-chat-date">TODAY</div>
-              <div className="tour-chat-message">
-                <span className="tour-person">AK</span>
-                <div>
-                  <b>
-                    Alex <small>09:41</small>
-                  </b>
-                  <p>The component previews are ready for a look.</p>
-                  <span className="tour-chat-link">
-                    <Layers3 size={12} /> Design system review
-                  </span>
-                </div>
-              </div>
-              <div className="tour-chat-message">
-                <span className="tour-person tour-person--2">MR</span>
-                <div>
-                  <b>
-                    Morgan <small>09:45</small>
-                  </b>
-                  <p>
-                    Great. I’ll check the small-screen flow and leave notes on
-                    the task.
-                  </p>
-                  <span className="tour-reaction">✓ &nbsp; 2</span>
-                </div>
-              </div>
-              <div className="tour-compose">
-                A thought, an update, a question…
-                <MessageSquare size={15} />
-              </div>
-            </>
-          )}
-          {kind === "review" && (
-            <>
-              <div className="tour-review-title">
-                <Sparkles size={17} />
-                <span>Weekly summary</span>
-                <span className="tour-preview-pill">Concept</span>
-              </div>
-              <p className="tour-review-copy">
-                The team aligned on the customer journey and moved the shared
-                components into review.
-              </p>
-              <div className="tour-review-item">
-                <span className="tour-review-mark">
-                  <Check size={14} />
-                </span>
-                <div>
-                  <b>What moved forward</b>
-                  <span>Design foundations ready for feedback</span>
-                </div>
-              </div>
-              <div className="tour-review-item">
-                <span className="tour-review-mark tour-review-mark--mint">
-                  <ArrowUpRight size={14} />
-                </span>
-                <div>
-                  <b>What comes next</b>
-                  <span>Mobile review and implementation</span>
-                </div>
-              </div>
-              <div className="tour-budget">
-                <span>AI is optional. Usage is capped.</span>
-                <span className="tour-status-dot" />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+    <figure className="tour-preview">
+      <img
+        src={screen.source}
+        alt={screen.alt}
+        width="1920"
+        height="1080"
+        loading={first ? "eager" : "lazy"}
+        decoding="async"
+      />
+      <figcaption>
+        <span>Demo data · actual application UI</span>
+        <a
+          href={screen.source}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`View full-size screenshot: ${kind} (opens in a new tab)`}
+        >
+          View full-size screenshot{" "}
+          <ArrowUpRight size={14} aria-hidden="true" />
+        </a>
+      </figcaption>
+    </figure>
   );
 }
 
@@ -323,35 +183,54 @@ export default function ProductTour() {
     <main className="product-tour">
       <div className="tour-ambient" aria-hidden="true" />
       <header className="tour-header">
-        <a className="tour-wordmark" href="/" aria-label="Back to the app">
-          <span className="tour-brand-icon">
-            <Layers3 size={20} />
-          </span>
+        <a
+          className="tour-wordmark"
+          href={BRAND.landingPath}
+          aria-label="E-Z home"
+        >
+          <img src="/brand/ez-logo.webp" alt="" width="44" height="48" />
           <span>
-            WORKSPACE<span className="tour-wordmark-sub">PRODUCT TOUR</span>
+            {BRAND.name}
+            <small>BY AFK³ SOLUTIONS</small>
           </span>
         </a>
-        <a className="tour-open-app" href="/">
-          Open the app <ArrowUpRight size={16} />
-        </a>
+        <nav className="tour-header-actions" aria-label="Primary">
+          <a className="tour-contact" href={BRAND.contactURL}>
+            Talk to us <ArrowUpRight size={16} />
+          </a>
+          <a className="tour-login" href={BRAND.loginPath}>
+            Log in <ArrowUpRight size={16} />
+          </a>
+        </nav>
       </header>
       <section className="tour-intro" aria-labelledby="tour-title">
         <p className="tour-kicker">
-          <span /> WORK, WITH A LITTLE MORE CLARITY
+          <span /> E-Z · IN DEVELOPMENT
         </p>
         <h1 id="tour-title">
-          Less scattered.
-          <br />
-          <span>More in sync.</span>
+          Skip the <span>basic.</span>
         </h1>
+        <p className="tour-long-tagline">{BRAND.longTagline}.</p>
         <p className="tour-intro-copy">
-          From the first idea to the next milestone.
-          <br className="tour-desktop-break" /> A connected place to plan, talk
-          and move work forward.
+          The usual choices are A to D. We start at E.
+          <br />
+          One place to plan the work, keep the context and see what comes next.
         </p>
+        <div className="tour-intro-actions">
+          <a
+            className="tour-contact tour-contact--primary"
+            href={BRAND.contactURL}
+          >
+            Talk to us <ArrowUpRight size={17} />
+          </a>
+          <a className="tour-text-link" href="#product-screens">
+            See E-Z in action <ArrowRight size={16} />
+          </a>
+        </div>
       </section>
       <section
         className="tour-carousel"
+        id="product-screens"
         ref={region}
         aria-label="Explore the product"
         aria-roledescription="carousel"
@@ -371,10 +250,8 @@ export default function ProductTour() {
         }}
       >
         <div className="tour-carousel-heading">
-          <span>ONE CONNECTED WORKDAY</span>
-          <span className="tour-sample-label">
-            Illustrative previews · sample data
-          </span>
+          <span>YOUR WORK, FROM E TO Z</span>
+          <span className="tour-sample-label">Real screens · demo data</span>
         </div>
         <div className="tour-controls">
           <button
@@ -494,7 +371,7 @@ export default function ProductTour() {
           {slides.map((slide, index) => (
             <SwiperSlide key={slide.key} aria-hidden={index !== active}>
               <article className="tour-slide">
-                <Preview kind={slide.key} />
+                <Preview kind={slide.key} first={index === 0} />
                 <div className="tour-slide-caption">
                   <p>{slide.eyebrow}</p>
                   <h2>{slide.title}</h2>
@@ -523,15 +400,25 @@ export default function ProductTour() {
         </ol>
       </section>
       <footer className="tour-footer">
-        <p>
-          Product preview. Illustrations show sample data, not a live workspace.
-          <br />
-          AI, accounts and subscription limits depend on configuration and the
-          staged rollout.
-        </p>
-        <a href="/">
-          Back to the app <ArrowUpRight size={14} />
-        </a>
+        <div>
+          <a className="tour-footer-brand" href={BRAND.productURL}>
+            {BRAND.name} <span>by AFK³ Solutions</span>
+          </a>
+          <p>
+            In development. Screens show the actual local application with
+            synthetic demo data, not customer data.
+            <br />
+            Team accounts, AI usage limits and paid plans are in development.
+          </p>
+        </div>
+        <div className="tour-footer-links">
+          <a href={BRAND.contactURL}>
+            Talk to us <ArrowUpRight size={14} />
+          </a>
+          <a href={BRAND.loginPath}>
+            Log in <ArrowUpRight size={14} />
+          </a>
+        </div>
       </footer>
     </main>
   );

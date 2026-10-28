@@ -4,6 +4,7 @@
 
 import { AlertCircle, CheckSquare, MessageSquare, TrendingUp } from 'lucide-react';
 import AmbientBackground from './AmbientBackground';
+import { BRAND } from '@/lib/brand';
 
 export function LoadingScreen() {
   return (
@@ -46,10 +47,8 @@ export function SignInScreen() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <AmbientBackground />
       <div className="glass w-full max-w-md rounded-[2rem] px-8 py-10 text-center sm:px-10">
-        <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff7ad1] via-primary to-[#4d7bff] text-lg font-bold text-white shadow-xl shadow-primary/30">
-          SB
-        </div>
-        <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">Welcome to ServiceBay PM</h1>
+        <img src="/brand/ez-logo-180.png" width="56" height="56" alt="" className="mx-auto mb-6 h-14 w-14 object-contain" />
+        <h1 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">Welcome to {BRAND.name}</h1>
         <p className="mb-8 text-muted-foreground">Please sign in to continue</p>
 
         {errorMessage && (
@@ -71,7 +70,7 @@ export function SignInScreen() {
         </a>
 
         <a
-          href="/tour"
+          href={BRAND.landingPath}
           className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
         >
           Explore the product tour

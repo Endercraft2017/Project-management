@@ -1,10 +1,40 @@
 import React, { Component, lazy, Suspense, type ReactNode } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
+import { BRAND } from "./lib/brand";
 import "./index.css";
 import "highlight.js/styles/github-dark.css";
 
 const ProductTour = lazy(() => import("./pages/ProductTour"));
+const path = window.location.pathname.replace(/\/$/, "") || "/";
+const parameters = new URLSearchParams(window.location.search);
+// Preserve old task/update/email/OAuth links while moving the default root to marketing.
+const legacyAppLink =
+  path === "/" &&
+  (window.location.hash.startsWith("#/") ||
+    parameters.has("token") ||
+    parameters.has("view") ||
+    parameters.has("error"));
+const showLanding = (path === "/" && !legacyAppLink) || path === "/tour";
+document.title = showLanding
+  ? `${BRAND.name} — ${BRAND.tagline}`
+  : `${BRAND.name} Project Manager`;
+
+// Legacy picker clients poll SDK availability on mount. Keep those libraries on app
+// entries while the public landing makes no unrelated Google SDK requests.
+if (!showLanding) {
+  for (const [id, source] of [
+    ["ez-google-api", "https://apis.google.com/js/api.js"],
+    ["ez-google-identity", "https://accounts.google.com/gsi/client"],
+  ]) {
+    if (document.getElementById(id)) continue;
+    const script = document.createElement("script");
+    script.id = id;
+    script.src = source;
+    script.async = true;
+    document.head.appendChild(script);
+  }
+}
 
 class TourErrorBoundary extends Component<
   { children: ReactNode },
@@ -19,17 +49,20 @@ class TourErrorBoundary extends Component<
       return (
         <main className="min-h-screen p-8">
           <h1 className="text-3xl font-bold">
-            A connected place for your team's work.
+            {BRAND.name} — {BRAND.tagline}
           </h1>
           <p className="my-4">
             Plan projects, share context and review progress together. The
             interactive preview could not load.
           </p>
-          <a href="/tour" className="mr-6 underline">
+          <a href={path === "/tour" ? "/tour" : "/"} className="mr-6 underline">
             Reload preview
           </a>
-          <a href="/" className="underline">
-            Open the app
+          <a href={BRAND.loginPath} className="mr-6 underline">
+            Log in
+          </a>
+          <a href={BRAND.contactURL} className="underline">
+            Talk to us
           </a>
         </main>
       );
@@ -39,17 +72,20 @@ class TourErrorBoundary extends Component<
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {window.location.pathname.replace(/\/$/, "") === "/tour" ? (
+    {showLanding ? (
       <TourErrorBoundary>
         <Suspense
           fallback={
             <main className="min-h-screen p-8" role="status">
               <h1 className="text-3xl font-bold">
-                A connected place for your team’s work.
+                {BRAND.name} — {BRAND.tagline}
               </h1>
-              <p className="my-4">Loading the product tour…</p>
-              <a className="underline" href="/">
-                Open the app
+              <p className="my-4">Loading E-Z…</p>
+              <a className="mr-6 underline" href={BRAND.loginPath}>
+                Log in
+              </a>
+              <a className="underline" href={BRAND.contactURL}>
+                Talk to us
               </a>
             </main>
           }

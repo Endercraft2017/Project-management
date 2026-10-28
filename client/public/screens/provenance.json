@@ -1,0 +1,120 @@
+{
+  "captured_at": "2026-10-28T02:30:16.026159+00:00",
+  "source_base_commit": "c966c149eecfedb36acfb5e1d3b87705c39096cb",
+  "source_worktree_note": "Screens use actual current application components with uncommitted E-Z branding changes in Sidebar and shared brand constants. Component hashes identify captured source state; this is not claimed to be a production release.",
+  "capture_script": "/workspace/ez-brand-work/capture-actual-app.cjs",
+  "capture_script_sha256": "3df000d76cc98234349109b4a93c218dc8f7802dad7e82d594cbe4417aac6008",
+  "fixture": "/workspace/ez-brand-work/synthetic-app-fixture.json",
+  "fixture_sha256": "aff8fb914b7885c1c033029c59aeff36e6cf18fe2759a187558e03c34d46b694",
+  "method": "Playwright Chromium screenshot of real locally rendered app routes. Browser-only GET fixtures replace API reads; all nonlocal requests blocked, all WebSockets closed, nonGET writes aborted. No real backend/auth/session/customer data.",
+  "runtime": "Vite dev server with NODE_ENV=production so actual production conditional hides development tools; no injected image or layout styling; light theme and reduced motion via normal browser preferences.",
+  "caption_required": "Demo data \u00b7 actual application UI",
+  "not_validated": [
+    "real authentication",
+    "database/API behavior",
+    "realtime transport/delivery",
+    "Google integrations",
+    "production availability",
+    "tenant isolation",
+    "paid features",
+    "functional saves"
+  ],
+  "screens": [
+    {
+      "file": "ez-dashboard-demo.png",
+      "route": "/app#/dashboard",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "deviceScaleFactor": 1,
+      "theme": "light",
+      "caption": "Demo data \u00b7 actual application UI",
+      "capturedAt": "2026-10-28T02:29:13.152Z",
+      "sha256": "01ef2de1fac7f95971ff84592d61842fcfe93d1742def12e9a4f2c39e14848e6",
+      "bytes": 258932,
+      "component": "client/src/components/summary/SummaryView.tsx",
+      "pageErrors": [],
+      "blockedNonFixture": [
+        "https://cdn.jsdelivr.net",
+        "https://apis.google.com",
+        "https://accounts.google.com"
+      ],
+      "writesAttempted": [],
+      "source_component_sha256": "0698423ce1971dac94861f153f6286f769780ad52b026f1deee063789a1fa5bb",
+      "visually_inspected": true
+    },
+    {
+      "file": "ez-tasks-demo.png",
+      "route": "/app#/tasks",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "deviceScaleFactor": 1,
+      "theme": "light",
+      "caption": "Demo data \u00b7 actual application UI",
+      "capturedAt": "2026-10-28T02:29:16.091Z",
+      "sha256": "dbbdbcd6cabceb380c83912a9dae3074c62b92a2bf3c62ffecc188e226ea66f8",
+      "bytes": 280459,
+      "component": "client/src/components/tasks/TaskTree.tsx",
+      "pageErrors": [],
+      "blockedNonFixture": [
+        "https://cdn.jsdelivr.net",
+        "https://apis.google.com",
+        "https://accounts.google.com"
+      ],
+      "writesAttempted": [],
+      "source_component_sha256": "4abc79d82ee7bcda025fe43fef0118d03409594fc00c12869ecca93c6b7fde49",
+      "visually_inspected": true
+    },
+    {
+      "file": "ez-gantt-demo.png",
+      "route": "/app#/gantt",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "deviceScaleFactor": 1,
+      "theme": "light",
+      "caption": "Demo data \u00b7 actual application UI",
+      "capturedAt": "2026-10-28T02:29:18.599Z",
+      "sha256": "5fadea52ae21bc1fe1588346bdce77fbd15c55ec10ec7a637b401924b443de83",
+      "bytes": 202453,
+      "component": "client/src/components/gantt/GanttView.tsx",
+      "pageErrors": [],
+      "blockedNonFixture": [
+        "https://cdn.jsdelivr.net",
+        "https://apis.google.com",
+        "https://accounts.google.com"
+      ],
+      "writesAttempted": [],
+      "source_component_sha256": "7821bbe0562b97c09c32843293364dbfb4c0b1410afc414df2f1d9c2fbeffc6d",
+      "visually_inspected": true
+    },
+    {
+      "file": "ez-chat-demo.png",
+      "route": "/app#/chat",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "deviceScaleFactor": 1,
+      "theme": "light",
+      "caption": "Demo data \u00b7 actual application UI",
+      "capturedAt": "2026-10-28T02:29:21.731Z",
+      "sha256": "055a086287b1811830829fb9b34713aab1fd9578186ce5f7ab8ee60cfc8ab855",
+      "bytes": 258836,
+      "component": "client/src/components/chat/ChatView.tsx",
+      "pageErrors": [],
+      "blockedNonFixture": [
+        "https://cdn.jsdelivr.net",
+        "https://apis.google.com",
+        "https://accounts.google.com"
+      ],
+      "writesAttempted": [],
+      "source_component_sha256": "e08d36fd13b9bbd534e89349edf8151cbaba4933e42e35ffd9535e65da08cdd1",
+      "visually_inspected": true
+    }
+  ]
+}

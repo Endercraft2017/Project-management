@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { BRAND } from '@/lib/brand';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -130,7 +131,7 @@ export default function AcceptInvitePage({ token, onSuccess }: AcceptInvitePageP
           <div className="text-center">
             <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
             <h2 className="mt-4 text-2xl font-bold text-green-600">
-              Welcome to ServiceBay PM!
+              Welcome to {BRAND.name}!
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Your account has been created successfully.
@@ -150,7 +151,7 @@ export default function AcceptInvitePage({ token, onSuccess }: AcceptInvitePageP
       <div className="w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-8 shadow-lg">
         <div className="text-center">
           <Mail className="mx-auto h-12 w-12 text-primary" />
-          <h1 className="mt-4 text-2xl font-bold">Join ServiceBay PM</h1>
+          <h1 className="mt-4 text-2xl font-bold">Join {BRAND.name}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             You've been invited to join the team!
           </p>

@@ -54,8 +54,8 @@ router.get(
       // Log successful authentication
       console.log(`User authenticated: ${req.user?.email}`);
 
-      // Successful authentication - redirect to root (React app will handle authenticated state)
-      res.redirect(`${corsConfig.clientUrl}/`);
+      // Return to the application; the root URL is the public landing page.
+      res.redirect(`${corsConfig.clientUrl}/app`);
     });
   }
 );

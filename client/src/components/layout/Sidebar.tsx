@@ -7,6 +7,7 @@
 import { useEffect, useRef } from 'react';
 import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BRAND } from '@/lib/brand';
 import { visibleSections, type View } from './navigation';
 
 interface SidebarProps {
@@ -22,13 +23,11 @@ interface SidebarProps {
 function Brand({ compact }: { compact: boolean }) {
   return (
     <div className={cn('flex items-center gap-3 px-2', compact && 'justify-center px-0')}>
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#ff7ad1] via-primary to-[#4d7bff] text-sm font-bold text-white shadow-lg shadow-primary/30">
-        SB
-      </div>
+      <img src="/brand/ez-logo-64.png" width="36" height="36" alt={compact ? BRAND.name : ''} className="h-9 w-9 shrink-0 object-contain" />
       {!compact && (
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">ServiceBay PM</p>
-          <p className="truncate text-xs text-muted-foreground">Project workspace</p>
+          <p className="truncate text-sm font-semibold leading-tight">{BRAND.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{BRAND.tagline}</p>
         </div>
       )}
     </div>

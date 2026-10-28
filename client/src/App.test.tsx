@@ -114,7 +114,7 @@ describe('Google Sign-In Button Tests', () => {
         </QueryClientProvider>
       );
 
-      expect(screen.getByText('Welcome to ServiceBay PM')).toBeInTheDocument();
+      expect(screen.getByText('Welcome to E-Z')).toBeInTheDocument();
       expect(screen.getByText('Please sign in to continue')).toBeInTheDocument();
       expect(screen.getByText('Sign in with Google')).toBeInTheDocument();
     });
@@ -202,7 +202,7 @@ describe('Google Sign-In Button Tests', () => {
       renderAs(memberUser);
 
       expect(screen.queryByText('Sign in with Google')).not.toBeInTheDocument();
-      expect(screen.getAllByText('ServiceBay PM').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('E-Z').length).toBeGreaterThan(0);
       expect(screen.getByText('Test User')).toBeInTheDocument();
       // Let the lazily loaded dashboard settle before the test ends
       expect(await screen.findByTestId('summary-view')).toBeInTheDocument();
@@ -280,28 +280,21 @@ describe('Sign-in error message', () => {
   });
 });
 
-describe('OAuth Redirect Flow', () => {
-  it('should verify the complete OAuth redirect flow', () => {
-    // This test verifies the expected redirect flow:
-    // 1. User clicks "Sign in with Google" button
-    // 2. Browser navigates to /api/auth/google
-    // 3. Server redirects to Google OAuth with servicebay.ai domain hint
-    // 4. Google redirects back to /api/auth/google/callback
-    // 5. On success: Server redirects to / (root)
-    // 6. On failure: Server redirects to /login?error=auth_failed
-
-    const expectedFlow = {
-      step1: 'User clicks button -> /api/auth/google',
-      step2: 'Server redirects -> accounts.google.com (with hd=servicebay.ai)',
-      step3: 'Google redirects back -> /api/auth/google/callback',
-      step4Success: 'Success -> / (root URL)',
-      step4Failure: 'Failure -> /login?error=auth_failed',
-    };
-
-    expect(expectedFlow.step1).toBe('User clicks button -> /api/auth/google');
-    expect(expectedFlow.step2).toContain('accounts.google.com');
-    expect(expectedFlow.step3).toBe('Google redirects back -> /api/auth/google/callback');
-    expect(expectedFlow.step4Success).toBe('Success -> / (root URL)');
-    expect(expectedFlow.step4Failure).toContain('error=auth_failed');
+describe('Public landing navigation', () => {
+  it('links the sign-in screen back to the public product page', () => {
+    vi.mocked(useCurrentUser).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: true,
+    } as any);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>
+    );
+    expect(screen.getByRole('link', { name: 'Explore the product tour' }))
+      .toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Sign in with Google' }))
+      .toHaveAttribute('href', '/api/auth/google');
   });
 });
