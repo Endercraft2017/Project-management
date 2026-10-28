@@ -59,7 +59,7 @@ export default function TaskFilters({
     const value = e.target.value;
     onFiltersChange({
       ...filters,
-      progressMin: value ? parseInt(value) : undefined,
+      minProgress: value ? parseInt(value) : undefined,
     });
   };
 
@@ -67,7 +67,7 @@ export default function TaskFilters({
     const value = e.target.value;
     onFiltersChange({
       ...filters,
-      progressMax: value ? parseInt(value) : undefined,
+      maxProgress: value ? parseInt(value) : undefined,
     });
   };
 
@@ -80,8 +80,8 @@ export default function TaskFilters({
     filters.sprintId ||
     filters.assignedToId ||
     filters.nestingLevel !== undefined ||
-    filters.progressMin !== undefined ||
-    filters.progressMax !== undefined;
+    filters.minProgress !== undefined ||
+    filters.maxProgress !== undefined;
 
   return (
     <div className="space-y-4">
@@ -117,8 +117,8 @@ export default function TaskFilters({
                 filters.sprintId,
                 filters.assignedToId,
                 filters.nestingLevel !== undefined,
-                filters.progressMin !== undefined,
-                filters.progressMax !== undefined,
+                filters.minProgress !== undefined,
+                filters.maxProgress !== undefined,
               ].filter(Boolean).length}
             </span>
           )}
@@ -205,7 +205,7 @@ export default function TaskFilters({
                 type="number"
                 min="0"
                 max="100"
-                value={filters.progressMin ?? ''}
+                value={filters.minProgress ?? ''}
                 onChange={handleProgressMinChange}
                 placeholder="0"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -221,7 +221,7 @@ export default function TaskFilters({
                 type="number"
                 min="0"
                 max="100"
-                value={filters.progressMax ?? ''}
+                value={filters.maxProgress ?? ''}
                 onChange={handleProgressMaxChange}
                 placeholder="100"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"

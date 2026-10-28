@@ -31,12 +31,10 @@ export const createSprintSchema = z
   .object({
     name: z.string().min(1, 'Sprint name is required').max(100).trim(),
     startDate: z.coerce.date({
-      required_error: 'Start date is required',
-      invalid_type_error: 'Invalid start date format',
+      error: (issue) => issue.input === undefined ? 'Start date is required' : 'Invalid start date format',
     }),
     endDate: z.coerce.date({
-      required_error: 'End date is required',
-      invalid_type_error: 'Invalid end date format',
+      error: (issue) => issue.input === undefined ? 'End date is required' : 'Invalid end date format',
     }),
     goal: z.string().max(1000).trim().optional(),
   })

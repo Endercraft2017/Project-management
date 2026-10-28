@@ -19,9 +19,8 @@ export default function WeekList({
   onSelectWeek,
   currentMonday,
 }: WeekListProps) {
-  const formatWeekLabel = (startDate: string, endDate: string) => {
+  const formatWeekLabel = (startDate: string) => {
     const start = new Date(startDate);
-    const end = new Date(endDate);
 
     const monthDay = start.toLocaleDateString('en-US', {
       month: 'short',
@@ -83,7 +82,7 @@ export default function WeekList({
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium flex items-center gap-2">
-                      {formatWeekLabel(week.weekStartDate, week.weekEndDate)}
+                      {formatWeekLabel(week.weekStartDate)}
                       {isCurrent && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
                           Now

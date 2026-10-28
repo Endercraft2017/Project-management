@@ -6,6 +6,10 @@ import "./index.css";
 import "highlight.js/styles/github-dark.css";
 
 const ProductTour = lazy(() => import("./pages/ProductTour"));
+const TenantLogin = lazy(() => import("./pages/TenantLogin"));
+const ConsoleLogin = lazy(() => import("./pages/ConsoleLogin"));
+const ConsoleTenants = lazy(() => import("./pages/ConsoleTenants"));
+const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
 const path = window.location.pathname.replace(/\/$/, "") || "/";
 const parameters = new URLSearchParams(window.location.search);
 // Preserve old task/update/email/OAuth links while moving the default root to marketing.
@@ -20,21 +24,17 @@ document.title = showLanding
   ? `${BRAND.name} — ${BRAND.tagline}`
   : `${BRAND.name} Project Manager`;
 
-// Legacy picker clients poll SDK availability on mount. Keep those libraries on app
-// entries while the public landing makes no unrelated Google SDK requests.
-if (!showLanding) {
-  for (const [id, source] of [
-    ["ez-google-api", "https://apis.google.com/js/api.js"],
-    ["ez-google-identity", "https://accounts.google.com/gsi/client"],
-  ]) {
-    if (document.getElementById(id)) continue;
-    const script = document.createElement("script");
-    script.id = id;
-    script.src = source;
-    script.async = true;
-    document.head.appendChild(script);
-  }
-}
+// Google/Drive SDKs are not required for password login or server-side OAuth.
+const AccessPage =
+  path === "/login"
+    ? TenantLogin
+    : path === "/activate"
+      ? ActivateAccount
+      : path === "/console/login"
+        ? ConsoleLogin
+        : path === "/console" || path.startsWith("/console/")
+          ? ConsoleTenants
+          : null;
 
 class TourErrorBoundary extends Component<
   { children: ReactNode },
@@ -93,6 +93,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <ProductTour />
         </Suspense>
       </TourErrorBoundary>
+    ) : AccessPage ? (
+      <Suspense
+        fallback={
+          <main className="ez-access">
+            <p role="status">Loading account access…</p>
+          </main>
+        }
+      >
+        <AccessPage />
+      </Suspense>
     ) : (
       <App />
     )}

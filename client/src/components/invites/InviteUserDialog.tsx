@@ -3,26 +3,21 @@
  * Modal for sending team invitations to new members
  */
 
-import { useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { X, Mail, Copy, Check } from 'lucide-react';
-import { useSendInvite } from '@/hooks/useInvites';
-import { useToast } from '@/contexts/ToastContext';
-import type { Role } from '@/types';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { X, Mail, Copy, Check } from "lucide-react";
+import { useSendInvite } from "@/hooks/useInvites";
+import { useToast } from "@/contexts/toast-context";
+import type { Role } from "@/types";
+import { cn } from "@/lib/utils";
 
 // Validation schema matching backend
 const inviteSchema = z.object({
-  email: z
-    .string()
-    .email('Invalid email format')
-    .refine((email) => email.endsWith('@servicebay.ai'), {
-      message: 'Only @servicebay.ai email addresses are allowed',
-    }),
-  role: z.enum(['ADMIN', 'MEMBER']),
+  email: z.string().email("Invalid email format"),
+  role: z.enum(["ADMIN", "MEMBER"]),
 });
 
 type InviteFormData = z.infer<typeof inviteSchema>;
@@ -49,51 +44,60 @@ export default function InviteUserDialog({
   } = useForm<InviteFormData>({
     resolver: zodResolver(inviteSchema),
     defaultValues: {
-      email: '',
-      role: 'MEMBER' as Role,
+      email: "",
+      role: "MEMBER" as Role,
     },
   });
 
   const onSubmit = async (data: InviteFormData) => {
     try {
       // Cast to SendInviteInput since form validation ensures required fields
-      const result = await sendInviteMutation.mutateAsync(data as { email: string; role: Role });
+      const result = await sendInviteMutation.mutateAsync(
+        data as { email: string; role: Role },
+      );
 
-      // All invitations now require acceptance, show invite link
-      const appUrl = window.location.origin;
-      const link = `${appUrl}/accept-invite?token=${result.token}`;
-      setInviteLink(link);
-
+      const url = new URL(result.setupUrl || "", window.location.origin);
+      if (
+        !result.setupUrl ||
+        url.origin !== window.location.origin ||
+        url.pathname !== "/activate"
+      )
+        throw new Error("Setup link unavailable");
+      setInviteLink(url.href);
       toast({
-        title: 'Invitation sent!',
-        description: `Invitation email sent to ${data.email}`,
-        variant: 'success',
+        title: "Invitation created",
+        description:
+          "Copy the one-time setup link and share it securely. No email has been sent.",
+        variant: "success",
       });
 
       reset();
-    } catch (error: any) {
+    } catch {
       toast({
-        title: 'Failed to send invitation',
-        description: error.response?.data?.message || 'An error occurred',
-        variant: 'error',
+        title: "Failed to send invitation",
+        description: "The invitation could not be created. Please try again.",
+        variant: "error",
       });
     }
   };
 
-  const copyInviteLink = () => {
-    if (inviteLink) {
-      navigator.clipboard.writeText(inviteLink);
+  const copyInviteLink = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
       setCopied(true);
+    } catch {
       toast({
-        title: 'Link copied!',
-        description: 'Invitation link copied to clipboard',
-        variant: 'success',
+        title: "Copy the link manually",
+        description:
+          "Clipboard access is unavailable. Select and copy the setup link.",
+        variant: "error",
       });
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
   const handleClose = () => {
+    if (sendInviteMutation.isPending) return;
     setInviteLink(null);
     setCopied(false);
     reset();
@@ -120,8 +124,8 @@ export default function InviteUserDialog({
           </div>
 
           <Dialog.Description className="text-sm text-muted-foreground">
-            Send an invitation to a new team member. They will receive an email
-            with instructions to join.
+            Create a one-time account setup link for a team member. Copy it now
+            and share it securely. No email is sent.
           </Dialog.Description>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -138,11 +142,11 @@ export default function InviteUserDialog({
                 <input
                   id="email"
                   type="email"
-                  placeholder="name@servicebay.ai"
-                  {...register('email')}
+                  placeholder="name@example.com"
+                  {...register("email")}
                   className={cn(
-                    'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-                    errors.email && 'border-red-500'
+                    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    errors.email && "border-red-500",
                   )}
                 />
               </div>
@@ -161,7 +165,7 @@ export default function InviteUserDialog({
               </label>
               <select
                 id="role"
-                {...register('role')}
+                {...register("role")}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="MEMBER">Member</option>
@@ -175,7 +179,11 @@ export default function InviteUserDialog({
             {/* Invite Link (after successful send) */}
             {inviteLink && (
               <div className="rounded-md bg-muted p-4 space-y-2">
-                <p className="text-sm font-medium">Invitation Link</p>
+                <p className="text-sm font-medium">One-time setup link</p>
+                <p className="text-sm text-muted-foreground">
+                  This link is shown only now. Save it before closing this
+                  dialog. It expires after 24 hours.
+                </p>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -216,10 +224,12 @@ export default function InviteUserDialog({
               </Dialog.Close>
               <button
                 type="submit"
-                disabled={sendInviteMutation.isPending}
+                disabled={sendInviteMutation.isPending || Boolean(inviteLink)}
                 className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
-                {sendInviteMutation.isPending ? 'Sending...' : 'Send Invitation'}
+                {sendInviteMutation.isPending
+                  ? "Creating..."
+                  : "Create invitation"}
               </button>
             </div>
           </form>

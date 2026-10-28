@@ -1,3 +1,4 @@
+import type { DailyUpdate } from '@/hooks/useUpdates';
 /**
  * Core Type Definitions for ServiceBay PM Frontend
  */
@@ -8,6 +9,7 @@ export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED';
 
 export interface User {
   id: string;
+  tenant?: { id: string; code: string; name: string };
   email: string;
   name: string;
   picture?: string;
@@ -36,7 +38,8 @@ export interface Sprint {
 export interface Task {
   id: string;
   taskName: string;
-  sprintId: string;
+  sprintId?: string;
+  sprintName?: string;
   parentTaskId?: string;
   details?: string;
   progress: number;
@@ -149,7 +152,7 @@ export interface File {
 }
 
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -170,7 +173,8 @@ export interface PaginatedResponse<T> {
 // Form Types
 export interface CreateTaskInput {
   taskName: string;
-  sprintId: string;
+  sprintId?: string;
+  sprintName?: string;
   parentTaskId?: string;
   details?: string;
   progress?: number;
@@ -180,6 +184,8 @@ export interface CreateTaskInput {
 }
 
 export interface UpdateTaskInput {
+  parentTaskId?: string | null;
+  sprintName?: string;
   taskName?: string;
   sprintId?: string;
   details?: string;
@@ -209,8 +215,8 @@ export interface TaskFilters {
   assignedToId?: string;
   createdById?: string;
   nestingLevel?: number;
-  progressMin?: number;
-  progressMax?: number;
+  minProgress?: number;
+  maxProgress?: number;
   limit?: number;
 }
 
@@ -226,7 +232,7 @@ export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
 export interface TeamInvite {
   id: string;
   email: string;
-  token?: string; // Only returned on creation
+  setupUrl?: string; // One-use activation URL returned only on creation
   role: Role;
   status: InviteStatus;
   invitedBy: {
@@ -295,8 +301,8 @@ export interface SocketEvents {
 
   // Server to Client
   new_message: (message: Message) => void;
-  message_edited: (data: { messageId: string; content: string }) => void;
-  message_deleted: (messageId: string) => void;
+  message_edited: (data: { id: string; content: string; updatedAt: string }) => void;
+  message_deleted: (data: {id: string; conversationId: string; isDeleted: boolean}) => void;
   user_typing: (data: { userId: string; conversationId: string }) => void;
   user_stopped_typing: (data: {
     userId: string;
@@ -311,7 +317,7 @@ export interface SocketEvents {
   task_updated: (task: Task) => void;
   task_deleted: (taskId: string) => void;
   task_assigned: (data: { task: Task; assignedTo: User }) => void;
-  task_created_by_member: (data: { task: Task; createdBy: User }) => void;
+  task_created_by_member: (data: { task: Task; creator: User; adminId: string }) => void;
   reaction_added: (data: {
     messageId: string;
     reactions: Record<string, string[]>;
@@ -342,7 +348,7 @@ export interface SocketEvents {
   // Daily Updates events
   daily_update_changed: (data: {
     date: Date;
-    update?: any;
+    update?: DailyUpdate;
     deletedId?: string;
   }) => void;
   member_daily_update: (data: {
@@ -435,9 +441,9 @@ export interface WeeklySummaryMembersConfig {
   includedUserIds: string[];
 }
 
-export interface AdminSetting {
+export interface AdminSetting<T = unknown> {
   key: string;
-  value: any;
+  value: T;
   updatedBy: string;
   updatedAt: string;
 }

@@ -1,16 +1,16 @@
 # One design system for the SaaS
 
-Current brand clarification: E-Z, “Skip the basic” / “skip the basic choices,” using the official AFK³/E-Z logo, dark surfaces and orange→blue→cyan accent direction. The public root/landing uses these verified assets; shared BRAND constants also update app identity. The earlier provisional indigo/unnamed-tour notes below describe the first slice, not an outstanding owner branding decision. Full authenticated work-surface restyling remains a later reviewed phase. See EZ-TENANT-AND-LANDING-PLAN.md and erp-reference/brand-review.md.
+Current brand clarification: E-Z, “Skip the basic” / “skip the basic choices,” using the official AFK³/E-Z logo, dark surfaces and orange→blue→cyan accent direction. The public root/landing uses these verified assets; shared BRAND constants also update app identity. The earlier provisional indigo/unnamed-tour notes below describe the first slice, not an outstanding owner branding decision. Authenticated surfaces now consume the shared global palette; legacy component consistency still requires review. See EZ-TENANT-AND-LANDING-PLAN.md and erp-reference/brand-review.md.
 
-2026-10-28 implementation: shared motion timing/easing tokens now live in client/src/index.css. The isolated /tour page uses the existing semantic palette and scoped Swiper styles. Reviewed guidance and provenance for Genjutsu, Taste, Hallmark, Brag and Swiper are in design-research/. Final product name/palette and the wider app rebrand remain pending; this page is a reviewed product-preview slice, not a completed redesign of every authenticated screen.
+2026-10-28 implementation: official shared tokens now cover landing, company login, console and authenticated surfaces. Orange #F7A21B, blue #4D7CFE and cyan #36D7FF are the shared brand accents. Light app primary is a deeper orange with white text; dark app primary is official orange with dark text. Background/surface/text tokens and locally hosted Inter are shared in client/src/index.css. Public display typography uses Manrope. Access pages deliberately retain the dark brand surface in either system theme; project/task surfaces follow light/dark preference.
 
-This is the proposed global UI specification. Existing CSS already has semantic light/dark tokens and shared glass surfaces; preserve useful foundations while replacing inconsistent feature-level controls. Authenticated screens have only been reviewed statically in this audit; do not claim their contrast or accessibility has been validated.
+Shared motion tokens cover press120ms, fast150ms, standard200ms and overlay250ms. Carousel spatial movement has explicit timing, manual-first playback and reduced-motion support. Guidance/provenance is in design-research/. The confirmed identity is no longer an outstanding decision. Legacy component migration and complete accessibility validation remain work to review; shared tokens are not accessibility certification.
 
 ## Ownership and source of truth
 
-One design-system owner maintains tokens, primitives, shell compositions and Storybook. Feature agents consume these components and submit shared changes to that owner rather than invent local variants. Use the existing Tailwind/Radix foundations and add semantic wrappers. Do not introduce a second component framework. Product identity, colors and wording are shared across login, app, settings, billing, email and public pages.
+One design-system owner maintains tokens, primitives and shell compositions. Storybook is a future documentation target, not an installed gate. Feature agents consume these components and submit shared changes to that owner rather than invent local variants. Use the existing Tailwind/Radix foundations and add semantic wrappers. Do not introduce a second component framework. Product identity, colors and wording are shared across login, app, settings, billing, email and public pages.
 
-Until the owner chooses branding, use a neutral functional work surface with restrained existing accent colors. Animated glass/gradients belong mainly to optional chrome; task tables, forms and reports need stable opaque surfaces. Respect reduced motion and provide readable contrast regardless of backdrop.
+Use the confirmed shared semantic palette rather than feature-specific color definitions. Animated glass/gradients belong mainly to optional chrome; task tables, forms and reports need stable opaque surfaces. Respect reduced motion and provide readable contrast regardless of backdrop.
 
 ## Tokens and primitives
 
@@ -24,13 +24,13 @@ Until the owner chooses branding, use a neutral functional work surface with res
 | Data | Card, Table/Tree, filter/selection toolbar, pagination, detail panel and accessible chart alternatives. List density is consistent across modules. |
 | Layout | Workspace AppShell, PageHeader, breadcrumbs/actions, settings layout and responsive sheet patterns; one navigation registry/routing policy. |
 
-Component stories cover light/dark, narrow/wide, long text, loading/error/empty, disabled and keyboard interaction. Enforce shared imports/tokens through lint rules with documented exceptions. Storybook and implementation tokens are the maintained source; a separate design mockup cannot silently drift.
+Component stories cover light/dark, narrow/wide, long text, loading/error/empty, disabled and keyboard interaction. Enforce shared imports/tokens through lint rules with documented exceptions. Implementation tokens are the maintained source; a separate design mockup cannot silently drift.
 
 ## Product routes and flows
 
-Public: product/pricing, sign-in/signup/recovery, legal/support. Account: identity/security, sessions and preferences. Workspace onboarding: create or join workspace, create first project, invite a teammate, create/complete first task. Workspace settings: profile, people/roles, integrations, plan/usage, export/deletion. App: project/task/sprint views followed by retained collaboration/reporting modules.
+Current routes: / and /tour are the public landing; /login is company login; /activate consumes a one-use setup link; /app is the company workspace; /console/login and /console/tenants are the separate operator interface. Provisioning returns a setup link for manual delivery and does not claim email delivery.
 
-Use `/w/:workspaceSlug/...` or another single reviewed routing convention with immutable-ID resolution server-side. Slugs are navigation, not security boundaries. Workspace switching is visible and explicit; account settings and workspace settings cannot be confused. Preserve deep links across sign-in and browser back/forward without granting access from the URL.
+Company code selects a tenant at login; the server-bound session resolves the schema. Names, codes and navigation URLs do not grant access. Operator and company sessions remain separate. Legacy app hashes and query links remain supported.
 
 For every query: loading, empty, error, denied and success are distinct. A network outage must not masquerade as sign-out or an empty dataset. For every mutation: pending, success and failure; preserve entered content on failure, prevent duplicates, provide retry, and roll back optimistic state correctly. Confirm irreversible operations with scope and effect; offer undo when safe. Avoid native blocking alert/confirm in product workflows.
 
@@ -41,7 +41,7 @@ For every query: loading, empty, error, denied and success are distinct. A netwo
 - Test at 360, 768 and 1440px, 200% zoom, long names, long translations, empty projects and dense data. Avoid viewport horizontal scrolling; intentional table/timeline scroll stays local and labeled.
 - Do not rely on color alone for task status/progress or chart meaning. Chart-based workflows have a usable table/text alternative.
 - Define timezone and date-only semantics centrally. Store instants in UTC; distinguish date-only deadlines from timed events; use a consistent locale/timezone formatter.
-- Playwright + axe are automated gates, complemented by manual keyboard/screen-reader review. No automated tool alone certifies accessibility. Visual snapshots need human review for intended changes.
+- Playwright browser regressions and manual visual/keyboard checks are maintained. Axe and screen-reader testing remain additional acceptance coverage. No automated tool alone certifies accessibility. Visual snapshots need human review for intended changes.
 
 ## Definition of visual consistency
 

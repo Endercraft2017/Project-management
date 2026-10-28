@@ -3,7 +3,6 @@
  * Parse and display message content with styled mentions and task mentions
  */
 
-import { useState } from 'react';
 import { useCurrentUser } from '@/hooks/useUsers';
 
 interface MentionHighlightProps {
@@ -19,7 +18,6 @@ const TASK_MENTION_PATTERN = /\$\[([a-f0-9-]{36})\]\(([^)]+)\)/g;
 
 export default function MentionHighlight({
   content,
-  mentions = [],
   onTaskClick,
 }: MentionHighlightProps) {
   const { data: currentUser } = useCurrentUser();

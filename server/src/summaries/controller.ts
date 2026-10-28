@@ -39,7 +39,7 @@ class WeeklySummariesController {
         return res.status(400).json({
           success: false,
           message: 'Invalid request data',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -87,7 +87,7 @@ class WeeklySummariesController {
         return res.status(400).json({
           success: false,
           message: 'Invalid date format',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -126,7 +126,7 @@ class WeeklySummariesController {
         return res.status(400).json({
           success: false,
           message: 'Invalid date format',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -156,7 +156,7 @@ class WeeklySummariesController {
         return res.status(400).json({
           success: false,
           message: 'Invalid query parameters',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -263,7 +263,7 @@ class WeeklySummariesController {
         return res.status(400).json({
           success: false,
           message: 'Invalid date format',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 

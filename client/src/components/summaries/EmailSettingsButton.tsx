@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Email Settings Button (Admin Only)
  * Opens a dialog to configure weekly summary email settings
@@ -6,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Loader2, X } from 'lucide-react';
 import { useEmailConfig, useUpdateEmailConfig } from '@/hooks/useSummaries';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 import type { WeeklySummaryEmailConfig } from '@/types';
 
 export default function EmailSettingsButton() {
@@ -40,10 +41,10 @@ export default function EmailSettingsButton() {
         variant: 'success',
       });
       setIsOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Update failed',
-        description: error.response?.data?.message || 'Failed to update settings',
+        description: apiErrorMessage(error) || 'Failed to update settings',
         variant: 'error',
       });
     }
@@ -122,7 +123,7 @@ export default function EmailSettingsButton() {
                 <select
                   value={formData.sendDay}
                   onChange={(e) =>
-                    setFormData({ ...formData, sendDay: e.target.value as any })
+                    setFormData({ ...formData, sendDay: e.target.value as WeeklySummaryEmailConfig['sendDay'] })
                   }
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 >

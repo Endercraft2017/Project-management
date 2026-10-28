@@ -1,3 +1,10 @@
+@font-face {
+  font-family: "EZ Inter";
+  src: url("/brand/inter-latin-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,25 +17,35 @@
  */
 @layer base {
   :root {
-    --background: 240 33% 97%;
+    /* Official E-Z palette, shared by the landing, console and workspace. */
+    --brand-bg: #080b12;
+    --brand-surface: #111824;
+    --brand-raised: #151e2c;
+    --brand-text: #f5f7fa;
+    --brand-subtle: #aab5c4;
+    --brand-muted: #8a97a9;
+    --brand-orange: #f7a21b;
+    --brand-blue: #4d7cfe;
+    --brand-cyan: #36d7ff;
+    --background: 218 33% 97%;
     --foreground: 240 24% 12%;
     --card: 0 0% 100%;
     --card-foreground: 240 24% 12%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 24% 12%;
-    --primary: 245 75% 60%;
+    --primary: 30 90% 32%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 25% 94%;
     --secondary-foreground: 240 24% 16%;
     --muted: 240 22% 94%;
     --muted-foreground: 240 8% 44%;
-    --accent: 245 60% 95%;
-    --accent-foreground: 245 50% 30%;
+    --accent: 37 80% 94%;
+    --accent-foreground: 30 90% 25%;
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 18% 88%;
     --input: 240 18% 86%;
-    --ring: 245 75% 60%;
+    --ring: 30 90% 32%;
     --radius: 0.75rem;
 
     /* Shared interaction timing; features must respect reduced-motion preferences. */
@@ -39,7 +56,7 @@
     --motion-ease-enter: cubic-bezier(0.2, 0, 0, 1);
 
     /* Glass material */
-    --app-bg: #eef0fb;
+    --app-bg: #eff3f8;
     --glass-bg: rgba(255, 255, 255, 0.55);
     --glass-bg-strong: rgba(255, 255, 255, 0.74);
     --glass-border: rgba(255, 255, 255, 0.75);
@@ -48,45 +65,45 @@
       inset 0 -1px 0 rgba(31, 27, 75, 0.04);
 
     /* Ambient background blobs */
-    --blob-1: #ff7ad1;
-    --blob-2: #6b8cff;
-    --blob-3: #5ff0b8;
-    --blob-opacity: 0.45;
+    --blob-1: var(--brand-orange);
+    --blob-2: var(--brand-blue);
+    --blob-3: var(--brand-cyan);
+    --blob-opacity: 0.2;
   }
 
   .dark {
-    --background: 240 33% 6%;
-    --foreground: 240 20% 96%;
-    --card: 240 24% 10%;
+    --background: 222 38% 5%;
+    --foreground: 216 33% 97%;
+    --card: 218 36% 10%;
     --card-foreground: 240 20% 96%;
-    --popover: 240 24% 11%;
+    --popover: 218 36% 11%;
     --popover-foreground: 240 20% 96%;
-    --primary: 245 85% 70%;
-    --primary-foreground: 240 40% 8%;
+    --primary: 37 93% 54%;
+    --primary-foreground: 222 38% 5%;
     --secondary: 240 18% 16%;
     --secondary-foreground: 240 20% 96%;
     --muted: 240 18% 15%;
     --muted-foreground: 240 10% 66%;
-    --accent: 245 30% 20%;
+    --accent: 218 36% 20%;
     --accent-foreground: 240 20% 96%;
     --destructive: 0 65% 52%;
     --destructive-foreground: 0 0% 100%;
     --border: 240 16% 18%;
     --input: 240 16% 20%;
-    --ring: 245 85% 70%;
+    --ring: 189 100% 61%;
 
-    --app-bg: #0b0b16;
-    --glass-bg: rgba(24, 24, 44, 0.5);
-    --glass-bg-strong: rgba(14, 14, 28, 0.72);
+    --app-bg: var(--brand-bg);
+    --glass-bg: rgba(17, 24, 36, 0.8);
+    --glass-bg-strong: rgba(17, 24, 36, 0.94);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-highlight: rgba(255, 255, 255, 0.07);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.09),
       inset 0 -1px 0 rgba(255, 255, 255, 0.02);
 
-    --blob-1: #ff5ecb;
-    --blob-2: #4d7bff;
-    --blob-3: #3ddc97;
-    --blob-opacity: 0.5;
+    --blob-1: var(--brand-orange);
+    --blob-2: var(--brand-blue);
+    --blob-3: var(--brand-cyan);
+    --blob-opacity: 0.18;
   }
 }
 

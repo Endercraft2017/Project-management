@@ -6,6 +6,7 @@
 
 import {
   LayoutDashboard,
+  FolderKanban,
   CheckSquare,
   GanttChartSquare,
   MessageSquare,
@@ -14,17 +15,18 @@ import {
   TrendingUp,
   Users,
   type LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 export type View =
-  | 'dashboard'
-  | 'tasks'
-  | 'gantt'
-  | 'chat'
-  | 'updates'
-  | 'notes'
-  | 'summaries'
-  | 'team';
+  | "dashboard"
+  | "projects"
+  | "tasks"
+  | "gantt"
+  | "chat"
+  | "updates"
+  | "notes"
+  | "summaries"
+  | "team";
 
 export interface NavItem {
   id: View;
@@ -43,60 +45,81 @@ export interface NavSection {
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    label: 'Overview',
+    label: "Overview",
     items: [
       {
-        id: 'dashboard',
-        label: 'Dashboard',
-        description: 'Progress, workload, and trends at a glance',
+        id: "dashboard",
+        label: "Dashboard",
+        description: "Progress, workload, and trends at a glance",
         icon: LayoutDashboard,
       },
     ],
   },
   {
-    label: 'Plan & track',
+    label: "Plan & track",
     items: [
-      { id: 'tasks', label: 'Tasks', description: 'Plan, assign, and track work', icon: CheckSquare },
       {
-        id: 'gantt',
-        label: 'Gantt',
-        description: 'Schedule and timelines across sprints',
+        id: "projects",
+        label: "Projects",
+        description: "Organize company projects and their backlog",
+        icon: FolderKanban,
+      },
+      {
+        id: "tasks",
+        label: "Tasks",
+        description: "Plan, assign, and track work",
+        icon: CheckSquare,
+      },
+      {
+        id: "gantt",
+        label: "Gantt",
+        description: "Schedule and timelines across sprints",
         icon: GanttChartSquare,
       },
     ],
   },
   {
-    label: 'Collaborate',
+    label: "Collaborate",
     items: [
-      { id: 'chat', label: 'Chat', description: 'Conversations with your team', icon: MessageSquare },
       {
-        id: 'updates',
-        label: 'Daily updates',
-        shortLabel: 'Updates',
-        description: 'What everyone worked on each day',
+        id: "chat",
+        label: "Chat",
+        description: "Conversations with your team",
+        icon: MessageSquare,
+      },
+      {
+        id: "updates",
+        label: "Daily updates",
+        shortLabel: "Updates",
+        description: "What everyone worked on each day",
         icon: FileText,
       },
-      { id: 'notes', label: 'Notes', description: 'Personal notes and reminders', icon: StickyNote },
+      {
+        id: "notes",
+        label: "Notes",
+        description: "Personal notes and reminders",
+        icon: StickyNote,
+      },
     ],
   },
   {
-    label: 'Report',
+    label: "Report",
     items: [
       {
-        id: 'summaries',
-        label: 'Weekly summaries',
-        description: 'AI-generated weekly recaps',
+        id: "summaries",
+        label: "Weekly summaries",
+        description: "AI-generated weekly recaps",
         icon: TrendingUp,
       },
     ],
   },
   {
-    label: 'Admin',
+    label: "Admin",
     items: [
       {
-        id: 'team',
-        label: 'Team',
-        description: 'Members and pending invitations',
+        id: "team",
+        label: "Team",
+        description: "Members and pending invitations",
         icon: Users,
         adminOnly: true,
       },
@@ -105,7 +128,7 @@ export const NAV_SECTIONS: NavSection[] = [
 ];
 
 /** Primary destinations shown in the mobile dock (thumb reach). */
-export const DOCK_VIEWS: View[] = ['dashboard', 'tasks', 'chat', 'updates'];
+export const DOCK_VIEWS: View[] = ["dashboard", "tasks", "chat", "updates"];
 
 const ALL_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
 

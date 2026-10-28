@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, get, post, patch, del } from '@/lib/api';
+import { api, post } from '@/lib/api';
 
 export interface Conversation {
   id: string;

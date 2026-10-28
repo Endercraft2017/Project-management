@@ -2,8 +2,9 @@
  * Custom hooks for Weekly Summaries API
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { get, post, put, del } from '@/lib/api';
+import { useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { get, post, put, del } from "@/lib/api";
 import type {
   WeeklySummary,
   GroupedWeeklySummary,
@@ -12,21 +13,24 @@ import type {
   WeeklySummaryMembersConfig,
   AutomatedReminderConfig,
   AdminSetting,
-} from '@/types';
+} from "@/types";
 
 // Query Keys
 export const SUMMARIES_KEYS = {
-  all: ['summaries'] as const,
-  list: () => [...SUMMARIES_KEYS.all, 'list'] as const,
-  byWeek: (weekDate: string) => [...SUMMARIES_KEYS.all, 'week', weekDate] as const,
-  grouped: (weekDate: string) => [...SUMMARIES_KEYS.all, 'grouped', weekDate] as const,
+  all: ["summaries"] as const,
+  list: () => [...SUMMARIES_KEYS.all, "list"] as const,
+  byWeek: (weekDate: string) =>
+    [...SUMMARIES_KEYS.all, "week", weekDate] as const,
+  grouped: (weekDate: string) =>
+    [...SUMMARIES_KEYS.all, "grouped", weekDate] as const,
 };
 
 export const ADMIN_KEYS = {
-  all: ['admin'] as const,
-  emailConfig: () => [...ADMIN_KEYS.all, 'email-config'] as const,
-  membersConfig: () => [...ADMIN_KEYS.all, 'members-config'] as const,
-  automatedReminderConfig: () => [...ADMIN_KEYS.all, 'automated-reminder-config'] as const,
+  all: ["admin"] as const,
+  emailConfig: () => [...ADMIN_KEYS.all, "email-config"] as const,
+  membersConfig: () => [...ADMIN_KEYS.all, "members-config"] as const,
+  automatedReminderConfig: () =>
+    [...ADMIN_KEYS.all, "automated-reminder-config"] as const,
 };
 
 /**
@@ -64,29 +68,55 @@ export function useWeeklySummary(weekDate: string) {
 export function useGroupedWeeklySummary(weekDate: string) {
   return useQuery({
     queryKey: SUMMARIES_KEYS.grouped(weekDate),
-    queryFn: () => get<GroupedWeeklySummary>(`/api/summaries/${weekDate}/grouped`),
+    queryFn: () =>
+      get<GroupedWeeklySummary>(`/api/summaries/${weekDate}/grouped`),
     enabled: !!weekDate,
   });
 }
 
-/**
- * Generate a weekly summary (Admin only)
- */
-export function useGenerateSummary() {
-  const queryClient = useQueryClient();
+export interface SummaryJob {
+  id: string;
+  status: "QUEUED" | "RUNNING" | "DONE" | "FAILED";
+  attempts: number;
+  maxAttempts: number;
+  errorCode: string | null;
+  createdAt: string;
+  finishedAt: string | null;
+}
 
+/** Enqueue one durable job; acceptance is not successful generation. */
+export function useGenerateSummary() {
   return useMutation({
     mutationFn: (weekDate: string) =>
-      post<WeeklySummary>('/api/summaries/generate', { weekDate }),
-    onSuccess: (data) => {
-      // Invalidate and refetch summaries
-      queryClient.invalidateQueries({ queryKey: SUMMARIES_KEYS.all });
+      post<{ jobId: string; status: SummaryJob["status"]; weekDate: string }>(
+        "/api/summaries/generate",
+        { weekDate },
+      ),
+  });
+}
 
-      // Set the new summary in cache
-      const weekDate = data.weekStartDate.split('T')[0];
-      queryClient.setQueryData(SUMMARIES_KEYS.byWeek(weekDate), data);
+/** Poll only while a job is active, then refresh the persisted summary. */
+export function useSummaryJob(jobId: string | null) {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: [...SUMMARIES_KEYS.all, "job", jobId],
+    queryFn: () =>
+      get<SummaryJob>(`/api/summaries/jobs/${encodeURIComponent(jobId!)}`),
+    enabled: !!jobId,
+    retry: false,
+    refetchInterval: (result) => {
+      const status = result.state.data?.status;
+      return result.state.error || status === "DONE" || status === "FAILED"
+        ? false
+        : 2000;
     },
   });
+  useEffect(() => {
+    if (query.data?.status === "DONE") {
+      void queryClient.invalidateQueries({ queryKey: SUMMARIES_KEYS.all });
+    }
+  }, [query.data?.status, queryClient]);
+  return query;
 }
 
 /**
@@ -99,11 +129,13 @@ export function useSendSummaryEmail() {
     mutationFn: (weekDate: string) =>
       post<{ success: boolean; message: string }>(
         `/api/summaries/${weekDate}/send-email`,
-        {}
+        {},
       ),
     onSuccess: (_, weekDate) => {
       // Invalidate the summary to refresh emailSentAt
-      queryClient.invalidateQueries({ queryKey: SUMMARIES_KEYS.byWeek(weekDate) });
+      queryClient.invalidateQueries({
+        queryKey: SUMMARIES_KEYS.byWeek(weekDate),
+      });
     },
   });
 }
@@ -131,7 +163,9 @@ export function useEmailConfig() {
   return useQuery({
     queryKey: ADMIN_KEYS.emailConfig(),
     queryFn: () =>
-      get<WeeklySummaryEmailConfig>('/api/admin/settings/weekly-summary-email/config'),
+      get<WeeklySummaryEmailConfig>(
+        "/api/admin/settings/weekly-summary-email/config",
+      ),
   });
 }
 
@@ -143,7 +177,10 @@ export function useUpdateEmailConfig() {
 
   return useMutation({
     mutationFn: (config: WeeklySummaryEmailConfig) =>
-      put<AdminSetting>('/api/admin/settings/weekly-summary-email/config', config),
+      put<AdminSetting>(
+        "/api/admin/settings/weekly-summary-email/config",
+        config,
+      ),
     onSuccess: () => {
       // Invalidate email config
       queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.emailConfig() });
@@ -159,7 +196,7 @@ export function useMembersConfig() {
     queryKey: ADMIN_KEYS.membersConfig(),
     queryFn: async () => {
       const response = await get<WeeklySummaryMembersConfig | null>(
-        '/api/admin/settings/weekly-summary-members/config'
+        "/api/admin/settings/weekly-summary-members/config",
       );
       return response;
     },
@@ -174,7 +211,10 @@ export function useUpdateMembersConfig() {
 
   return useMutation({
     mutationFn: (config: WeeklySummaryMembersConfig) =>
-      put<AdminSetting>('/api/admin/settings/weekly-summary-members/config', config),
+      put<AdminSetting>(
+        "/api/admin/settings/weekly-summary-members/config",
+        config,
+      ),
     onSuccess: () => {
       // Invalidate members config
       queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.membersConfig() });
@@ -189,7 +229,9 @@ export function useAutomatedReminderConfig() {
   return useQuery({
     queryKey: ADMIN_KEYS.automatedReminderConfig(),
     queryFn: () =>
-      get<AutomatedReminderConfig>('/api/admin/settings/automated-reminder/config'),
+      get<AutomatedReminderConfig>(
+        "/api/admin/settings/automated-reminder/config",
+      ),
   });
 }
 
@@ -201,10 +243,15 @@ export function useUpdateAutomatedReminderConfig() {
 
   return useMutation({
     mutationFn: (config: AutomatedReminderConfig) =>
-      put<AdminSetting>('/api/admin/settings/automated-reminder/config', config),
+      put<AdminSetting>(
+        "/api/admin/settings/automated-reminder/config",
+        config,
+      ),
     onSuccess: () => {
       // Invalidate automated reminder config
-      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.automatedReminderConfig() });
+      queryClient.invalidateQueries({
+        queryKey: ADMIN_KEYS.automatedReminderConfig(),
+      });
     },
   });
 }

@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Gantt Toolbar Component
  * Controls for view mode, filters, and export
@@ -33,7 +34,6 @@ export default function GanttToolbar({
     const sprint = sprints.find((s) => s.id === sprintId);
     if (!sprint) return;
 
-    const taskCount = (sprint as any)._count?.tasks || 0;
 
     try {
       await deleteSprint.mutateAsync({
@@ -45,9 +45,9 @@ export default function GanttToolbar({
       if (selectedSprint === sprintId) {
         onSprintChange('');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to delete sprint:', error);
-      alert(error?.response?.data?.message || 'Failed to delete sprint');
+      alert(apiErrorMessage(error) || 'Failed to delete sprint');
     }
   };
 
@@ -113,7 +113,7 @@ export default function GanttToolbar({
       {/* Delete Confirmation Modal */}
       {deleteConfirmSprintId && (() => {
         const sprint = sprints.find((s) => s.id === deleteConfirmSprintId);
-        const taskCount = (sprint as any)?._count?.tasks || 0;
+        const taskCount = sprint?._count?.tasks || 0;
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">

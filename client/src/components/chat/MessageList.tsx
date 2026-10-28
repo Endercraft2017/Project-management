@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from 'react';
 import { RefreshCw, ArrowLeft } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useMessages, messageKeys } from '@/hooks/useMessages';
 import type { Message } from '@/hooks/useMessages';
 import { useCurrentUser } from '@/hooks/useUsers';
@@ -50,12 +50,12 @@ export default function MessageList({ conversationId, onOpenThread, onEditMessag
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     };
 
-    const handleMessageEdited = (data: any) => {
+    const handleMessageEdited = (data: Pick<Message, 'id' | 'content' | 'updatedAt'>) => {
       console.log('[MessageList] Message edit event received:', data);
       // Optimistically update the cache
       queryClient.setQueryData(
         messageKeys.conversation(conversationId),
-        (oldData: any) => {
+        (oldData: InfiniteData<{messages: Message[]; hasMore: boolean}> | undefined) => {
           if (!oldData) {
             console.log('[MessageList] No oldData in cache for edit');
             return oldData;
@@ -64,7 +64,7 @@ export default function MessageList({ conversationId, onOpenThread, onEditMessag
           console.log('[MessageList] Updating edited message in cache:', data.id);
           return {
             ...oldData,
-            pages: oldData.pages.map((page: any) => ({
+            pages: oldData.pages.map((page) => ({
               ...page,
               messages: page.messages.map((msg: Message) =>
                 msg.id === data.id
@@ -83,16 +83,16 @@ export default function MessageList({ conversationId, onOpenThread, onEditMessag
       console.log('[MessageList] Edit cache updated');
     };
 
-    const handleMessageDeleted = (data: any) => {
+    const handleMessageDeleted = (data: {id: string}) => {
       // Optimistically update the cache
       queryClient.setQueryData(
         messageKeys.conversation(conversationId),
-        (oldData: any) => {
+        (oldData: InfiniteData<{messages: Message[]; hasMore: boolean}> | undefined) => {
           if (!oldData) return oldData;
 
           return {
             ...oldData,
-            pages: oldData.pages.map((page: any) => ({
+            pages: oldData.pages.map((page) => ({
               ...page,
               messages: page.messages.map((msg: Message) =>
                 msg.id === data.id
@@ -105,12 +105,12 @@ export default function MessageList({ conversationId, onOpenThread, onEditMessag
       );
     };
 
-    const handleReactionChange = (data: any) => {
+    const handleReactionChange = (data: {messageId: string; reactions: Record<string, string[]>}) => {
       console.log('[MessageList] Reaction event received:', data);
       // Optimistically update the cache with reaction data
       queryClient.setQueryData(
         messageKeys.conversation(conversationId),
-        (oldData: any) => {
+        (oldData: InfiniteData<{messages: Message[]; hasMore: boolean}> | undefined) => {
           if (!oldData) {
             console.log('[MessageList] No oldData in cache for reactions');
             return oldData;
@@ -119,7 +119,7 @@ export default function MessageList({ conversationId, onOpenThread, onEditMessag
           console.log('[MessageList] Updating reactions in cache for message:', data.messageId);
           return {
             ...oldData,
-            pages: oldData.pages.map((page: any) => ({
+            pages: oldData.pages.map((page) => ({
               ...page,
               messages: page.messages.map((msg: Message) =>
                 msg.id === data.messageId
@@ -133,16 +133,16 @@ export default function MessageList({ conversationId, onOpenThread, onEditMessag
       console.log('[MessageList] Reaction cache updated');
     };
 
-    const handleThreadReplyAdded = (data: any) => {
+    const handleThreadReplyAdded = (data: {parentMessageId: string}) => {
       // Update thread reply count
       queryClient.setQueryData(
         messageKeys.conversation(conversationId),
-        (oldData: any) => {
+        (oldData: InfiniteData<{messages: Message[]; hasMore: boolean}> | undefined) => {
           if (!oldData) return oldData;
 
           return {
             ...oldData,
-            pages: oldData.pages.map((page: any) => ({
+            pages: oldData.pages.map((page) => ({
               ...page,
               messages: page.messages.map((msg: Message) =>
                 msg.id === data.parentMessageId
@@ -171,7 +171,7 @@ export default function MessageList({ conversationId, onOpenThread, onEditMessag
       off('thread_reply_added', handleThreadReplyAdded);
       leaveConversation(conversationId);
     };
-  }, [conversationId, queryClient]);
+  }, [conversationId, queryClient, refetch]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView();

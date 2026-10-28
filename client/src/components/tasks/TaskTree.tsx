@@ -13,7 +13,7 @@ import TaskNode from './TaskNode';
 import TaskForm from './TaskForm';
 import TaskImport from './TaskImport';
 import TaskDetailDrawer from './TaskDetailDrawer';
-import type { Task, Sprint, TaskFilters as TaskFiltersType } from '@/types';
+import type { Task, TaskFilters as TaskFiltersType } from '@/types';
 
 export default function TaskTree() {
   const [filters, setFilters] = useState<TaskFiltersType>({});
@@ -30,8 +30,8 @@ export default function TaskTree() {
   const deleteAllTasks = useDeleteAllTasks();
   const deleteSprintTasks = useDeleteSprintTasks();
 
-  const tasks = Array.isArray(tasksData?.data) ? tasksData.data : [];
-  const sprints = Array.isArray(sprintsData?.data) ? sprintsData.data : [];
+  const tasks = useMemo(() => Array.isArray(tasksData?.data) ? tasksData.data : [], [tasksData]);
+  const sprints = useMemo(() => Array.isArray(sprintsData?.data) ? sprintsData.data : [], [sprintsData]);
 
   // Debug logging
   console.log('TaskTree Debug:', {

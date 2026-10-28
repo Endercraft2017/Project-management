@@ -1,10 +1,11 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Send Email Button (Admin Only)
  */
 
 import { Mail, Loader2 } from 'lucide-react';
 import { useSendSummaryEmail } from '@/hooks/useSummaries';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 
 interface SendEmailButtonProps {
   weekDate: string;
@@ -22,8 +23,8 @@ export default function SendEmailButton({ weekDate }: SendEmailButtonProps) {
         description: result.message || 'Weekly summary has been emailed',
         variant: 'success',
       });
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to send email';
+    } catch (error: unknown) {
+      const message = apiErrorMessage(error) || 'Failed to send email';
       toast({
         title: 'Email failed',
         description: message,

@@ -28,16 +28,7 @@ export function CsvModal({ fileId, fileName, fileSize, webViewLink, onClose }: C
     document.addEventListener('keydown', handleEscape);
     document.body.style.overflow = 'hidden';
 
-    // Load file content
-    loadContent();
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [onClose, fileId]);
-
-  const loadContent = async () => {
+    const loadContent = async () => {
     try {
       const response = await fetch(downloadUrl, {
         credentials: 'include',
@@ -49,13 +40,22 @@ export function CsvModal({ fileId, fileName, fileSize, webViewLink, onClose }: C
 
       const text = await response.text();
       setContent(text);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[CsvModal] Error loading file:', err);
-      setError(err.message || 'Failed to load file content');
+      setError(err instanceof Error ? err.message : 'Failed to load file content');
     } finally {
       setIsLoading(false);
     }
   };
+
+    loadContent();
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [onClose, downloadUrl]);
+
 
   const handleCopy = async () => {
     try {

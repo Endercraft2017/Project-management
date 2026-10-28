@@ -1,13 +1,13 @@
 {
-  "captured_at": "2026-10-28T02:30:16.026159+00:00",
-  "source_base_commit": "c966c149eecfedb36acfb5e1d3b87705c39096cb",
-  "source_worktree_note": "Screens use actual current application components with uncommitted E-Z branding changes in Sidebar and shared brand constants. Component hashes identify captured source state; this is not claimed to be a production release.",
-  "capture_script": "/workspace/ez-brand-work/capture-actual-app.cjs",
-  "capture_script_sha256": "3df000d76cc98234349109b4a93c218dc8f7802dad7e82d594cbe4417aac6008",
-  "fixture": "/workspace/ez-brand-work/synthetic-app-fixture.json",
+  "captured_at": "2026-10-28T04:49:08.142Z",
+  "source_base_commit": "f3cd5ed44714b939ad62fd83602c1c346427491c",
+  "source_worktree_note": "Actual current application components with the reviewed production-branch E-Z tokens and source. Read-only browser fixtures replace API reads; these images do not prove authentication or functional saves.",
+  "capture_script": "docs/saas/evidence/ez-landing/capture-actual-app.cjs",
+  "capture_script_sha256": "37a75ec936751386e1726f0e34943ed96553df9044a7cdea4328cf88e4e6874a",
+  "fixture": "docs/saas/evidence/ez-landing/synthetic-app-fixture.json",
   "fixture_sha256": "aff8fb914b7885c1c033029c59aeff36e6cf18fe2759a187558e03c34d46b694",
   "method": "Playwright Chromium screenshot of real locally rendered app routes. Browser-only GET fixtures replace API reads; all nonlocal requests blocked, all WebSockets closed, nonGET writes aborted. No real backend/auth/session/customer data.",
-  "runtime": "Vite dev server with NODE_ENV=production so actual production conditional hides development tools; no injected image or layout styling; light theme and reduced motion via normal browser preferences.",
+  "runtime": "Local Vite development server on 127.0.0.1:5181; light theme, reduced motion and ambient motion off through browser preferences. Developer query tools are disabled by default.",
   "caption_required": "Demo data \u00b7 actual application UI",
   "not_validated": [
     "real authentication",
@@ -30,19 +30,17 @@
       "deviceScaleFactor": 1,
       "theme": "light",
       "caption": "Demo data \u00b7 actual application UI",
-      "capturedAt": "2026-10-28T02:29:13.152Z",
-      "sha256": "01ef2de1fac7f95971ff84592d61842fcfe93d1742def12e9a4f2c39e14848e6",
-      "bytes": 258932,
+      "capturedAt": "2026-10-28T04:49:00.368Z",
+      "sha256": "61f44930abd0f7e66c583d7919b053acdcaeec0d8388f57074c3b461b1dfe2c2",
+      "bytes": 257683,
       "component": "client/src/components/summary/SummaryView.tsx",
       "pageErrors": [],
       "blockedNonFixture": [
-        "https://cdn.jsdelivr.net",
-        "https://apis.google.com",
-        "https://accounts.google.com"
+        "https://cdn.jsdelivr.net"
       ],
       "writesAttempted": [],
       "source_component_sha256": "0698423ce1971dac94861f153f6286f769780ad52b026f1deee063789a1fa5bb",
-      "visually_inspected": true
+      "visually_inspected": false
     },
     {
       "file": "ez-tasks-demo.png",
@@ -54,18 +52,16 @@
       "deviceScaleFactor": 1,
       "theme": "light",
       "caption": "Demo data \u00b7 actual application UI",
-      "capturedAt": "2026-10-28T02:29:16.091Z",
-      "sha256": "dbbdbcd6cabceb380c83912a9dae3074c62b92a2bf3c62ffecc188e226ea66f8",
-      "bytes": 280459,
+      "capturedAt": "2026-10-28T04:49:03.113Z",
+      "sha256": "25e361bbd730b847fc8c0d6e1e758e2a588265132f235c74a08a0052902fdaa7",
+      "bytes": 284255,
       "component": "client/src/components/tasks/TaskTree.tsx",
       "pageErrors": [],
       "blockedNonFixture": [
-        "https://cdn.jsdelivr.net",
-        "https://apis.google.com",
-        "https://accounts.google.com"
+        "https://cdn.jsdelivr.net"
       ],
       "writesAttempted": [],
-      "source_component_sha256": "4abc79d82ee7bcda025fe43fef0118d03409594fc00c12869ecca93c6b7fde49",
+      "source_component_sha256": "cf1259bc8486d3fe03febb51d3a56965b9f58beb2e3e1b73b95c63415a09d2c6",
       "visually_inspected": true
     },
     {
@@ -78,19 +74,17 @@
       "deviceScaleFactor": 1,
       "theme": "light",
       "caption": "Demo data \u00b7 actual application UI",
-      "capturedAt": "2026-10-28T02:29:18.599Z",
-      "sha256": "5fadea52ae21bc1fe1588346bdce77fbd15c55ec10ec7a637b401924b443de83",
-      "bytes": 202453,
+      "capturedAt": "2026-10-28T04:49:05.349Z",
+      "sha256": "60b184dd962c8d168fbb280a152ee2c3e9daf17469cd6573f12b5ec6f86ac161",
+      "bytes": 191946,
       "component": "client/src/components/gantt/GanttView.tsx",
       "pageErrors": [],
       "blockedNonFixture": [
-        "https://cdn.jsdelivr.net",
-        "https://apis.google.com",
-        "https://accounts.google.com"
+        "https://cdn.jsdelivr.net"
       ],
       "writesAttempted": [],
-      "source_component_sha256": "7821bbe0562b97c09c32843293364dbfb4c0b1410afc414df2f1d9c2fbeffc6d",
-      "visually_inspected": true
+      "source_component_sha256": "bf3468045ac7179048e37312d1f6d0b32783dc67e449489ca07800804d70b690",
+      "visually_inspected": false
     },
     {
       "file": "ez-chat-demo.png",
@@ -102,18 +96,16 @@
       "deviceScaleFactor": 1,
       "theme": "light",
       "caption": "Demo data \u00b7 actual application UI",
-      "capturedAt": "2026-10-28T02:29:21.731Z",
-      "sha256": "055a086287b1811830829fb9b34713aab1fd9578186ce5f7ab8ee60cfc8ab855",
-      "bytes": 258836,
+      "capturedAt": "2026-10-28T04:49:08.142Z",
+      "sha256": "ac67acf676f8be6adeaf4b32852eebbfe5e1cdd879ca044be3492ab6508e4c72",
+      "bytes": 232878,
       "component": "client/src/components/chat/ChatView.tsx",
       "pageErrors": [],
       "blockedNonFixture": [
-        "https://cdn.jsdelivr.net",
-        "https://apis.google.com",
-        "https://accounts.google.com"
+        "https://cdn.jsdelivr.net"
       ],
       "writesAttempted": [],
-      "source_component_sha256": "e08d36fd13b9bbd534e89349edf8151cbaba4933e42e35ffd9535e65da08cdd1",
+      "source_component_sha256": "6323ef062e0a0ad86f5cc2a86e466e470c9e3c94ebd0b7e46b8795831d428b8f",
       "visually_inspected": true
     }
   ]

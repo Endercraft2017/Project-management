@@ -3,8 +3,8 @@
  * Request handlers for sprint-related operations
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { sprintService } from './service';
+import { Request, Response, NextFunction } from "express";
+import { sprintService } from "./service";
 import {
   listSprintsQuerySchema,
   createSprintSchema,
@@ -13,8 +13,8 @@ import {
   getSprintTasksQuerySchema,
   deleteSprintQuerySchema,
   getSprintQuerySchema,
-} from './validators';
-import { ZodError } from 'zod';
+} from "./validators";
+import { ZodError } from "zod";
 
 export class SprintController {
   /**
@@ -35,9 +35,9 @@ export class SprintController {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
-          message: 'Invalid query parameters',
-          details: error.errors,
+          error: "Validation Error",
+          message: "Invalid query parameters",
+          details: error.issues,
         });
       }
       next(error);
@@ -53,13 +53,18 @@ export class SprintController {
       const sprintId = uuidSchema.parse(req.params.id);
       const { includeTasks } = getSprintQuerySchema.parse(req.query);
 
-      const sprint = await sprintService.getSprintById(sprintId, includeTasks);
+      const sprint = await sprintService.getSprintById(
+        sprintId,
+        includeTasks,
+        req.user!.id,
+        req.user!.role === "ADMIN",
+      );
 
       if (!sprint) {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Sprint not found',
+          error: "Not Found",
+          message: "Sprint not found",
         });
       }
 
@@ -71,9 +76,9 @@ export class SprintController {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
-          message: 'Invalid sprint ID',
-          details: error.errors,
+          error: "Validation Error",
+          message: "Invalid sprint ID",
+          details: error.issues,
         });
       }
       next(error);
@@ -91,14 +96,14 @@ export class SprintController {
       // Check for overlapping sprints
       const hasOverlap = await sprintService.checkSprintOverlap(
         data.startDate,
-        data.endDate
+        data.endDate,
       );
 
       if (hasOverlap) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
-          message: 'Sprint dates overlap with an existing sprint',
+          error: "Validation Error",
+          message: "Sprint dates overlap with an existing sprint",
         });
       }
 
@@ -106,21 +111,21 @@ export class SprintController {
 
       // Log sprint creation for audit
       console.log(
-        `Sprint created: "${sprint.name}" (${sprint.id}) by ${req.user?.email}`
+        `Sprint created: "${sprint.name}" (${sprint.id}) by ${req.user?.email}`,
       );
 
       res.status(201).json({
         success: true,
-        message: 'Sprint created successfully',
+        message: "Sprint created successfully",
         data: sprint,
       });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
-          message: 'Invalid input',
-          details: error.errors,
+          error: "Validation Error",
+          message: "Invalid input",
+          details: error.issues,
         });
       }
       next(error);
@@ -139,13 +144,18 @@ export class SprintController {
       // If dates are being updated, check for overlaps
       if (data.startDate || data.endDate) {
         // Get existing sprint to use current dates if not provided
-        const existingSprint = await sprintService.getSprintById(sprintId);
+        const existingSprint = await sprintService.getSprintById(
+          sprintId,
+          false,
+          req.user!.id,
+          req.user!.role === "ADMIN",
+        );
 
         if (!existingSprint) {
           return res.status(404).json({
             success: false,
-            error: 'Not Found',
-            message: 'Sprint not found',
+            error: "Not Found",
+            message: "Sprint not found",
           });
         }
 
@@ -155,14 +165,14 @@ export class SprintController {
         const hasOverlap = await sprintService.checkSprintOverlap(
           startDate,
           endDate,
-          sprintId // Exclude current sprint from overlap check
+          sprintId, // Exclude current sprint from overlap check
         );
 
         if (hasOverlap) {
           return res.status(400).json({
             success: false,
-            error: 'Validation Error',
-            message: 'Sprint dates overlap with another sprint',
+            error: "Validation Error",
+            message: "Sprint dates overlap with another sprint",
           });
         }
       }
@@ -171,39 +181,39 @@ export class SprintController {
 
       // Log sprint update for audit
       console.log(
-        `Sprint updated: "${sprint.name}" (${sprint.id}) by ${req.user?.email}`
+        `Sprint updated: "${sprint.name}" (${sprint.id}) by ${req.user?.email}`,
       );
 
       res.json({
         success: true,
-        message: 'Sprint updated successfully',
+        message: "Sprint updated successfully",
         data: sprint,
       });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
-          message: 'Invalid input',
-          details: error.errors,
+          error: "Validation Error",
+          message: "Invalid input",
+          details: error.issues,
         });
       }
 
-      if (error instanceof Error && error.message === 'Sprint not found') {
+      if (error instanceof Error && error.message === "Sprint not found") {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Sprint not found',
+          error: "Not Found",
+          message: "Sprint not found",
         });
       }
 
       if (
         error instanceof Error &&
-        error.message === 'End date must be after start date'
+        error.message === "End date must be after start date"
       ) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
+          error: "Validation Error",
           message: error.message,
         });
       }
@@ -219,9 +229,15 @@ export class SprintController {
   async deleteSprint(req: Request, res: Response, next: NextFunction) {
     try {
       const sprintId = uuidSchema.parse(req.params.id);
-      const { moveTasksToBacklog, deleteTasks } = deleteSprintQuerySchema.parse(req.query);
+      const { moveTasksToBacklog, deleteTasks } = deleteSprintQuerySchema.parse(
+        req.query,
+      );
 
-      await sprintService.deleteSprint(sprintId, moveTasksToBacklog, deleteTasks);
+      await sprintService.deleteSprint(
+        sprintId,
+        moveTasksToBacklog,
+        deleteTasks,
+      );
 
       // Log sprint deletion for audit
       console.log(`Sprint deleted: ${sprintId} by ${req.user?.email}`);
@@ -231,32 +247,37 @@ export class SprintController {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
-          message: 'Invalid sprint ID',
-          details: error.errors,
+          error: "Validation Error",
+          message: "Invalid sprint ID",
+          details: error.issues,
         });
       }
 
-      if (error instanceof Error && error.message === 'Sprint not found') {
+      if (error instanceof Error && error.message === "Sprint not found") {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Sprint not found',
+          error: "Not Found",
+          message: "Sprint not found",
         });
       }
 
-      if (error instanceof Error && error.message.includes('Sprint has')) {
+      if (error instanceof Error && error.message.includes("Sprint has")) {
         return res.status(400).json({
           success: false,
-          error: 'Conflict',
+          error: "Conflict",
           message: error.message,
         });
       }
 
-      if (error instanceof Error && error.message.includes('Cannot use both deleteTasks and moveTasksToBacklog')) {
+      if (
+        error instanceof Error &&
+        error.message.includes(
+          "Cannot use both deleteTasks and moveTasksToBacklog",
+        )
+      ) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
+          error: "Validation Error",
           message: error.message,
         });
       }
@@ -274,7 +295,12 @@ export class SprintController {
       const sprintId = uuidSchema.parse(req.params.id);
       const query = getSprintTasksQuerySchema.parse(req.query);
 
-      const result = await sprintService.getSprintTasks(sprintId, query);
+      const result = await sprintService.getSprintTasks(
+        sprintId,
+        query,
+        req.user!.id,
+        req.user!.role === "ADMIN",
+      );
 
       res.json({
         success: true,
@@ -284,17 +310,17 @@ export class SprintController {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
-          error: 'Validation Error',
-          message: 'Invalid parameters',
-          details: error.errors,
+          error: "Validation Error",
+          message: "Invalid parameters",
+          details: error.issues,
         });
       }
 
-      if (error instanceof Error && error.message === 'Sprint not found') {
+      if (error instanceof Error && error.message === "Sprint not found") {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'Sprint not found',
+          error: "Not Found",
+          message: "Sprint not found",
         });
       }
 
@@ -313,8 +339,8 @@ export class SprintController {
       if (!sprint) {
         return res.status(404).json({
           success: false,
-          error: 'Not Found',
-          message: 'No active sprint found',
+          error: "Not Found",
+          message: "No active sprint found",
         });
       }
 

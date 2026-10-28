@@ -11,21 +11,21 @@ const router = Router();
 
 /**
  * POST /api/invites
- * Send a new invitation
+ * Create a copy-once account activation link (no automatic email)
  * Auth: Admin only
  */
 router.post('/', isAuthenticated, isAdmin, inviteController.sendInvite);
 
 /**
  * POST /api/invites/accept
- * Accept an invitation
+ * Retired: use company-bound /api/auth/activate with a password
  * Auth: Public (no authentication required)
  */
 router.post('/accept', inviteController.acceptInvite);
 
 /**
  * GET /api/invites/validate
- * Validate invitation token
+ * Retired: legacy invitation tokens are not accepted
  * Auth: Public (no authentication required)
  */
 router.get('/validate', inviteController.validateInvite);
@@ -39,7 +39,7 @@ router.get('/', isAuthenticated, isAdmin, inviteController.listInvites);
 
 /**
  * POST /api/invites/:id/resend
- * Resend invitation email
+ * Retired: setup links are non-recoverable; revoke and recreate
  * Auth: Admin only
  */
 router.post('/:id/resend', isAuthenticated, isAdmin, inviteController.resendInvite);

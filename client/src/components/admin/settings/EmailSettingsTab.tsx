@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Email Settings Tab
  * Configuration for automated weekly summary emails
@@ -6,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useEmailConfig, useUpdateEmailConfig } from '@/hooks/useSummaries';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 import type { WeeklySummaryEmailConfig } from '@/types';
 
 interface EmailSettingsTabProps {
@@ -47,10 +48,10 @@ export default function EmailSettingsTab({ onClose }: EmailSettingsTabProps) {
       if (onClose) {
         onClose();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Update Failed',
-        description: error.response?.data?.message || 'Failed to update email settings',
+        description: apiErrorMessage(error) || 'Failed to update email settings',
         variant: 'error',
       });
     } finally {
@@ -135,7 +136,7 @@ export default function EmailSettingsTab({ onClose }: EmailSettingsTabProps) {
         <select
           value={formData.sendDay}
           onChange={(e) =>
-            setFormData({ ...formData, sendDay: e.target.value as any })
+            setFormData({ ...formData, sendDay: e.target.value as WeeklySummaryEmailConfig['sendDay'] })
           }
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         >

@@ -5,12 +5,19 @@
 
 let audioContext: AudioContext | null = null;
 
+function audioContextConstructor() {
+  const legacyWindow: Window & { webkitAudioContext?: typeof AudioContext } = window;
+  return window.AudioContext || legacyWindow.webkitAudioContext;
+}
+
 /**
  * Initialize audio context (needed for iOS/Safari)
  */
 export function initAudioContext() {
   if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const Constructor = audioContextConstructor();
+    if (!Constructor) throw new Error('Web Audio is unavailable');
+    audioContext = new Constructor();
   }
   return audioContext;
 }
@@ -76,5 +83,5 @@ export function playNotificationSound() {
  * Check if notification sounds are supported
  */
 export function isNotificationSoundSupported(): boolean {
-  return !!(window.AudioContext || (window as any).webkitAudioContext);
+  return !!audioContextConstructor();
 }

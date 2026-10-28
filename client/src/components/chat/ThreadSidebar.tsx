@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { X, Send, MessageSquare, Pencil, Trash2, Check, Paperclip, Edit } from 'lucide-react';
+import { X, Send, MessageSquare, Pencil, Trash2, Edit } from 'lucide-react';
 import type { Message } from '@/hooks/useMessages';
 import { getSocket } from '@/lib/socket';
 import { formatDate } from '@/lib/utils';
@@ -13,10 +13,59 @@ import ReactionPicker from './ReactionPicker';
 import { useCurrentUser } from '@/hooks/useUsers';
 import MentionInputV2 from './MentionInputV2';
 import MentionHighlight from './MentionHighlight';
-import { FileAttachment } from './attachments/FileAttachment';
-import { useGooglePicker, type DriveFile } from '@/hooks/useGooglePicker';
-import DriveReauthPrompt from '@/components/auth/DriveReauthPrompt';
 import TaskDetailModal from '../tasks/TaskDetailModal';
+
+interface ThreadResponse {
+  success: boolean;
+  data?: Message | { replies?: Message[] };
+  error?: string;
+}
+function requestThread(
+  event: string,
+  data: unknown,
+  signal?: AbortSignal,
+): Promise<ThreadResponse> {
+  const socket = getSocket();
+  if (!socket?.connected)
+    return Promise.reject(
+      new Error(
+        'Connection unavailable. Reconnect and try again. Your draft is kept.',
+      ),
+    );
+  return new Promise((resolve, reject) => {
+    let complete = false;
+    const finish = (error?: Error, response?: ThreadResponse) => {
+      if (complete) return;
+      complete = true;
+      clearTimeout(timer);
+      socket.off('disconnect', disconnected);
+      signal?.removeEventListener('abort', aborted);
+      if (error) reject(error);
+      else resolve(response!);
+    };
+    const uncertain = () =>
+      new Error(
+        'No confirmation received. Your draft is kept. Check the thread before retrying to avoid a duplicate.',
+      );
+    const disconnected = () => finish(uncertain());
+    const aborted = () => finish(new Error('Request canceled'));
+    const timer = setTimeout(() => finish(uncertain()), 10000);
+    socket.on('disconnect', disconnected);
+    signal?.addEventListener('abort', aborted, { once: true });
+    if (signal?.aborted) return aborted();
+    try {
+      socket.emit(event, data, (response: ThreadResponse) => {
+        if (response?.success === true) finish(undefined, response);
+        else
+          finish(
+            new Error(response?.error || 'Request failed. Your draft is kept.'),
+          );
+      });
+    } catch {
+      finish(uncertain());
+    }
+  });
+}
 
 interface ThreadSidebarProps {
   parentMessage: Message;
@@ -31,41 +80,75 @@ export default function ThreadSidebar({
   const [replyContent, setReplyContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
+  const [editingMessage, setEditingMessage] = useState<{
+    id: string;
+    content: string;
+  } | null>(null);
   const [hoveredReplyId, setHoveredReplyId] = useState<string | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<DriveFile[]>([]);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+  const drafts = useRef(new Map<string, string>());
+  const activeParent = useRef(parentMessage.id);
+  const pending = useRef(false);
+  const requestNumber = useRef(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const repliesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: currentUser } = useCurrentUser();
-  const { openPicker, isLoaded, error: pickerError, requiresReauth, handleReauth, dismissReauth, retryLoad } = useGooglePicker();
 
   const handleTaskClick = (taskId: string) => {
     setSelectedTaskId(taskId);
   };
 
-  // Fetch thread replies when sidebar opens or parent message changes
   useEffect(() => {
-    // CRITICAL: Clear replies immediately when parent message changes
-    // This prevents showing old thread's replies for new parent message
+    activeParent.current = parentMessage.id;
+    requestNumber.current += 1;
+    pending.current = false;
+    setReplyContent(drafts.current.get(parentMessage.id) || '');
+    setEditingMessage(null);
+    setIsSending(false);
+    setRequestError(null);
+    return () => {
+      activeParent.current = '';
+      requestNumber.current += 1;
+    };
+  }, [parentMessage.id]);
+  const changeDraft = (value: string) => {
+    drafts.current.set(parentMessage.id, value);
+    setReplyContent(value);
+  };
+
+  useEffect(() => {
+    let canceled = false;
+    const controller = new AbortController();
     setReplies([]);
     setIsLoading(true);
-
-    const socket = getSocket();
-    socket?.emit(
+    setLoadError(null);
+    void requestThread(
       'get_thread_replies',
-      {
-        parentMessageId: parentMessage.id,
-        limit: 50,
-      },
-      (response: any) => {
-        if (response.success) {
-          setReplies(Array.isArray(response.data.replies) ? response.data.replies : []);
-        }
-        setIsLoading(false);
-      }
-    );
-  }, [parentMessage.id]);
+      { parentMessageId: parentMessage.id, limit: 50 },
+      controller.signal,
+    )
+      .then((response) => {
+        if (!canceled)
+          setReplies(
+            Array.isArray((response.data as { replies?: Message[] })?.replies)
+              ? (response.data as { replies: Message[] }).replies
+              : [],
+          );
+      })
+      .catch((error) => {
+        if (!canceled) setLoadError(error.message);
+      })
+      .finally(() => {
+        if (!canceled) setIsLoading(false);
+      });
+    return () => {
+      canceled = true;
+      controller.abort();
+    };
+  }, [parentMessage.id, reload]);
 
   // Listen for new thread replies
   useEffect(() => {
@@ -74,12 +157,19 @@ export default function ThreadSidebar({
       parentMessageId: string;
     }) => {
       if (data.parentMessageId === parentMessage.id) {
-        setReplies((prev) => [...prev, data.reply]);
+        setReplies((prev) =>
+          prev.some((reply) => reply.id === data.reply.id)
+            ? prev
+            : [...prev, data.reply],
+        );
         scrollToBottom();
       }
     };
 
-    const handleReactionChange = (data: { messageId: string; reactions: any }) => {
+    const handleReactionChange = (data: {
+      messageId: string;
+      reactions: Record<string, string[]>;
+    }) => {
       // Update reactions for parent message
       if (data.messageId === parentMessage.id) {
         // Parent message reaction handled by parent component
@@ -91,19 +181,24 @@ export default function ThreadSidebar({
         prev.map((reply) =>
           reply.id === data.messageId
             ? { ...reply, reactions: data.reactions }
-            : reply
-        )
+            : reply,
+        ),
       );
     };
 
-    const handleMessageEdited = (data: any) => {
+    const handleMessageEdited = (data: Pick<Message, 'id' | 'content' | 'updatedAt'>) => {
       // Update edited replies
       setReplies((prev) =>
         prev.map((reply) =>
           reply.id === data.id
-            ? { ...reply, content: data.content, isEdited: true, updatedAt: data.updatedAt }
-            : reply
-        )
+            ? {
+                ...reply,
+                content: data.content,
+                isEdited: true,
+                updatedAt: data.updatedAt,
+              }
+            : reply,
+        ),
       );
     };
 
@@ -113,8 +208,8 @@ export default function ThreadSidebar({
         prev.map((reply) =>
           reply.id === data.id
             ? { ...reply, isDeleted: true, content: '' }
-            : reply
-        )
+            : reply,
+        ),
       );
     };
 
@@ -140,56 +235,62 @@ export default function ThreadSidebar({
     repliesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Send thread reply
-  const handleSendReply = () => {
-    // If editing a message
-    if (editingMessage) {
-      if (replyContent.trim()) {
-        const socket = getSocket();
-        socket?.emit('edit_message', { messageId: editingMessage.id, content: replyContent.trim() });
-      }
+  const handleSendReply = async () => {
+    if (!replyContent.trim() || pending.current) return;
+    const threadId = parentMessage.id,
+      content = replyContent.trim(),
+      draft = replyContent;
+    const edited = editingMessage;
+    const number = ++requestNumber.current;
+    pending.current = true;
+    setIsSending(true);
+    setRequestError(null);
+    try {
+      const response = await requestThread(
+        edited ? 'edit_message' : 'send_thread_reply',
+        edited
+          ? { messageId: edited.id, content }
+          : { parentMessageId: threadId, content },
+      );
+      if (drafts.current.get(threadId) === draft)
+        drafts.current.delete(threadId);
+      if (activeParent.current !== threadId || requestNumber.current !== number)
+        return;
+      const reply = response.data as Message | undefined;
+      if (reply?.id)
+        setReplies((prev) =>
+          edited
+            ? prev.map((item) =>
+                item.id === reply.id ? { ...item, ...reply } : item,
+              )
+            : prev.some((item) => item.id === reply.id)
+              ? prev
+              : [...prev, reply],
+        );
       setReplyContent('');
       setEditingMessage(null);
-      return;
-    }
-
-    // Otherwise send new reply
-    if ((!replyContent.trim() && selectedFiles.length === 0) || isSending) return;
-
-    setIsSending(true);
-    const socket = getSocket();
-    socket?.emit(
-      'send_thread_reply',
-      {
-        parentMessageId: parentMessage.id,
-        content: replyContent.trim(),
-        driveFileIds: selectedFiles.map(f => f.id),
-      },
-      (response: any) => {
+    } catch (error) {
+      if (activeParent.current === threadId && requestNumber.current === number)
+        setRequestError(
+          error instanceof Error
+            ? error.message
+            : 'Request failed. Your draft is kept.',
+        );
+    } finally {
+      if (
+        activeParent.current === threadId &&
+        requestNumber.current === number
+      ) {
+        pending.current = false;
         setIsSending(false);
-        if (response.success) {
-          setReplyContent('');
-          setSelectedFiles([]);
-        } else {
-          alert(response.error || 'Failed to send reply');
-        }
       }
-    );
+    }
   };
-
   const handleCancelEdit = () => {
-    setReplyContent('');
+    if (pending.current) return;
+    changeDraft('');
     setEditingMessage(null);
-  };
-
-  const handleAttachClick = () => {
-    openPicker((files) => {
-      setSelectedFiles((prev) => [...prev, ...files]);
-    });
-  };
-
-  const handleRemoveFile = (fileId: string) => {
-    setSelectedFiles((prev) => prev.filter((f) => f.id !== fileId));
+    setRequestError(null);
   };
 
   const handleAddReaction = (messageId: string, emoji: string) => {
@@ -198,8 +299,13 @@ export default function ThreadSidebar({
   };
 
   const handleReactionToggle = (messageId: string, emoji: string) => {
-    const message = messageId === parentMessage.id ? parentMessage : replies.find((r) => r.id === messageId);
-    const hasReacted = message?.reactions?.[emoji]?.includes(currentUser?.id || '');
+    const message =
+      messageId === parentMessage.id
+        ? parentMessage
+        : replies.find((r) => r.id === messageId);
+    const hasReacted = message?.reactions?.[emoji]?.includes(
+      currentUser?.id || '',
+    );
 
     const socket = getSocket();
     if (hasReacted) {
@@ -210,10 +316,10 @@ export default function ThreadSidebar({
   };
 
   const handleEditReply = (reply: Message) => {
+    if (pending.current) return;
     setEditingMessage({ id: reply.id, content: reply.content });
-    setReplyContent(reply.content);
+    changeDraft(reply.content);
   };
-
 
   const handleDeleteReply = (replyId: string) => {
     if (!confirm('Delete this reply?')) return;
@@ -224,8 +330,8 @@ export default function ThreadSidebar({
     // Optimistically update the reply
     setReplies((prev) =>
       prev.map((r) =>
-        r.id === replyId ? { ...r, isDeleted: true, content: '' } : r
-      )
+        r.id === replyId ? { ...r, isDeleted: true, content: '' } : r,
+      ),
     );
   };
 
@@ -272,17 +378,11 @@ export default function ThreadSidebar({
             />
           </div>
         )}
-        {/* Parent Message Attachments */}
-        {parentMessage.driveAttachments && parentMessage.driveAttachments.length > 0 && (
-          <div className="mt-2 space-y-2">
-            {parentMessage.driveAttachments.map((attachment) => (
-              <FileAttachment key={attachment.id} attachment={attachment} />
-            ))}
-          </div>
-        )}
         <MessageReactions
           reactions={parentMessage.reactions}
-          onReactionToggle={(emoji) => handleReactionToggle(parentMessage.id, emoji)}
+          onReactionToggle={(emoji) =>
+            handleReactionToggle(parentMessage.id, emoji)
+          }
         />
       </div>
 
@@ -291,6 +391,16 @@ export default function ThreadSidebar({
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="space-y-3 text-sm text-destructive">
+            <p>{loadError}</p>
+            <button
+              className="underline"
+              onClick={() => setReload((value) => value + 1)}
+            >
+              Retry loading replies
+            </button>
           </div>
         ) : replies.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
@@ -309,7 +419,9 @@ export default function ThreadSidebar({
                   onMouseEnter={() => setHoveredReplyId(reply.id)}
                   onMouseLeave={() => setHoveredReplyId(null)}
                 >
-                  <div className={`max-w-[85%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
+                  <div
+                    className={`max-w-[85%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
+                  >
                     {!isOwn && reply.sender && (
                       <div className="mb-1 flex items-center gap-2">
                         {reply.sender.picture && (
@@ -329,57 +441,57 @@ export default function ThreadSidebar({
                     )}
 
                     <>
-                        <div
-                          className={`rounded-lg p-3 ${
-                            isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                          }`}
-                        >
-                          {reply.isDeleted ? (
-                            <div className="whitespace-pre-wrap break-words text-sm">
-                              <span className="italic opacity-70">
-                                Message deleted
-                              </span>
-                            </div>
-                          ) : (
-                            <>
-                              {reply.content && (
-                                <div className="whitespace-pre-wrap break-words text-sm">
-                                  <MentionHighlight
-                                    content={reply.content}
-                                    mentions={reply.mentions}
-                                    onTaskClick={handleTaskClick}
-                                  />
-                                  {reply.isEdited && (
-                                    <span className="ml-1 text-xs opacity-70">(edited)</span>
-                                  )}
-                                </div>
-                              )}
-                            </>
-                          )}
-                          {isOwn && (
-                            <span className="mt-1 block text-xs opacity-70">
-                              {formatDate(reply.createdAt)}
+                      <div
+                        className={`rounded-lg p-3 ${
+                          isOwn
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        {reply.isDeleted ? (
+                          <div className="whitespace-pre-wrap break-words text-sm">
+                            <span className="italic opacity-70">
+                              Message deleted
                             </span>
-                          )}
-                        </div>
-                        {/* Reply Attachments */}
-                        {reply.driveAttachments && reply.driveAttachments.length > 0 && (
-                          <div className="mt-2 space-y-2">
-                            {reply.driveAttachments.map((attachment) => (
-                              <FileAttachment key={attachment.id} attachment={attachment} />
-                            ))}
                           </div>
+                        ) : (
+                          <>
+                            {reply.content && (
+                              <div className="whitespace-pre-wrap break-words text-sm">
+                                <MentionHighlight
+                                  content={reply.content}
+                                  mentions={reply.mentions}
+                                  onTaskClick={handleTaskClick}
+                                />
+                                {reply.isEdited && (
+                                  <span className="ml-1 text-xs opacity-70">
+                                    (edited)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </>
                         )}
-                        <MessageReactions
-                          reactions={reply.reactions}
-                          onReactionToggle={(emoji) => handleReactionToggle(reply.id, emoji)}
-                        />
-                      </>
+                        {isOwn && (
+                          <span className="mt-1 block text-xs opacity-70">
+                            {formatDate(reply.createdAt)}
+                          </span>
+                        )}
+                      </div>
+                      <MessageReactions
+                        reactions={reply.reactions}
+                        onReactionToggle={(emoji) =>
+                          handleReactionToggle(reply.id, emoji)
+                        }
+                      />
+                    </>
                   </div>
 
                   {/* Hover actions - Edit/Delete + Reaction picker */}
                   {!reply.isDeleted && hoveredReplyId === reply.id && (
-                    <div className={`absolute -top-2 ${isOwn ? 'right-0' : 'left-0'} flex gap-1 rounded-lg border border-border bg-background p-1 shadow-md`}>
+                    <div
+                      className={`absolute -top-2 ${isOwn ? 'right-0' : 'left-0'} flex gap-1 rounded-lg border border-border bg-background p-1 shadow-md`}
+                    >
                       {isOwn && (
                         <>
                           <button
@@ -400,7 +512,9 @@ export default function ThreadSidebar({
                         </>
                       )}
                       <ReactionPicker
-                        onEmojiSelect={(emoji) => handleAddReaction(reply.id, emoji)}
+                        onEmojiSelect={(emoji) =>
+                          handleAddReaction(reply.id, emoji)
+                        }
                       />
                     </div>
                   )}
@@ -414,62 +528,19 @@ export default function ThreadSidebar({
 
       {/* Reply Input */}
       <div className="border-t border-border p-4">
-        {/* Re-auth Prompt */}
-        {requiresReauth && (
-          <DriveReauthPrompt
-            onReauth={handleReauth}
-            onDismiss={dismissReauth}
-            variant="inline"
-          />
+        {requestError && (
+          <p role="alert" className="mb-2 text-sm text-destructive">
+            {requestError}
+          </p>
         )}
-
-        {/* Picker Error Display with Retry */}
-        {pickerError && !requiresReauth && (
-          <div className="mb-2 rounded-md border border-destructive bg-destructive/10 p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-destructive">{pickerError}</span>
-              {pickerError.includes('not loaded') && (
-                <button
-                  onClick={retryLoad}
-                  className="ml-3 rounded bg-destructive/20 px-3 py-1 text-xs font-medium text-destructive hover:bg-destructive/30"
-                >
-                  Retry
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Selected Files Display */}
-        {selectedFiles.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
-            {selectedFiles.map((file) => (
-              <div
-                key={file.id}
-                className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5"
-              >
-                {file.iconUrl && (
-                  <img src={file.iconUrl} alt="" className="h-4 w-4" />
-                )}
-                <span className="text-sm">{file.name}</span>
-                <button
-                  onClick={() => handleRemoveFile(file.id)}
-                  className="ml-1 rounded hover:bg-accent"
-                  title="Remove file"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Editing Indicator */}
         {editingMessage && (
           <div className="mb-2 flex items-center justify-between rounded-md border border-primary bg-primary/10 p-2">
             <div className="flex items-center gap-2">
               <Edit className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Editing message</span>
+              <span className="text-sm font-medium text-primary">
+                Editing message
+              </span>
             </div>
             <button
               onClick={handleCancelEdit}
@@ -484,7 +555,7 @@ export default function ThreadSidebar({
           <div className="flex-1">
             <MentionInputV2
               value={replyContent}
-              onChange={setReplyContent}
+              onChange={changeDraft}
               onSubmit={handleSendReply}
               conversationId={parentMessage.conversationId}
               placeholder="Reply to thread..."
@@ -492,16 +563,8 @@ export default function ThreadSidebar({
             />
           </div>
           <button
-            onClick={handleAttachClick}
-            disabled={!isLoaded || isSending}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed self-end"
-            title="Attach files from Google Drive"
-          >
-            <Paperclip className="h-4 w-4" />
-          </button>
-          <button
             onClick={handleSendReply}
-            disabled={(!replyContent.trim() && selectedFiles.length === 0) || isSending}
+            disabled={!replyContent.trim() || isSending}
             className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed self-end"
             title="Send reply"
           >

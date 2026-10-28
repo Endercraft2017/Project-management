@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Delete Summary Button (Admin Only)
  * Deletes a weekly summary with confirmation dialog
@@ -6,7 +7,7 @@
 import { useState } from 'react';
 import { Trash2, Loader2, X, AlertTriangle } from 'lucide-react';
 import { useDeleteSummary } from '@/hooks/useSummaries';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 
 interface DeleteSummaryButtonProps {
   summaryId: string;
@@ -54,8 +55,8 @@ export default function DeleteSummaryButton({
       if (onDeleted) {
         onDeleted();
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to delete summary';
+    } catch (error: unknown) {
+      const message = apiErrorMessage(error) || 'Failed to delete summary';
       toast({
         title: 'Delete failed',
         description: message,

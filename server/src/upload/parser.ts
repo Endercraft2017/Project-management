@@ -116,10 +116,10 @@ export function validateTaskRows(rows: any[]): {
       valid.push(validated);
     } catch (error: any) {
       if (error instanceof ZodError) {
-        const firstError = error.errors[0];
+        const firstError = error.issues[0];
         errors.push({
           row: index + 2, // +2 for header row and 1-indexed
-          error: `${firstError.path[0]}: ${firstError.message}`,
+          error: `${String(firstError.path[0] ?? 'row')}: ${firstError.message}`,
           data: row,
         });
       } else {

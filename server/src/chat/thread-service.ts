@@ -4,9 +4,9 @@
  */
 
 import prisma from '@/database/client';
+import { lockMessage, lockConversationMember } from './transaction-policy';
 import { isMemberOfConversation, isAdminOfConversation } from './conversation-service';
 import { extractMentions, validateMentions, logMentionExtraction } from '@/lib/mentions';
-import { getFileMetadata, shareFileWithUsers } from '@/services/drive-service';
 
 /**
  * Send a reply in a thread
@@ -17,6 +17,8 @@ export async function sendThreadReply(
   content: string,
   driveFileIds?: string[]
 ) {
+  if (driveFileIds?.length) throw Object.assign(new Error('Google Drive attachments are disabled'), { status: 503 });
+
   // 1. Get parent message
   const parentMessage = await prisma.message.findUnique({
     where: { id: parentMessageId },
@@ -71,47 +73,15 @@ export async function sendThreadReply(
   const mentionIds = extractMentions(content);
   const validMentions = await validateMentions(mentionIds, parentMessage.conversationId);
 
-  // 7. Process Drive attachments if provided
-  let attachmentRecords: any[] = [];
-  if (driveFileIds && driveFileIds.length > 0) {
-    // Get other conversation members' emails for file sharing
-    const memberEmails = conversation.members
-      .filter((m) => m.user && m.user.id !== senderId)
-      .map((m) => m.user!.email);
-
-    // Fetch metadata and share files with conversation members
-    for (const fileId of driveFileIds) {
-      try {
-        // Get file metadata from Drive
-        const metadata = await getFileMetadata(senderId, fileId);
-
-        // Share file with all conversation members
-        if (memberEmails.length > 0) {
-          await shareFileWithUsers(senderId, fileId, memberEmails, 'reader');
-        }
-
-        // Prepare attachment record
-        attachmentRecords.push({
-          driveFileId: fileId,
-          fileName: metadata.name,
-          mimeType: metadata.mimeType,
-          fileSize: BigInt(metadata.size || '0'),
-          thumbnailLink: metadata.thumbnailLink,
-          webViewLink: metadata.webViewLink,
-          webContentLink: metadata.webContentLink,
-          iconLink: metadata.iconLink,
-        });
-
-        console.log(`[ThreadService] Attached file ${fileId} to thread reply`);
-      } catch (error: any) {
-        console.error(`[ThreadService] Failed to process attachment ${fileId}:`, error.message);
-        // Continue with other attachments even if one fails
-      }
-    }
-  }
+  const attachmentRecords: any[] = [];
 
   // 8. Create reply in transaction
   const result = await prisma.$transaction(async (tx) => {
+    const currentParent = await lockMessage(tx, parentMessageId);
+    if (!currentParent || currentParent.conversationId !== parentMessage.conversationId) throw new Error('Parent message not found');
+    if (currentParent.parentMessageId) throw new Error('Cannot reply to a thread reply. Replies must be to main messages only.');
+    await lockConversationMember(tx, currentParent.conversationId, senderId);
+    if (currentParent.isDeleted) throw new Error('Cannot reply to deleted messages');
     // Create thread reply with mentions and attachments
     const reply = await tx.message.create({
       data: {
@@ -254,45 +224,20 @@ export async function getThreadReplies(
  * Delete thread reply
  */
 export async function deleteThreadReply(replyId: string, userId: string) {
-  const reply = await prisma.message.findUnique({
-    where: { id: replyId },
+  return prisma.$transaction(async (tx) => {
+    // Parent-first lock order is shared with reply creation, avoiding inverse row locks.
+    const candidate = await tx.message.findUnique({ where: { id: replyId }, select: { parentMessageId: true } });
+    if (!candidate?.parentMessageId) throw new Error('Thread reply not found');
+    const parent = await lockMessage(tx, candidate.parentMessageId);
+    const reply = await lockMessage(tx, replyId);
+    if (!parent || !reply || reply.parentMessageId !== parent.id || reply.conversationId !== parent.conversationId) throw new Error('Thread reply not found');
+    const member = await lockConversationMember(tx, reply.conversationId, userId);
+    if (reply.senderId !== userId && !member.isAdmin) throw new Error('You can only delete your own replies or be a group admin');
+    if (reply.isDeleted) throw new Error('Reply already deleted');
+    await tx.message.update({ where: { id: replyId }, data: { isDeleted: true } });
+    // Count under the parent lock, repairing historical drift and preventing negative counts.
+    const remaining = await tx.message.count({ where: { parentMessageId: parent.id, isDeleted: false } });
+    await tx.message.update({ where: { id: parent.id }, data: { threadRepliesCount: remaining } });
+    return { id: replyId, conversationId: reply.conversationId, isDeleted: true };
   });
-
-  if (!reply || !reply.parentMessageId) {
-    throw new Error('Thread reply not found');
-  }
-
-  if (reply.isDeleted) {
-    throw new Error('Reply already deleted');
-  }
-
-  // Permission check (sender or admin)
-  const isSender = reply.senderId === userId;
-  const isAdmin = await isAdminOfConversation(reply.conversationId, userId);
-
-  if (!isSender && !isAdmin) {
-    throw new Error('You can only delete your own replies or be a group admin');
-  }
-
-  // Soft delete in transaction
-  await prisma.$transaction(async (tx) => {
-    await tx.message.update({
-      where: { id: replyId },
-      data: { isDeleted: true },
-    });
-
-    // Decrement parent's reply count
-    await tx.message.update({
-      where: { id: reply.parentMessageId! },
-      data: {
-        threadRepliesCount: {
-          decrement: 1,
-        },
-      },
-    });
-  });
-
-  console.log(`[Audit] User ${userId} deleted thread reply ${replyId}`);
-
-  return { id: replyId, conversationId: reply.conversationId, isDeleted: true };
 }

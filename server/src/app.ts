@@ -7,26 +7,40 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import passport from './auth/passport-config';
 import { sessionMiddleware } from './middlewares/session';
-import { securityHeaders, apiLimiter, sanitizeInput } from './middlewares/security';
+import { securityHeaders, apiLimiter } from './middlewares/security';
 import { attachUser } from './auth/middleware';
+import { requireTrustedOrigin } from './auth/request-security';
+import { sessionTenantContext, skipsSessionIdentity } from './auth/session-context';
+import consoleRoutes from './platform/routes';
 import authRoutes from './auth/routes';
 import userRoutes from './users/routes';
 import sprintRoutes from './sprints/routes';
 import taskRoutes from './tasks/routes';
-import syncRoutes from './sync/routes';
+import projectRoutes from './projects/routes';
 import chatRoutes from './chat/routes';
 import uploadRoutes from './upload/routes';
 import inviteRoutes from './invites/routes';
-import driveRoutes from './drive/routes';
 import updatesRoutes from './updates/routes';
 import notesRoutes from './notes/routes';
 import summariesRoutes from './summaries/routes';
 import adminRoutes from './admin/routes';
 import { corsConfig, serverConfig } from './config';
+import { checkDatabaseConnection } from './database/client';
 
 const app: Express = express();
+const privateJsonKeys = new Set([
+  'passwordHash', 'password_hash', 'sessionVersion', 'session_version',
+  'googleRefreshToken', 'googleAccessToken', 'tokenExpiresAt',
+]);
+app.set('json replacer', (key: string, value: unknown) => privateJsonKeys.has(key) ? undefined : value);
+app.use((_req, res, next) => {
+  res.locals.requestId = randomUUID();
+  res.setHeader('X-Request-Id', res.locals.requestId);
+  next();
+});
 
 /**
  * Trust proxy (for Railway deployment)
@@ -59,7 +73,6 @@ if (serverConfig.isProduction) {
   );
 }
 
-app.use(sanitizeInput);
 
 /**
  * CORS configuration
@@ -69,15 +82,28 @@ app.use(
     origin: corsConfig.origin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-EZ-Workspace'],
   })
 );
 
 /**
  * Body parsing middleware
  */
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '64kb' }));
+app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store, private'); next(); });
+app.use('/api', requireTrustedOrigin);
+
+// Operator sessions have their own cookie/principal and never pass through tenant auth.
+app.use('/api/console', consoleRoutes);
+app.use('/api/console', (_req, res) => res.status(404).json({ success: false, error: 'Not Found' }));
+
+// Liveness is public and must not depend on a customer session or tenant schema.
+app.get(['/health', '/health/live'], (_req, res) => res.json({ success: true, status: 'healthy' }));
+app.get('/health/ready', async (_req, res) => {
+  const healthy = await Promise.race([checkDatabaseConnection(), new Promise<boolean>((resolve) => { const timer = setTimeout(() => resolve(false), 2000); timer.unref(); })]);
+  res.status(healthy ? 200 : 503).json({ success: healthy, status: healthy ? 'ready' : 'unavailable' });
+});
 
 /**
  * Session middleware
@@ -88,7 +114,9 @@ app.use(sessionMiddleware);
  * Passport initialization
  */
 app.use(passport.initialize());
-app.use(passport.session());
+app.use(sessionTenantContext);
+const deserializeSession = passport.session();
+app.use((req, res, next) => skipsSessionIdentity(req) ? next() : deserializeSession(req, res, next));
 
 /**
  * Attach user to response locals
@@ -101,29 +129,18 @@ app.use(attachUser);
 app.use('/api', apiLimiter);
 
 /**
- * Health check endpoint
- */
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: serverConfig.nodeEnv,
-  });
-});
-
-/**
  * API Routes
  */
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/sprints', sprintRoutes);
 app.use('/api/tasks', taskRoutes);
-app.use('/api/sync', syncRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/sync', (_req, res) => res.status(503).json({ success: false, error: 'CAPABILITY_DISABLED' }));
 app.use('/api/conversations', chatRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/invites', inviteRoutes);
-app.use('/api/drive', driveRoutes);
+app.use('/api/drive', (_req, res) => res.status(503).json({ success: false, error: 'CAPABILITY_DISABLED' }));
 app.use('/api/updates', updatesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/summaries', summariesRoutes);
@@ -155,7 +172,12 @@ if (serverConfig.isProduction) {
  * Global error handler
  */
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
+  // Do not log provider errors/request objects which may contain credentials.
+  console.error('Request failed', {
+    name: err.name || 'Error',
+    code: typeof err.code === 'string' && /^[A-Z0-9_]{1,24}$/.test(err.code) ? err.code : undefined,
+    requestId: res.locals.requestId,
+  });
 
   // Don't leak error details in production
   const message = serverConfig.isProduction
@@ -164,6 +186,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
   res.status(err.status || 500).json({
     success: false,
+    requestId: res.locals.requestId,
     error: err.name || 'Error',
     message,
     ...(serverConfig.isDevelopment && { stack: err.stack }),

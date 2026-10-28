@@ -3,15 +3,25 @@
  * Business logic for hierarchical task operations
  */
 
-import { PrismaClient, Prisma, Role } from '@prisma/client';
-import prisma from '@/database/client';
+import { Prisma } from "@prisma/client";
+import prisma from "@/database/client";
+import { ListTasksQuery, CreateTask, UpdateTask } from "./validators";
+import { getSocketServer, emitTenantEvent } from "@/chat/socket-server";
 import {
-  ListTasksQuery,
-  CreateTask,
-  UpdateTask,
-  MoveToSprint,
-} from './validators';
-import { getSocketServer } from '@/chat/socket-server';
+  withTaskTopology,
+  taskAncestry,
+  taskSubtree,
+  setSubtreeDepth,
+  recalculateProgress,
+  hierarchyConflict,
+  taskReadWhere,
+  visibleSubtasks,
+} from "./hierarchy";
+
+const taskRelations = {
+  assignedTo: { select: { id: true, name: true, email: true } },
+  createdBy: { select: { id: true, name: true } },
+} satisfies Prisma.TaskInclude;
 
 export class TaskService {
   /**
@@ -34,12 +44,7 @@ export class TaskService {
     } = query;
 
     // Build where clause
-    const where: Prisma.TaskWhereInput = {};
-
-    // Authorization filter: non-admins see only assigned or created tasks
-    if (!isAdmin) {
-      where.OR = [{ assignedToId: userId }, { createdById: userId }];
-    }
+    const where: Prisma.TaskWhereInput = taskReadWhere(userId, isAdmin);
 
     // Apply filters
     if (sprintId !== undefined) {
@@ -48,7 +53,7 @@ export class TaskService {
 
     if (assignedToId) {
       // Special handling for 'null' string to filter unassigned tasks
-      where.assignedToId = assignedToId === 'null' ? null : assignedToId;
+      where.assignedToId = assignedToId === "null" ? null : assignedToId;
     }
 
     if (createdById) {
@@ -81,7 +86,6 @@ export class TaskService {
       [sortBy]: sortOrder,
     };
 
-    // Execute queries in parallel
     const [tasks, total] = await Promise.all([
       prisma.task.findMany({
         where,
@@ -89,723 +93,487 @@ export class TaskService {
         take: limit,
         orderBy,
         include: {
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          sprint: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+          ...taskRelations,
+          sprint: { select: { id: true, name: true } },
           _count: {
-            select: {
-              subtasks: true,
-            },
+            select: { subtasks: { where: taskReadWhere(userId, isAdmin) } },
           },
           ...(includeSubtasks && {
-            subtasks: {
-              include: {
-                subtasks: {
-                  include: {
-                    subtasks: {
-                      include: {
-                        subtasks: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
+            subtasks: visibleSubtasks(userId, isAdmin),
           }),
         },
       }),
       prisma.task.count({ where }),
     ]);
-
     return {
       tasks,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  /**
-   * Get task by ID with relations
-   */
   async getTaskById(
     id: string,
     includeSubtasks: boolean,
-    includeParent: boolean
+    includeParent: boolean,
+    userId: string,
+    isAdmin: boolean,
   ) {
     const task = await prisma.task.findUnique({
       where: { id },
       include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        sprint: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        ...taskRelations,
+        sprint: { select: { id: true, name: true } },
         _count: {
-          select: {
-            subtasks: true,
-          },
-        },
-        ...(includeParent && {
-          parentTask: {
-            select: {
-              id: true,
-              taskName: true,
-              nestingLevel: true,
-            },
-          },
-        }),
-        ...(includeSubtasks && {
-          subtasks: {
-            include: {
-              subtasks: {
-                include: {
-                  subtasks: {
-                    include: {
-                      subtasks: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        }),
-      },
-    });
-
-    return task;
-  }
-
-  /**
-   * Create a task (can be top-level or nested if parentTaskId is provided)
-   */
-  async createTask(data: CreateTask, userId: string, isAdmin: boolean) {
-    // Verify assignment permissions
-    if (data.assignedToId && data.assignedToId !== userId && !isAdmin) {
-      throw new Error('Only admins can assign tasks to other users');
-    }
-
-    let sprintId = data.sprintId;
-    let nestingLevel = 0;
-    let parentTask: any = null;
-
-    // If parentTaskId is provided, validate and get parent task details
-    if (data.parentTaskId) {
-      parentTask = await prisma.task.findUnique({
-        where: { id: data.parentTaskId },
-      });
-
-      if (!parentTask) {
-        throw new Error('Parent task not found');
-      }
-
-      // Verify permission on parent task
-      if (!this.verifyTaskPermission(parentTask, userId, isAdmin)) {
-        throw new Error('No permission to create task under this parent');
-      }
-
-      // Verify nesting depth limit (max level is 3)
-      if (parentTask.nestingLevel >= 3) {
-        throw new Error(
-          'Maximum nesting depth (4 levels) reached. Cannot create task under this parent.'
-        );
-      }
-
-      // Inherit sprint from parent if not explicitly provided
-      if (!sprintId) {
-        sprintId = parentTask.sprintId;
-      }
-
-      // Calculate nesting level
-      nestingLevel = parentTask.nestingLevel + 1;
-    }
-
-    // Create new sprint if sprintName is provided instead of sprintId
-    if (!sprintId && data.sprintName) {
-      // Check if sprint with this name already exists
-      let sprint = await prisma.sprint.findFirst({
-        where: { name: data.sprintName },
-      });
-
-      if (!sprint) {
-        // Create new sprint with default dates (2 weeks from now)
-        const now = new Date();
-        const twoWeeksLater = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-        sprint = await prisma.sprint.create({
-          data: {
-            name: data.sprintName,
-            startDate: now,
-            endDate: twoWeeksLater,
-            status: 'ACTIVE',
-            createdById: userId,
-          },
-        });
-      }
-
-      sprintId = sprint.id;
-    }
-
-    // Verify sprint exists if provided
-    if (sprintId) {
-      const sprint = await prisma.sprint.findUnique({
-        where: { id: sprintId },
-      });
-      if (!sprint) {
-        throw new Error('Sprint not found');
-      }
-    }
-
-    // Verify assigned user exists if provided
-    if (data.assignedToId) {
-      const user = await prisma.user.findUnique({
-        where: { id: data.assignedToId },
-      });
-      if (!user) {
-        throw new Error('Assigned user not found');
-      }
-    }
-
-    // Create task
-    const task = await prisma.task.create({
-      data: {
-        taskName: data.taskName,
-        details: data.details,
-        startDate: data.startDate,
-        deadline: data.deadline,
-        sprintId: sprintId,
-        assignedToId: data.assignedToId,
-        createdById: userId,
-        parentTaskId: data.parentTaskId || null,
-        nestingLevel: nestingLevel,
-        progress: 0, // Start at 0%
-      },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    // Emit WebSocket event
-    try {
-      const io = getSocketServer();
-      io.emit('task_created', task);
-
-      // If task was assigned to someone, emit notification
-      if (task.assignedToId) {
-        io.emit('task_assigned', {
-          task,
-          assignedTo: task.assignedTo,
-        });
-        console.log(`[Task] New task ${task.id} assigned to ${task.assignedTo?.name}`);
-      }
-
-      // Notify admins when a non-admin creates a task
-      if (!isAdmin) {
-        // Fetch all admin users
-        const admins = await prisma.user.findMany({
-          where: { role: 'ADMIN', isActive: true },
-          select: { id: true, name: true },
-        });
-
-        // Emit notification to each admin
-        admins.forEach((admin) => {
-          io.emit('task_created_by_member', {
-            task,
-            creator: task.createdBy,
-            adminId: admin.id,
-          });
-        });
-        console.log(`[Task] Notified ${admins.length} admins about task creation by ${task.createdBy?.name}`);
-      }
-    } catch (error) {
-      console.error('[Task] Failed to emit WebSocket event:', error);
-    }
-
-    return task;
-  }
-
-  /**
-   * Create a subtask under a parent task
-   */
-  async createSubtask(
-    parentId: string,
-    data: CreateTask,
-    userId: string,
-    isAdmin: boolean
-  ) {
-    // Find parent task
-    const parent = await prisma.task.findUnique({
-      where: { id: parentId },
-      include: {
-        _count: {
-          select: {
-            subtasks: true,
-          },
-        },
-      },
-    });
-
-    if (!parent) {
-      throw new Error('Parent task not found');
-    }
-
-    // Verify permission on parent task
-    if (!this.verifyTaskPermission(parent, userId, isAdmin)) {
-      throw new Error('No permission to create subtask under this task');
-    }
-
-    // Verify nesting depth limit (max level is 3, which is index 3, so parent must be < 3)
-    if (parent.nestingLevel >= 3) {
-      throw new Error(
-        'Maximum nesting depth (4 levels) reached. Cannot create subtask.'
-      );
-    }
-
-    // Verify assignment permissions
-    if (data.assignedToId && data.assignedToId !== userId && !isAdmin) {
-      throw new Error('Only admins can assign tasks to other users');
-    }
-
-    // Verify assigned user exists if provided
-    if (data.assignedToId) {
-      const user = await prisma.user.findUnique({
-        where: { id: data.assignedToId },
-      });
-      if (!user) {
-        throw new Error('Assigned user not found');
-      }
-    }
-
-    // Create subtask (inherit sprint from parent, override is not allowed)
-    const subtask = await prisma.task.create({
-      data: {
-        taskName: data.taskName,
-        details: data.details,
-        startDate: data.startDate,
-        deadline: data.deadline,
-        sprintId: parent.sprintId, // Inherit from parent
-        assignedToId: data.assignedToId,
-        createdById: userId,
-        parentTaskId: parentId,
-        nestingLevel: parent.nestingLevel + 1,
-        progress: 0,
-      },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { subtasks: { where: taskReadWhere(userId, isAdmin) } },
         },
         parentTask: {
           select: {
             id: true,
             taskName: true,
             nestingLevel: true,
+            createdById: true,
+            assignedToId: true,
           },
         },
+        ...(includeSubtasks && { subtasks: visibleSubtasks(userId, isAdmin) }),
       },
     });
-
-    // Emit WebSocket event
-    try {
-      const io = getSocketServer();
-      io.emit('task_created', subtask);
-
-      // If subtask was assigned to someone, emit notification
-      if (subtask.assignedToId) {
-        io.emit('task_assigned', {
-          task: subtask,
-          assignedTo: subtask.assignedTo,
-        });
-        console.log(`[Task] New subtask ${subtask.id} assigned to ${subtask.assignedTo?.name}`);
-      }
-
-      // Notify admins when a non-admin creates a subtask
-      if (!isAdmin) {
-        // Fetch all admin users
-        const admins = await prisma.user.findMany({
-          where: { role: 'ADMIN', isActive: true },
-          select: { id: true, name: true },
-        });
-
-        // Emit notification to each admin
-        admins.forEach((admin) => {
-          io.emit('task_created_by_member', {
-            task: subtask,
-            creator: subtask.createdBy,
-            adminId: admin.id,
-          });
-        });
-        console.log(`[Task] Notified ${admins.length} admins about subtask creation by ${subtask.createdBy?.name}`);
-      }
-    } catch (error) {
-      console.error('[Task] Failed to emit WebSocket event:', error);
-    }
-
-    return subtask;
+    if (!task) return null;
+    if (!this.verifyTaskPermission(task, userId, isAdmin))
+      throw Object.assign(new Error("No permission to access this task"), {
+        status: 403,
+      });
+    const { parentTask, ...result } = task;
+    return {
+      ...result,
+      ...(includeParent && {
+        parentTask:
+          parentTask && this.verifyTaskPermission(parentTask, userId, isAdmin)
+            ? {
+                id: parentTask.id,
+                taskName: parentTask.taskName,
+                nestingLevel: parentTask.nestingLevel,
+              }
+            : null,
+      }),
+    };
   }
 
-  /**
-   * Update an existing task
-   */
+  /** Create roots or children under the same serialized topology transaction. */
+  async createTask(data: CreateTask, userId: string, isAdmin: boolean) {
+    if (data.assignedToId && data.assignedToId !== userId && !isAdmin)
+      throw Object.assign(
+        new Error("Only admins can assign tasks to other users"),
+        { status: 403 },
+      );
+    const result = await withTaskTopology(async (tx) => {
+      const changed = new Set<string>();
+      let sprintId = data.sprintId || null;
+      let projectId: string | null = null;
+      let nestingLevel = 0;
+      if (data.parentTaskId) {
+        const parent = await tx.task.findUnique({
+          where: { id: data.parentTaskId },
+        });
+        if (!parent)
+          throw Object.assign(new Error("Parent task not found"), {
+            status: 404,
+          });
+        if (!this.verifyTaskPermission(parent, userId, isAdmin))
+          throw Object.assign(
+            new Error("No permission to create task under this parent"),
+            { status: 403 },
+          );
+        nestingLevel = (await taskAncestry(tx, parent)).length;
+        if (nestingLevel > 3)
+          throw hierarchyConflict("Maximum nesting depth (4 levels) reached.");
+        if (
+          (data.sprintId && data.sprintId !== parent.sprintId) ||
+          data.sprintName
+        )
+          throw hierarchyConflict(
+            "A subtask must inherit its parent project and sprint.",
+          );
+        sprintId = parent.sprintId;
+        projectId = parent.projectId;
+      } else if (!sprintId && data.sprintName) {
+        let sprint = await tx.sprint.findFirst({
+          where: { name: data.sprintName },
+        });
+        if (!sprint) {
+          const now = new Date();
+          sprint = await tx.sprint.create({
+            data: {
+              name: data.sprintName,
+              startDate: now,
+              endDate: new Date(now.getTime() + 14 * 86400000),
+              status: "ACTIVE",
+              createdById: userId,
+            },
+          });
+        }
+        sprintId = sprint.id;
+      }
+      if (sprintId) {
+        const sprint = await tx.sprint.findUnique({ where: { id: sprintId } });
+        if (!sprint)
+          throw Object.assign(new Error("Sprint not found"), { status: 404 });
+        if (data.parentTaskId && sprint.projectId !== projectId)
+          throw hierarchyConflict(
+            "Task and sprint must belong to the same project.",
+          );
+        projectId = sprint.projectId;
+      }
+      await this.validateAssignee(tx, data.assignedToId);
+      const task = await tx.task.create({
+        data: {
+          taskName: data.taskName,
+          details: data.details,
+          startDate: data.startDate,
+          deadline: data.deadline,
+          sprintId,
+          projectId,
+          assignedToId: data.assignedToId,
+          createdById: userId,
+          parentTaskId: data.parentTaskId || null,
+          nestingLevel,
+          progress: 0,
+        },
+        include: taskRelations,
+      });
+      await recalculateProgress(tx, task.parentTaskId, changed);
+      return { task, updated: await this.changedTasks(tx, changed) };
+    });
+    this.emitUpdates(result.updated);
+    try {
+      const io = getSocketServer();
+      io.emit("task_created", result.task);
+      if (result.task.assignedToId)
+        io.to(`user:${result.task.assignedToId}`).emit("task_assigned", {
+          task: result.task,
+          assignedTo: result.task.assignedTo,
+        });
+      if (!isAdmin) {
+        const admins = await prisma.user.findMany({
+          where: { role: "ADMIN", isActive: true },
+          select: { id: true },
+        });
+        for (const admin of admins)
+          io.to(`user:${admin.id}`).emit("task_created_by_member", {
+            task: result.task,
+            creator: result.task.createdBy,
+            adminId: admin.id,
+          });
+      }
+    } catch {
+      console.error("[Task] Realtime delivery unavailable");
+    }
+    return result.task;
+  }
+
+  async createSubtask(
+    parentId: string,
+    data: CreateTask,
+    userId: string,
+    isAdmin: boolean,
+  ) {
+    if (data.parentTaskId && data.parentTaskId !== parentId)
+      throw hierarchyConflict("Conflicting parent task IDs.");
+    return this.createTask(
+      { ...data, parentTaskId: parentId },
+      userId,
+      isAdmin,
+    );
+  }
+
+  /** Reparent a complete subtree; validate links and levels before any write. */
   async updateTask(
     id: string,
     data: UpdateTask,
     userId: string,
-    isAdmin: boolean
+    isAdmin: boolean,
   ) {
-    // Find task
-    const task = await prisma.task.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            subtasks: true,
-          },
-        },
-      },
-    });
-
-    if (!task) {
-      throw new Error('Task not found');
-    }
-
-    // Verify permission
-    if (!this.verifyTaskPermission(task, userId, isAdmin)) {
-      throw new Error('No permission to update this task');
-    }
-
-    // Verify assignment permissions
-    if (data.assignedToId && data.assignedToId !== userId && !isAdmin) {
-      throw new Error('Only admins can reassign tasks to other users');
-    }
-
-    // Verify sprint change rules
-    if (data.sprintId !== undefined && task._count.subtasks > 0) {
-      throw new Error(
-        'Cannot change sprint of task with subtasks. Move subtasks first or use move-to-sprint endpoint.'
-      );
-    }
-
-    // Verify sprint exists if provided
-    if (data.sprintId) {
-      const sprint = await prisma.sprint.findUnique({
-        where: { id: data.sprintId },
-      });
-      if (!sprint) {
-        throw new Error('Sprint not found');
-      }
-    }
-
-    // Track if assignment changed for notification
-    const assignmentChanged = data.assignedToId && data.assignedToId !== task.assignedToId;
-    const previousAssigneeId = task.assignedToId;
-
-    // Verify assigned user exists if provided
-    if (data.assignedToId) {
-      const user = await prisma.user.findUnique({
-        where: { id: data.assignedToId },
-      });
-      if (!user) {
-        throw new Error('Assigned user not found');
-      }
-    }
-
-    // Verify parent task exists if provided and prevent circular references
-    if (data.parentTaskId !== undefined) {
-      if (data.parentTaskId) {
-        const parentTask = await prisma.task.findUnique({
-          where: { id: data.parentTaskId },
+    const result = await withTaskTopology(async (tx) => {
+      const task = await tx.task.findUnique({ where: { id } });
+      if (!task)
+        throw Object.assign(new Error("Task not found"), { status: 404 });
+      if (!this.verifyTaskPermission(task, userId, isAdmin))
+        throw Object.assign(new Error("No permission to update this task"), {
+          status: 403,
         });
-        if (!parentTask) {
-          throw new Error('Parent task not found');
-        }
-        // Prevent making a task its own parent or ancestor
-        if (data.parentTaskId === id) {
-          throw new Error('Task cannot be its own parent');
-        }
+      if (data.assignedToId && data.assignedToId !== userId && !isAdmin)
+        throw Object.assign(
+          new Error("Only admins can reassign tasks to other users"),
+          { status: 403 },
+        );
+      await taskAncestry(tx, task);
+      const subtree = await taskSubtree(tx, task);
+      const changed = new Set<string>([id]);
+      const parentId =
+        data.parentTaskId === undefined ? task.parentTaskId : data.parentTaskId;
+      const sprintId =
+        data.sprintId === undefined ? task.sprintId : data.sprintId;
+      if (sprintId !== task.sprintId && subtree.length > 1)
+        throw hierarchyConflict(
+          "Cannot change sprint of a task with subtasks. Use move-to-sprint.",
+        );
+      if (sprintId) {
+        const sprint = await tx.sprint.findUnique({ where: { id: sprintId } });
+        if (!sprint)
+          throw Object.assign(new Error("Sprint not found"), { status: 404 });
+        if (sprint.projectId !== task.projectId)
+          throw hierarchyConflict(
+            "Task and sprint must belong to the same project.",
+          );
       }
-    }
-
-    // Update task
-    const updatedTask = await prisma.task.update({
-      where: { id },
-      data: {
-        ...(data.taskName && { taskName: data.taskName }),
-        ...(data.details !== undefined && { details: data.details }),
-        ...(data.startDate && { startDate: data.startDate }),
-        ...(data.deadline && { deadline: data.deadline }),
-        ...(data.sprintId !== undefined && { sprintId: data.sprintId }),
-        ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId || null }),
-        ...(data.parentTaskId !== undefined && {
-          parentTaskId: data.parentTaskId || null
-        }),
-        ...(data.progress !== undefined && { progress: data.progress }),
-      },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+      let depth = 0;
+      if (parentId) {
+        if (subtree.some((entry) => entry.task.id === parentId))
+          throw hierarchyConflict(
+            "A task cannot be parented to itself or its descendants.",
+          );
+        const parent = await tx.task.findUnique({ where: { id: parentId } });
+        if (!parent)
+          throw Object.assign(new Error("Parent task not found"), {
+            status: 404,
+          });
+        if (
+          parentId !== task.parentTaskId &&
+          !this.verifyTaskPermission(parent, userId, isAdmin)
+        )
+          throw Object.assign(
+            new Error("No permission to use this parent task"),
+            { status: 403 },
+          );
+        if (parent.sprintId !== sprintId || parent.projectId !== task.projectId)
+          throw hierarchyConflict(
+            "Parent and child tasks must belong to the same project and sprint.",
+          );
+        depth = (await taskAncestry(tx, parent)).length;
+      }
+      if (subtree.some((entry) => depth + entry.relativeDepth > 3))
+        throw hierarchyConflict(
+          "Maximum nesting depth (4 levels) reached for this subtree.",
+        );
+      if (data.progress !== undefined && subtree.length > 1)
+        throw hierarchyConflict(
+          "Parent progress is calculated from its subtasks.",
+        );
+      await this.validateAssignee(tx, data.assignedToId);
+      await tx.task.update({
+        where: { id },
+        data: {
+          ...(data.taskName !== undefined && { taskName: data.taskName }),
+          ...(data.details !== undefined && { details: data.details }),
+          ...(data.startDate !== undefined && { startDate: data.startDate }),
+          ...(data.deadline !== undefined && { deadline: data.deadline }),
+          sprintId,
+          parentTaskId: parentId,
+          ...(data.assignedToId !== undefined && {
+            assignedToId: data.assignedToId || null,
+          }),
+          ...(data.progress !== undefined && { progress: data.progress }),
         },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+      });
+      await setSubtreeDepth(tx, subtree, depth, changed);
+      await recalculateProgress(tx, task.parentTaskId, changed);
+      if (parentId !== task.parentTaskId)
+        await recalculateProgress(tx, parentId, changed);
+      const updated = await this.changedTasks(tx, changed);
+      return {
+        task: updated.find((item) => item.id === id)!,
+        updated,
+        assignmentChanged:
+          !!data.assignedToId && data.assignedToId !== task.assignedToId,
+      };
     });
-
-    // If progress was updated, cascade to parent
-    if (data.progress !== undefined && task.parentTaskId) {
-      await this.recalculateParentProgress(task.parentTaskId);
-    }
-
-    // Emit WebSocket events
-    try {
-      const io = getSocketServer();
-
-      // Emit general task update to all clients
-      io.emit('task_updated', updatedTask);
-
-      // If task was assigned to someone new, emit special notification
-      if (assignmentChanged && data.assignedToId) {
-        io.emit('task_assigned', {
-          task: updatedTask,
-          assignedTo: updatedTask.assignedTo,
-        });
-        console.log(`[Task] Task ${updatedTask.id} assigned to ${updatedTask.assignedTo?.name}`);
+    this.emitUpdates(result.updated);
+    if (result.assignmentChanged) {
+      try {
+        getSocketServer()
+          .to(`user:${result.task.assignedToId}`)
+          .emit("task_assigned", {
+            task: result.task,
+            assignedTo: result.task.assignedTo,
+          });
+      } catch {
+        console.error("[Task] Realtime delivery unavailable");
       }
-    } catch (error) {
-      console.error('[Task] Failed to emit WebSocket event:', error);
-      // Don't throw - socket failure shouldn't break task update
     }
-
-    return updatedTask;
+    return result.task;
   }
 
-  /**
-   * Move task and all subtasks to different sprint
-   */
+  /** Moving a nested subtree to another sprint detaches it to a top-level task. */
   async moveToSprint(
     id: string,
     sprintId: string | null,
     userId: string,
-    isAdmin: boolean
+    isAdmin: boolean,
   ) {
-    if (!isAdmin) {
-      throw new Error('Only admins can move tasks to different sprints');
-    }
-
-    // Find task
-    const task = await prisma.task.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            subtasks: true,
-          },
-        },
-      },
-    });
-
-    if (!task) {
-      throw new Error('Task not found');
-    }
-
-    // Verify sprint exists if not null
-    if (sprintId) {
-      const sprint = await prisma.sprint.findUnique({
-        where: { id: sprintId },
-      });
-      if (!sprint) {
-        throw new Error('Sprint not found');
+    if (!isAdmin)
+      throw Object.assign(
+        new Error("Only admins can move tasks to different sprints"),
+        { status: 403 },
+      );
+    const result = await withTaskTopology(async (tx) => {
+      const task = await tx.task.findUnique({ where: { id } });
+      if (!task)
+        throw Object.assign(new Error("Task not found"), { status: 404 });
+      await taskAncestry(tx, task);
+      if (sprintId) {
+        const sprint = await tx.sprint.findUnique({ where: { id: sprintId } });
+        if (!sprint)
+          throw Object.assign(new Error("Sprint not found"), { status: 404 });
+        if (sprint.projectId !== task.projectId)
+          throw hierarchyConflict(
+            "Task and sprint must belong to the same project.",
+          );
       }
-    }
-
-    // Get all descendant IDs
-    const descendantIds = await this.getAllDescendantIds(id);
-
-    // Update task and all descendants in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Update all descendants
-      if (descendantIds.length > 0) {
-        await tx.task.updateMany({
-          where: {
-            id: {
-              in: descendantIds,
-            },
-          },
-          data: {
-            sprintId,
-          },
-        });
-      }
-
-      // Update the task itself
-      const updatedTask = await tx.task.update({
-        where: { id },
+      const subtree = await taskSubtree(tx, task);
+      const changed = new Set(subtree.map((entry) => entry.task.id));
+      const detach = !!task.parentTaskId && sprintId !== task.sprintId;
+      await tx.task.updateMany({
+        where: { id: { in: [...changed] } },
         data: { sprintId },
       });
-
+      if (detach)
+        await tx.task.update({ where: { id }, data: { parentTaskId: null } });
+      const depth = detach ? 0 : (await taskAncestry(tx, task)).length - 1;
+      await setSubtreeDepth(tx, subtree, depth, changed);
+      if (detach) await recalculateProgress(tx, task.parentTaskId, changed);
+      const updated = await this.changedTasks(tx, changed);
       return {
-        task: updatedTask,
-        subtasksUpdated: descendantIds.length,
+        task: updated.find((item) => item.id === id)!,
+        subtasksUpdated: subtree.length - 1,
+        updated,
       };
     });
-
-    return result;
+    this.emitUpdates(result.updated);
+    return { task: result.task, subtasksUpdated: result.subtasksUpdated };
   }
 
-  /**
-   * Delete all tasks in the system
-   */
   async deleteAllTasks(): Promise<number> {
-    const result = await prisma.task.deleteMany({});
-    return result.count;
+    const result = await withTaskTopology(async (tx) => {
+      const deleted = await tx.task.findMany();
+      await tx.task.deleteMany({});
+      return deleted;
+    });
+    await this.emitDeleted(result);
+    return result.length;
   }
 
-  /**
-   * Delete all tasks in a specific sprint
-   */
   async deleteSprintTasks(sprintId: string): Promise<number> {
-    const result = await prisma.task.deleteMany({
-      where: { sprintId },
+    const result = await withTaskTopology(async (tx) => {
+      const deleted = await tx.task.findMany({ where: { sprintId } });
+      for (const task of deleted) await taskSubtree(tx, task);
+      await tx.task.deleteMany({ where: { sprintId } });
+      const changed = new Set<string>();
+      const deletedIds = new Set(deleted.map((task) => task.id));
+      for (const task of deleted)
+        if (task.parentTaskId && !deletedIds.has(task.parentTaskId))
+          await recalculateProgress(tx, task.parentTaskId, changed);
+      return { deleted, updated: await this.changedTasks(tx, changed) };
     });
-    return result.count;
+    await this.emitDeleted(result.deleted);
+    this.emitUpdates(result.updated);
+    return result.deleted.length;
   }
 
-  /**
-   * Delete all subtasks under a specific task (recursively)
-   */
   async deleteTaskSubtasks(taskId: string): Promise<number> {
-    // Verify task exists
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-    });
-
-    if (!task) {
-      throw new Error('Task not found');
-    }
-
-    // Get all descendant IDs recursively
-    const descendantIds = await this.getAllDescendantIds(taskId);
-
-    // Delete all descendants
-    if (descendantIds.length > 0) {
-      const result = await prisma.task.deleteMany({
-        where: {
-          id: {
-            in: descendantIds,
-          },
-        },
+    const result = await withTaskTopology(async (tx) => {
+      const task = await tx.task.findUnique({ where: { id: taskId } });
+      if (!task)
+        throw Object.assign(new Error("Task not found"), { status: 404 });
+      await taskAncestry(tx, task);
+      const subtree = await taskSubtree(tx, task);
+      const deleted = subtree.slice(1).map((entry) => entry.task);
+      await tx.task.deleteMany({
+        where: { id: { in: deleted.map((item) => item.id) } },
       });
-      return result.count;
-    }
-
-    return 0;
+      const changed = new Set<string>();
+      if (deleted.length) await recalculateProgress(tx, taskId, changed);
+      return { deleted, updated: await this.changedTasks(tx, changed) };
+    });
+    await this.emitDeleted(result.deleted);
+    this.emitUpdates(result.updated);
+    return result.deleted.length;
   }
 
-  /**
-   * Delete task and optionally cascade to subtasks
-   */
-  async deleteTask(id: string, cascade: boolean, userId: string, isAdmin: boolean) {
-    // Find task
-    const task = await prisma.task.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            subtasks: true,
-          },
-        },
-      },
+  async deleteTask(
+    id: string,
+    cascade: boolean,
+    userId: string,
+    isAdmin: boolean,
+  ) {
+    const result = await withTaskTopology(async (tx) => {
+      const task = await tx.task.findUnique({ where: { id } });
+      if (!task)
+        throw Object.assign(new Error("Task not found"), { status: 404 });
+      if (!this.verifyTaskPermission(task, userId, isAdmin))
+        throw Object.assign(new Error("No permission to delete this task"), {
+          status: 403,
+        });
+      await taskAncestry(tx, task);
+      const subtree = await taskSubtree(tx, task);
+      if (subtree.length > 1 && !cascade)
+        throw hierarchyConflict(
+          `Task has ${subtree.length - 1} subtasks. Use cascade=true to delete all subtasks.`,
+        );
+      await tx.task.delete({ where: { id } });
+      const changed = new Set<string>();
+      await recalculateProgress(tx, task.parentTaskId, changed);
+      return {
+        deleted: subtree.map((entry) => entry.task),
+        updated: await this.changedTasks(tx, changed),
+      };
     });
+    await this.emitDeleted(result.deleted);
+    this.emitUpdates(result.updated);
+  }
 
-    if (!task) {
-      throw new Error('Task not found');
-    }
-
-    // Verify permission - members can delete their own created tasks
-    if (!this.verifyTaskPermission(task, userId, isAdmin)) {
-      throw new Error('No permission to delete this task');
-    }
-
-    // Check for subtasks
-    if (task._count.subtasks > 0 && !cascade) {
-      throw new Error(
-        `Task has ${task._count.subtasks} subtasks. Use cascade=true to delete all subtasks.`
-      );
-    }
-
-    // Delete task (cascade is handled by database schema)
-    await prisma.task.delete({
+  private async validateAssignee(tx: Prisma.TransactionClient, id?: string) {
+    if (!id) return;
+    const user = await tx.user.findUnique({
       where: { id },
+      select: { isActive: true },
     });
-
-    // Emit WebSocket event
+    if (!user?.isActive)
+      throw Object.assign(new Error("Assigned user not found"), {
+        status: 404,
+      });
+  }
+  private changedTasks(tx: Prisma.TransactionClient, ids: Set<string>) {
+    return tx.task.findMany({
+      where: { id: { in: [...ids] } },
+      include: taskRelations,
+    });
+  }
+  private emitUpdates(tasks: Array<{ id: string }>) {
     try {
       const io = getSocketServer();
-      io.emit('task_deleted', id);
-      console.log(`[Task] Task ${id} deleted`);
-    } catch (error) {
-      console.error('[Task] Failed to emit WebSocket event:', error);
+      for (const task of tasks) io.emit("task_updated", task);
+    } catch {
+      console.error("[Task] Realtime delivery unavailable");
+    }
+  }
+  private async emitDeleted(
+    tasks: Array<{
+      id: string;
+      createdById: string;
+      assignedToId: string | null;
+    }>,
+  ) {
+    for (const task of tasks) {
+      try {
+        await emitTenantEvent("task_deleted", task.id, {
+          taskAcl: {
+            createdById: task.createdById,
+            assignedToId: task.assignedToId,
+          },
+        });
+      } catch {
+        console.error("[Task] Realtime delivery unavailable");
+      }
     }
   }
 
@@ -819,19 +587,19 @@ export class TaskService {
     });
 
     if (!task) {
-      throw new Error('Task not found');
+      throw new Error("Task not found");
     }
 
     // Verify permission
     if (!this.verifyTaskPermission(task, userId, isAdmin)) {
-      throw new Error('No permission to view this task');
+      throw new Error("No permission to view this task");
     }
 
     // Get ancestors (path to root)
-    const ancestors = await this.getAncestors(id);
+    const ancestors = await this.getAncestors(id, userId, isAdmin);
 
     // Get descendants (full subtree)
-    const descendants = await this.getDescendantsTree(id);
+    const descendants = await this.getDescendantsTree(id, userId, isAdmin);
 
     return {
       root: ancestors.length > 0 ? ancestors[0] : null,
@@ -856,16 +624,16 @@ export class TaskService {
     });
 
     if (!task) {
-      throw new Error('Task not found');
+      throw new Error("Task not found");
     }
 
     // Verify permission
     if (!this.verifyTaskPermission(task, userId, isAdmin)) {
-      throw new Error('No permission to view this task');
+      throw new Error("No permission to view this task");
     }
 
     // Get all descendants
-    const descendantIds = await this.getAllDescendantIds(id);
+    const descendantIds = await this.getAllDescendantIds(id, userId, isAdmin);
 
     // Get subtask statistics
     const subtasks = await prisma.task.findMany({
@@ -882,7 +650,7 @@ export class TaskService {
     const totalSubtasks = subtasks.length;
     const completedSubtasks = subtasks.filter((t) => t.progress === 100).length;
     const inProgressSubtasks = subtasks.filter(
-      (t) => t.progress > 0 && t.progress < 100
+      (t) => t.progress > 0 && t.progress < 100,
     ).length;
 
     // Calculate overall progress
@@ -899,17 +667,17 @@ export class TaskService {
     if (task.deadline) {
       const now = new Date();
       daysRemaining = Math.ceil(
-        (task.deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        (task.deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // If we have start date, calculate if on track
       if (task.startDate) {
         const totalDays = Math.ceil(
           (task.deadline.getTime() - task.startDate.getTime()) /
-            (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24),
         );
         const elapsedDays = Math.ceil(
-          (now.getTime() - task.startDate.getTime()) / (1000 * 60 * 60 * 24)
+          (now.getTime() - task.startDate.getTime()) / (1000 * 60 * 60 * 24),
         );
         const expectedProgress = (elapsedDays / totalDays) * 100;
 
@@ -921,7 +689,7 @@ export class TaskService {
           const remainingProgress = 100 - overallProgress;
           const estimatedDays = Math.ceil(remainingProgress / velocity);
           estimatedCompletion = new Date(
-            now.getTime() + estimatedDays * 24 * 60 * 60 * 1000
+            now.getTime() + estimatedDays * 24 * 60 * 60 * 1000,
           );
         }
       }
@@ -939,46 +707,12 @@ export class TaskService {
   }
 
   /**
-   * Helper: Recalculate parent progress based on subtasks
-   */
-  private async recalculateParentProgress(parentId: string) {
-    // Get all direct subtasks
-    const subtasks = await prisma.task.findMany({
-      where: { parentTaskId: parentId },
-      select: {
-        progress: true,
-      },
-    });
-
-    if (subtasks.length === 0) {
-      return;
-    }
-
-    // Calculate average progress
-    const averageProgress =
-      subtasks.reduce((sum, task) => sum + task.progress, 0) / subtasks.length;
-
-    // Update parent progress
-    const parent = await prisma.task.update({
-      where: { id: parentId },
-      data: {
-        progress: Math.round(averageProgress),
-      },
-    });
-
-    // Recurse up the hierarchy
-    if (parent.parentTaskId) {
-      await this.recalculateParentProgress(parent.parentTaskId);
-    }
-  }
-
-  /**
    * Helper: Verify if user has permission to access task
    */
   private verifyTaskPermission(
     task: { assignedToId: string | null; createdById: string },
     userId: string,
-    isAdmin: boolean
+    isAdmin: boolean,
   ): boolean {
     if (isAdmin) return true;
     if (task.assignedToId === userId) return true;
@@ -986,100 +720,80 @@ export class TaskService {
     return false;
   }
 
-  /**
-   * Helper: Get all descendant IDs (flat list)
-   */
-  private async getAllDescendantIds(taskId: string): Promise<string[]> {
+  /** Each traversal edge observes the same task ACL as direct reads. */
+  private async getAllDescendantIds(
+    taskId: string,
+    userId: string,
+    isAdmin: boolean,
+  ): Promise<string[]> {
     const descendants: string[] = [];
-
+    const seen = new Set([taskId]);
     const getChildren = async (id: string) => {
       const children = await prisma.task.findMany({
-        where: { parentTaskId: id },
+        where: { parentTaskId: id, ...taskReadWhere(userId, isAdmin) },
         select: { id: true },
       });
-
       for (const child of children) {
+        if (seen.has(child.id))
+          throw hierarchyConflict("Task hierarchy contains a cycle.");
+        seen.add(child.id);
         descendants.push(child.id);
-        await getChildren(child.id); // Recurse
+        await getChildren(child.id);
       }
     };
-
     await getChildren(taskId);
     return descendants;
   }
 
-  /**
-   * Helper: Get ancestors (path to root)
-   */
-  private async getAncestors(
-    taskId: string
-  ): Promise<Array<{ id: string; taskName: string; nestingLevel: number }>> {
+  private async getAncestors(taskId: string, userId: string, isAdmin: boolean) {
     const ancestors: Array<{
       id: string;
       taskName: string;
       nestingLevel: number;
     }> = [];
-
+    const seen = new Set<string>();
     let currentId: string | null = taskId;
-
     while (currentId) {
-      const task = await prisma.task.findUnique({
-        where: { id: currentId },
-        select: {
-          id: true,
-          taskName: true,
-          nestingLevel: true,
-          parentTaskId: true,
-        },
-      });
-
-      if (!task) break;
-
-      if (task.parentTaskId) {
-        const parent = await prisma.task.findUnique({
-          where: { id: task.parentTaskId },
-          select: {
-            id: true,
-            taskName: true,
-            nestingLevel: true,
-          },
+      if (seen.has(currentId))
+        throw hierarchyConflict("Task hierarchy contains a cycle.");
+      seen.add(currentId);
+      const task = await prisma.task.findUnique({ where: { id: currentId } });
+      if (!task || !this.verifyTaskPermission(task, userId, isAdmin)) break;
+      if (task.id !== taskId)
+        ancestors.unshift({
+          id: task.id,
+          taskName: task.taskName,
+          nestingLevel: task.nestingLevel,
         });
-
-        if (parent) {
-          ancestors.unshift(parent); // Add to beginning
-        }
-      }
-
       currentId = task.parentTaskId;
     }
-
     return ancestors;
   }
 
-  /**
-   * Helper: Get descendants tree structure
-   */
-  private async getDescendantsTree(taskId: string): Promise<any[]> {
+  private async getDescendantsTree(
+    taskId: string,
+    userId: string,
+    isAdmin: boolean,
+    seen = new Set<string>(),
+  ): Promise<any[]> {
+    if (seen.has(taskId))
+      throw hierarchyConflict("Task hierarchy contains a cycle.");
+    seen.add(taskId);
     const children = await prisma.task.findMany({
-      where: { parentTaskId: taskId },
-      select: {
-        id: true,
-        taskName: true,
-        nestingLevel: true,
-        progress: true,
-      },
+      where: { parentTaskId: taskId, ...taskReadWhere(userId, isAdmin) },
+      select: { id: true, taskName: true, nestingLevel: true, progress: true },
     });
-
     const tree = [];
-
-    for (const child of children) {
-      const subtree = await this.getDescendantsTree(child.id);
+    for (const child of children)
       tree.push({
         ...child,
-        children: subtree,
+        children: await this.getDescendantsTree(
+          child.id,
+          userId,
+          isAdmin,
+          seen,
+        ),
       });
-    }
-
     return tree;
   }
 }

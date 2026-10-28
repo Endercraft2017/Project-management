@@ -1,13 +1,14 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Member Selection Tab
  * Shared member selection for weekly summaries and missing updates tracking
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 import { useMembersConfig, useUpdateMembersConfig } from '@/hooks/useSummaries';
 import { useUsers } from '@/hooks/useUsers';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 import type { User } from '@/types';
 
 export default function MemberSelectionTab() {
@@ -20,7 +21,7 @@ export default function MemberSelectionTab() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Get the users array from the API response
-  const users = usersData?.data?.users || [];
+  const users = useMemo(() => usersData?.data?.users || [], [usersData]);
 
   // Initialize with config or all users (default)
   useEffect(() => {
@@ -61,10 +62,10 @@ export default function MemberSelectionTab() {
         description: `${selectedUserIds.length} member(s) selected for weekly summaries and missing updates tracking`,
         variant: 'success',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Update Failed',
-        description: error.response?.data?.message || 'Failed to update member selection',
+        description: apiErrorMessage(error) || 'Failed to update member selection',
         variant: 'error',
       });
     } finally {

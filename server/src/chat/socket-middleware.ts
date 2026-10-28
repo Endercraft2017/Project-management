@@ -1,127 +1,158 @@
-/**
- * Socket.IO Middleware
- * Authentication and authorization for WebSocket connections
- */
-
+/** Session and tenant authorization for every realtime boundary. */
 import { Socket } from 'socket.io';
 import { ExtendedError } from 'socket.io/dist/namespace';
+import prisma from '@/database/client';
+import { sessionStore } from '@/middlewares/session';
+import { getTenantById } from '@/platform/store';
+import { runWithTenant, TenantContext } from '@/tenancy/context';
 
-/**
- * Extend Socket type to include userId
- */
 export interface AuthenticatedSocket extends Socket {
   userId: string;
   userName: string;
+  tenant: TenantContext;
 }
 
-/**
- * Authenticate socket connection using Express session
- */
+const credentialKeys = new Set([
+  'password',
+  'passwordhash',
+  'password_hash',
+  'googlerefreshtoken',
+  'googleaccesstoken',
+  'tokenexpiresat',
+  'sessionversion',
+  'setuptoken',
+  'setuptokenhash',
+  'setup_token_hash',
+  'access_token',
+  'refresh_token',
+]);
+/** Explicit transport DTO barrier for legacy services that include whole users. */
+export function publicSocketPayload<T>(value: T): T {
+  if (value === undefined) return value;
+  return JSON.parse(
+    JSON.stringify(value, (key, data) =>
+      credentialKeys.has(key.toLowerCase()) ? undefined : data,
+    ),
+  );
+}
+
+export async function readSocketIdentity(
+  socket: any,
+): Promise<{ tenant: TenantContext; user: { id: string; name: string; role: string } }> {
+  const sessionId = socket.data?.sessionId || socket.request?.sessionID;
+  if (typeof sessionId !== 'string' || !sessionId)
+    throw new Error('Unauthorized');
+  const session: any = await new Promise((resolve, reject) => {
+    sessionStore.get(sessionId, (error: any, value: any) =>
+      error ? reject(error) : resolve(value),
+    );
+  });
+  const userId = session?.passport?.user;
+  if (
+    !session ||
+    typeof session.tenantId !== 'string' ||
+    typeof userId !== 'string' ||
+    !Number.isInteger(session.sessionVersion) ||
+    !Number.isFinite(session.issuedAt)
+  ) {
+    throw new Error('Unauthorized');
+  }
+  if (
+    session.cookie?.expires &&
+    new Date(session.cookie.expires).getTime() <= Date.now()
+  )
+    throw new Error('Unauthorized');
+  if (
+    socket.data?.tenantId &&
+    (session.tenantId !== socket.data.tenantId || userId !== socket.data.userId)
+  )
+    throw new Error('Unauthorized');
+  const tenant = await getTenantById(session.tenantId);
+  if (!tenant || tenant.status !== 'ACTIVE') throw new Error('Unauthorized');
+  const user = await runWithTenant(tenant, () =>
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, isActive: true, sessionVersion: true, role: true },
+    }),
+  );
+  if (!user?.isActive || user.sessionVersion !== session.sessionVersion)
+    throw new Error('Unauthorized');
+  return { tenant, user };
+}
+
 export async function authenticateSocket(
   socket: Socket,
-  next: (err?: ExtendedError) => void
+  next: (err?: ExtendedError) => void,
 ) {
   try {
-    // Access session from socket request
-    const session = (socket.request as any).session;
-
-    // Check if session exists and has passport user
-    if (!session || !session.passport || !session.passport.user) {
-      console.log('[Socket.IO] Authentication failed: No session or user');
-      return next(new Error('Unauthorized'));
-    }
-
-    const userId = session.passport.user;
-
-    // Verify user exists in database
-    const { default: prisma } = await import('@/database/client');
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, name: true, isActive: true },
-    });
-
-    if (!user || !user.isActive) {
-      console.log('[Socket.IO] Authentication failed: User not found or inactive');
-      return next(new Error('User not found or inactive'));
-    }
-
-    // Attach user info to socket
-    (socket as AuthenticatedSocket).userId = user.id;
-    (socket as AuthenticatedSocket).userName = user.name;
-
-    console.log(`[Socket.IO] User ${user.name} (${user.id}) authenticated`);
+    const sessionId = (socket.request as any).sessionID;
+    const session: any = await new Promise((resolve, reject) => sessionStore.get(sessionId, (error: any, value: any) => error ? reject(error) : resolve(value)));
+    if (!session?.workspaceContext || socket.handshake?.auth?.workspaceContext !== session.workspaceContext) throw new Error('Unauthorized');
+    const { tenant, user } = await readSocketIdentity(socket);
+    const authenticated = socket as AuthenticatedSocket;
+    authenticated.tenant = tenant;
+    authenticated.userId = user.id;
+    authenticated.userName = user.name;
+    // Server-derived identifiers only. No client handshake tenant/schema selectors.
+    socket.data.tenantId = tenant.id;
+    socket.data.userId = user.id;
+    socket.data.sessionId = (socket.request as any).sessionID;
     next();
-  } catch (error: any) {
-    console.error('[Socket.IO] Authentication error:', error.message);
-    next(new Error('Authentication failed'));
+  } catch {
+    next(new Error('Unauthorized'));
   }
 }
 
-/**
- * Rate limiter for socket events
- * Prevents spam and abuse
- */
-export class SocketRateLimiter {
-  private events: Map<string, number[]> = new Map();
-  private maxEvents: number;
-  private windowMs: number;
-
-  constructor(maxEvents: number = 30, windowMs: number = 60000) {
-    this.maxEvents = maxEvents;
-    this.windowMs = windowMs;
+/** Explicit ALS scope on each callback, independent of handshake execution context. */
+export async function withSocketAuthorization<T>(
+  socket: AuthenticatedSocket,
+  fn: () => Promise<T>,
+): Promise<T> {
+  let identity: Awaited<ReturnType<typeof readSocketIdentity>>;
+  try {
+    identity = await readSocketIdentity(socket);
+  } catch (error) {
+    socket.disconnect(true);
+    throw error;
   }
+  socket.tenant = identity.tenant;
+  socket.userId = identity.user.id;
+  socket.userName = identity.user.name;
+  return runWithTenant(identity.tenant, fn);
+}
 
-  /**
-   * Check if event is allowed
-   */
-  check(socketId: string): boolean {
+export class SocketRateLimiter {
+  private events = new Map<string, number[]>();
+  constructor(
+    private maxEvents = 30,
+    private windowMs = 60000,
+  ) {}
+  check(key: string): boolean {
     const now = Date.now();
-    const events = this.events.get(socketId) || [];
-
-    // Remove old events outside window
-    const recentEvents = events.filter((timestamp) => now - timestamp < this.windowMs);
-
-    // Check if limit exceeded
-    if (recentEvents.length >= this.maxEvents) {
-      return false;
-    }
-
-    // Add current event
-    recentEvents.push(now);
-    this.events.set(socketId, recentEvents);
-
+    const recent = (this.events.get(key) || []).filter(
+      (time) => now - time < this.windowMs,
+    );
+    if (recent.length >= this.maxEvents) return false;
+    recent.push(now);
+    this.events.set(key, recent);
     return true;
   }
-
-  /**
-   * Clear events for socket (on disconnect)
-   */
-  clear(socketId: string) {
-    this.events.delete(socketId);
+  clear(key: string) {
+    this.events.delete(key);
   }
-
-  /**
-   * Clean up old entries periodically
-   */
   cleanup() {
     const now = Date.now();
-    for (const [socketId, events] of this.events.entries()) {
-      const recentEvents = events.filter((timestamp) => now - timestamp < this.windowMs);
-      if (recentEvents.length === 0) {
-        this.events.delete(socketId);
-      } else {
-        this.events.set(socketId, recentEvents);
-      }
+    for (const [key, times] of this.events) {
+      const recent = times.filter((time) => now - time < this.windowMs);
+      if (recent.length) this.events.set(key, recent);
+      else this.events.delete(key);
     }
   }
 }
-
-// Create global rate limiter instances
-export const messageRateLimiter = new SocketRateLimiter(30, 60000); // 30 messages per minute
-export const typingRateLimiter = new SocketRateLimiter(60, 60000); // 60 typing events per minute
-
-// Cleanup every 5 minutes
-setInterval(() => {
+export const messageRateLimiter = new SocketRateLimiter(30, 60000);
+export const typingRateLimiter = new SocketRateLimiter(60, 60000);
+const cleanup = setInterval(() => {
   messageRateLimiter.cleanup();
   typingRateLimiter.cleanup();
-}, 5 * 60 * 1000);
+}, 300000);
+cleanup.unref();

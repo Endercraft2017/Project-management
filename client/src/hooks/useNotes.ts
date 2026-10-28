@@ -45,11 +45,17 @@ export interface AddReminderInput {
   remindAt: string;
 }
 
+export interface NoteFilters {
+  search?: string;
+  tag?: string;
+  pinned?: boolean;
+}
+
 // Query keys
 export const noteKeys = {
   all: ['notes'] as const,
   lists: () => [...noteKeys.all, 'list'] as const,
-  list: (filters?: any) => [...noteKeys.lists(), filters] as const,
+  list: (filters?: NoteFilters) => [...noteKeys.lists(), filters] as const,
   details: () => [...noteKeys.all, 'detail'] as const,
   detail: (id: string) => [...noteKeys.details(), id] as const,
 };
@@ -57,11 +63,7 @@ export const noteKeys = {
 /**
  * Get all notes with optional filters
  */
-export function useNotes(options?: {
-  search?: string;
-  tag?: string;
-  pinned?: boolean;
-}) {
+export function useNotes(options?: NoteFilters) {
   return useQuery({
     queryKey: noteKeys.list(options),
     queryFn: async () => {
@@ -168,7 +170,7 @@ export function useDeleteReminder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ reminderId, noteId }: { reminderId: string; noteId: string }) => {
+    mutationFn: async ({ reminderId }: { reminderId: string; noteId: string }) => {
       await api.delete(`/api/notes/reminders/${reminderId}`);
     },
     onSuccess: (_, variables) => {

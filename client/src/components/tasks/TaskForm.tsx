@@ -1,3 +1,5 @@
+import { isAxiosError } from 'axios';
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Task Form Component
  * Create and edit tasks with validation
@@ -35,9 +37,9 @@ export default function TaskForm({
   const updateTask = useUpdateTask();
   const createSubtask = useCreateSubtask();
 
-  const sprints = Array.isArray(sprintsData?.data) ? sprintsData.data : [];
+  const sprints = useMemo(() => Array.isArray(sprintsData?.data) ? sprintsData.data : [], [sprintsData]);
   const users = Array.isArray(usersData?.data?.users) ? usersData.data.users : [];
-  const allTasks = Array.isArray(tasksData?.data) ? tasksData.data : [];
+  const allTasks = useMemo(() => Array.isArray(tasksData?.data) ? tasksData.data : [], [tasksData]);
 
   const [formData, setFormData] = useState<
     CreateTaskInput | UpdateTaskInput
@@ -82,7 +84,7 @@ export default function TaskForm({
     });
 
     // Sort within each group by name
-    groups.forEach((tasks, level) => {
+    groups.forEach((tasks) => {
       tasks.sort((a, b) => a.taskName.localeCompare(b.taskName));
     });
 
@@ -94,10 +96,10 @@ export default function TaskForm({
 
   // Get selected parent task name for display
   const selectedParentTask = useMemo(() => {
-    const parentId = (formData as any).parentTaskId;
+    const parentId = formData.parentTaskId;
     if (!parentId) return '';
     return allTasks.find(t => t.id === parentId)?.taskName || '';
-  }, [(formData as any).parentTaskId, allTasks]);
+  }, [formData.parentTaskId, allTasks]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -160,7 +162,7 @@ export default function TaskForm({
 
     try {
       // Prepare data with sprintName if creating new sprint
-      const submitData: any = { ...formData };
+      const submitData = { ...formData };
       if (isCreatingNewSprint && sprintInput.trim()) {
         submitData.sprintName = sprintInput.trim();
         delete submitData.sprintId; // Remove sprintId when using sprintName
@@ -182,20 +184,20 @@ export default function TaskForm({
 
       onSuccess?.();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Form submission error:', error);
 
       // Provide helpful error message
       let errorMessage = 'Failed to save task';
 
-      if (error?.response?.status === 404) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         errorMessage = 'Task not found. The page will refresh to update the task list.';
         // Close form and let the cache invalidation refresh the data
         setTimeout(() => {
           onClose();
         }, 2000);
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
+      } else if (apiErrorMessage(error)) {
+        errorMessage = apiErrorMessage(error)!;
       }
 
       setErrors({
@@ -355,7 +357,7 @@ export default function TaskForm({
                     <button
                       type="button"
                       onClick={() => {
-                        setFormData({ ...formData, parentTaskId: '' } as any);
+                        setFormData({ ...formData, parentTaskId: '' });
                         setShowParentDropdown(false);
                         setParentTaskSearch('');
                       }}
@@ -382,7 +384,7 @@ export default function TaskForm({
                               key={t.id}
                               type="button"
                               onClick={() => {
-                                setFormData({ ...formData, parentTaskId: t.id } as any);
+                                setFormData({ ...formData, parentTaskId: t.id });
                                 setShowParentDropdown(false);
                                 setParentTaskSearch('');
                               }}

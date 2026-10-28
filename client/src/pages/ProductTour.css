@@ -13,15 +13,15 @@
   font-display: swap;
 }
 .product-tour {
-  --ez-bg: #080b12;
-  --ez-surface: #111824;
-  --ez-raised: #151e2c;
-  --ez-text: #f5f7fa;
-  --ez-subtle: #aab5c4;
-  --ez-muted: #8a97a9;
-  --ez-orange: #f7a21b;
-  --ez-blue: #4d7cfe;
-  --ez-cyan: #36d7ff;
+  --ez-bg: var(--brand-bg);
+  --ez-surface: var(--brand-surface);
+  --ez-raised: var(--brand-raised);
+  --ez-text: var(--brand-text);
+  --ez-subtle: var(--brand-subtle);
+  --ez-muted: var(--brand-muted);
+  --ez-orange: var(--brand-orange);
+  --ez-blue: var(--brand-blue);
+  --ez-cyan: var(--brand-cyan);
   --tour-ease: var(--ease-enter, cubic-bezier(0.2, 0, 0, 1));
   color: var(--ez-text);
   background: var(--ez-bg);

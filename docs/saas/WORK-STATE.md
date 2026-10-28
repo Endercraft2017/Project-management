@@ -1,33 +1,13 @@
-# Work state and handoff
+# Current handoff
 
-Current E-Z alignment update (2026-10-28): branch saas/ez-landing-and-tenant-alignment. Brand, seller/markets and public-root routing are clarified in DECISIONS.md. The landing now uses official E-Z assets and actual UI captures with demo data; existing app/legacy links and Google return to /app are preserved. ERP branch 5b974e0 was reviewed read-only. EZ-TENANT-AND-LANDING-PLAN.md defines reuse of the existing operator console through product grants/adapter; tenant-code/password login and that adapter are not implemented. No live-domain deployment, DNS edit, reset, purchase or ERP modification occurred.
+Updated 2026-10-28. Branch: `production`. This is a new standalone E-Z tenant-console implementation; the earlier external ERP console adapter plan is superseded. See [ADR-001](ADR-001-PRODUCTION-TENANCY.md), [verification](VERIFICATION.md), and [ordered rollout](ROLLOUT-CHECKLIST.md).
 
-Verification for this slice: full workspace build passes; 19 frontend tests, 24 focused backend tests and six retained browser tests pass. Changed client lint exits 0 with two existing AcceptInvite warnings. Independent mobile/tablet/desktop and reduced-motion review passed. Broader SaaS/production/authentication checks remain open.
+Implemented: isolated company accounts and schemas; code/email/password access; separate operator sessions; company provisioning, activation, invitations, recovery and suspension; owner/seat protections; company-visible projects; private nested task/read/socket policies; atomic hierarchy/rollups; scoped files and quota accounting; durable reminders and bounded AI generation; encrypted backup/restore tools; tested CI without an automatic deployment step. Core boots without Google/AI/SMTP keys.
 
-Active 2026-10-28 update: owner choices are recorded in DECISIONS.md. Branch: saas/foundation-and-product-tour. Exact-ID owner and task-read authorization repairs were reviewed and pushed as 96dc163. The isolated /tour carousel and pinned design guidance passed lead/independent review. No reset, purchase or deployment was performed.
+The shared browser cookie is checked against a document's pinned sign-in context before protected operations. A changed sign-in shows a reload screen instead of submitting an old company's form into the new session. Console identity remains independent.
 
-Latest verification: full workspace build exit 0; changed client source/config/browser-test ESLint exit 0; 20 focused backend tests and 19 existing frontend tests pass; four retained Playwright browser tests pass. Frozen dependency install passes with a minimal lockfile update for pinned Swiper and Playwright. Screenshots, regression output and review limits are in evidence/ and IMPLEMENTATION-UPDATE.md. Existing repository-wide lint/advisory findings remain open; no claim of complete Phase 0 or SaaS readiness.
+The E-Z landing uses official assets and an accessible Swiper screen carousel. Landing, access/console and workspace colors/fonts consume shared brand tokens. Demo screenshots are rendered application fixtures, clearly labeled and distinct from authenticated browser evidence.
 
-As of 2026-10-27. This file is the short entry point for implementation agents; follow the linked contracts rather than relying on chat history.
+Remaining work and owner decisions are collected in [DECISIONS.md](DECISIONS.md). Billing/webhooks/paid entitlements, true operator MFA, a measured capacity/scaling plan, hosted backup schedules, 30-day deleted-item recovery, export/deletion/privacy controls and real provider/account/domain activation remain launch gates. Do not infer production readiness or complete handbook coverage from the local build/tests.
 
-## Completed in the audit phase
-
-- Reviewed the uploaded handbook as reference data and mapped all 233 checks. See CHECKLIST.csv; FAIL and UNVERIFIED remain open work, not completed fixes.
-- Parallel security, backend/data, frontend/UX and delivery reviews; lead source verification; independent rollout/security/design reviews.
-- Current local build/typecheck/frontend test and dependency/lint evidence, synthetic authorization reproduction, public desktop/mobile browser observations and read-only local DB metadata.
-- Official-source free-tier/tooling research; bounded Arena architecture decision and provenance are retained with this package when finalized.
-- Ordered implementation plan, target architecture, global design specification and one owner-decision register.
-
-## Original audit implementation status (2026-10-27; superseded by active update above)
-
-No product implementation task is complete in this change. Existing authorization, startup, CI, tenancy and UX findings remain in the application. No paid account, production deployment, destructive migration, real customer messaging or billing activation was performed.
-
-Next actionable phase: **Phase 0** in IMPLEMENTATION-PLAN.md. Start with a disposable test harness and the exact ownership/task-read/socket regression tests, then fix those boundaries. Use separate authors/reviewers for security changes. Optional-provider gating must preserve authentication on protected resources.
-
-Most Phase 0 tasks can proceed without brand, hosting or pricing answers. D2 and D4 must be resolved before the production data/permission migration; D3 before customer identity integration; D5–D8 and D10 before the affected provider/commercial/operational launch gates. Do not reset data or broaden current privacy rules by assumption.
-
-## Required context for every implementation agent
-
-Read README.md, the current phase in IMPLEMENTATION-PLAN.md, TARGET-ARCHITECTURE.md, DESIGN-SYSTEM.md and DECISIONS.md. Use one Workspace security/billing concept, shared runtime API schemas, scoped policies/repositories, and shared UI primitives. Do not create an independent token/component/session/permission system inside a feature. Respect disjoint ownership; contracts, migrations, lockfiles and global design tokens have one writer at a time.
-
-Report the changed behavior, targeted checks and unresolved risks. The lead reviews the diff and evidence before authorizing a commit/push on a feature branch. Never merge/deploy or mark a phase complete on a build result alone. Update this handoff and checklist only for controls actually revalidated.
+Use current contracts and source, not historical chat or superseded proposals. Maintain one writer for schemas, shared tokens and dependency locks. Review source and test evidence before committing/pushing; do not merge/deploy without the applicable authorization.

@@ -3,14 +3,15 @@
  * Business logic for sprint operations
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
-import prisma from '@/database/client';
+import { PrismaClient, Prisma } from "@prisma/client";
+import prisma from "@/database/client";
+import { withTaskTopology, taskReadWhere } from "@/tasks/hierarchy";
 import {
   ListSprintsQuery,
   CreateSprint,
   UpdateSprint,
   GetSprintTasksQuery,
-} from './validators';
+} from "./validators";
 
 export class SprintService {
   /**
@@ -68,17 +69,23 @@ export class SprintService {
   /**
    * Get sprint by ID
    */
-  async getSprintById(id: string, includeTasks = false) {
+  async getSprintById(
+    id: string,
+    includeTasks: boolean,
+    userId: string,
+    isAdmin: boolean,
+  ) {
     const sprint = await prisma.sprint.findUnique({
       where: { id },
       include: {
         _count: {
           select: {
-            tasks: true,
+            tasks: { where: taskReadWhere(userId, isAdmin) },
           },
         },
         ...(includeTasks && {
           tasks: {
+            where: taskReadWhere(userId, isAdmin),
             select: {
               id: true,
               taskName: true,
@@ -127,7 +134,7 @@ export class SprintService {
     });
 
     if (!existingSprint) {
-      throw new Error('Sprint not found');
+      throw new Error("Sprint not found");
     }
 
     // If updating dates, validate the new date range
@@ -135,7 +142,7 @@ export class SprintService {
     const endDate = data.endDate || existingSprint.endDate;
 
     if (endDate <= startDate) {
-      throw new Error('End date must be after start date');
+      throw new Error("End date must be after start date");
     }
 
     // Update sprint
@@ -156,60 +163,47 @@ export class SprintService {
   /**
    * Delete a sprint
    */
-  async deleteSprint(id: string, moveTasksToBacklog: boolean, deleteTasks: boolean = false) {
-    // Check if sprint exists and get task count
-    const sprint = await prisma.sprint.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
-      },
-    });
-
-    if (!sprint) {
-      throw new Error('Sprint not found');
-    }
-
-    // Validate options
-    if (deleteTasks && moveTasksToBacklog) {
-      throw new Error('Cannot use both deleteTasks and moveTasksToBacklog options');
-    }
-
-    // If sprint has tasks and not moving to backlog or deleting, prevent deletion
-    if (sprint._count.tasks > 0 && !moveTasksToBacklog && !deleteTasks) {
+  async deleteSprint(
+    id: string,
+    moveTasksToBacklog: boolean,
+    deleteTasks: boolean = false,
+  ) {
+    if (deleteTasks && moveTasksToBacklog)
       throw new Error(
-        `Sprint has ${sprint._count.tasks} tasks. Use moveTasksToBacklog=true to move tasks or deleteTasks=true to delete all tasks.`
+        "Cannot use both deleteTasks and moveTasksToBacklog options",
       );
-    }
-
-    // Use transaction to ensure atomicity
-    await prisma.$transaction(async (tx) => {
-      if (deleteTasks && sprint._count.tasks > 0) {
-        // Delete all tasks in sprint (cascade will delete subtasks)
-        // No need to explicitly delete - Prisma cascade will handle it
-        console.log(`Deleting sprint ${id} with ${sprint._count.tasks} tasks (cascade delete)`);
-      } else if (moveTasksToBacklog && sprint._count.tasks > 0) {
-        // Move tasks to backlog (null sprint)
+    // Count and mutation share the topology lock with task creation and moves.
+    // An empty-sprint check outside the transaction could miss a new task and
+    // cascade-delete it without the caller choosing deleteTasks.
+    await withTaskTopology(async (tx) => {
+      const sprint = await tx.sprint.findUnique({
+        where: { id },
+        include: { _count: { select: { tasks: true } } },
+      });
+      if (!sprint) throw new Error("Sprint not found");
+      if (sprint._count.tasks > 0 && !moveTasksToBacklog && !deleteTasks) {
+        throw new Error(
+          `Sprint has ${sprint._count.tasks} tasks. Use moveTasksToBacklog=true to move tasks or deleteTasks=true to delete all tasks.`,
+        );
+      }
+      if (moveTasksToBacklog)
         await tx.task.updateMany({
           where: { sprintId: id },
           data: { sprintId: null },
         });
-      }
-
-      // Delete sprint (if deleteTasks=true, cascade will auto-delete tasks and subtasks)
-      await tx.sprint.delete({
-        where: { id },
-      });
+      await tx.sprint.delete({ where: { id } });
     });
   }
 
   /**
    * Get tasks in a sprint
    */
-  async getSprintTasks(id: string, query: GetSprintTasksQuery) {
+  async getSprintTasks(
+    id: string,
+    query: GetSprintTasksQuery,
+    userId: string,
+    isAdmin: boolean,
+  ) {
     const { page, limit } = query;
 
     // Check if sprint exists
@@ -222,7 +216,7 @@ export class SprintService {
     });
 
     if (!sprint) {
-      throw new Error('Sprint not found');
+      throw new Error("Sprint not found");
     }
 
     // Calculate pagination
@@ -231,7 +225,7 @@ export class SprintService {
     // Get tasks
     const [tasks, total] = await Promise.all([
       prisma.task.findMany({
-        where: { sprintId: id },
+        where: { sprintId: id, ...taskReadWhere(userId, isAdmin) },
         skip,
         take: limit,
         include: {
@@ -244,11 +238,11 @@ export class SprintService {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       }),
       prisma.task.count({
-        where: { sprintId: id },
+        where: { sprintId: id, ...taskReadWhere(userId, isAdmin) },
       }),
     ]);
 
@@ -298,7 +292,7 @@ export class SprintService {
   async checkSprintOverlap(
     startDate: Date,
     endDate: Date,
-    excludeId?: string
+    excludeId?: string,
   ): Promise<boolean> {
     // Build where clause
     const where: Prisma.SprintWhereInput = {

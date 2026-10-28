@@ -4,13 +4,23 @@
  * and sign out, so the top bar stays uncluttered.
  */
 
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, ChevronDown, LogOut, Monitor, Moon, Settings, Sparkles, Sun } from 'lucide-react';
-import api from '@/lib/api';
-import { cn, getInitials } from '@/lib/utils';
-import { useThemeStore, type Theme } from '@/store/themeStore';
-import { useUiStore } from '@/store/uiStore';
-import type { User } from '@/types';
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  LogOut,
+  Monitor,
+  Moon,
+  Settings,
+  Sparkles,
+  Sun,
+} from "lucide-react";
+import api from "@/lib/api";
+import { cn, getInitials } from "@/lib/utils";
+import { useThemeStore, type Theme } from "@/store/themeStore";
+import { useUiStore } from "@/store/uiStore";
+import type { User } from "@/types";
 
 interface UserMenuProps {
   user: User;
@@ -18,27 +28,36 @@ interface UserMenuProps {
 }
 
 const THEMES: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
 ];
 
 const itemClass =
-  'flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors data-[highlighted]:bg-foreground/[0.07]';
+  "flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors data-[highlighted]:bg-foreground/[0.07]";
 
-export function Avatar({ user, className }: { user: Pick<User, 'name' | 'picture'>; className?: string }) {
+export function Avatar({
+  user,
+  className,
+}: {
+  user: Pick<User, "name" | "picture">;
+  className?: string;
+}) {
   return user.picture ? (
     <img
       src={user.picture}
       alt=""
       referrerPolicy="no-referrer"
-      className={cn('h-8 w-8 rounded-full object-cover ring-2 ring-white/60 dark:ring-white/10', className)}
+      className={cn(
+        "h-8 w-8 rounded-full object-cover ring-2 ring-white/60 dark:ring-white/10",
+        className,
+      )}
     />
   ) : (
     <div
       className={cn(
-        'flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary',
-        className
+        "flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary",
+        className,
       )}
     >
       {getInitials(user.name)}
@@ -46,21 +65,24 @@ export function Avatar({ user, className }: { user: Pick<User, 'name' | 'picture
   );
 }
 
-// The server only accepts POST for logout (a GET link would not end the session)
-async function signOut() {
-  try {
-    await api.post('/api/auth/logout');
-  } catch (error) {
-    console.error('Sign out failed:', error);
-  } finally {
-    window.location.assign('/');
-  }
-}
-
 export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState(false);
+  async function signOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError(false);
+    try {
+      await api.post("/api/auth/logout");
+      window.location.assign("/");
+    } catch {
+      setSignOutError(true);
+      setSigningOut(false);
+    }
+  }
   const { theme, setTheme } = useThemeStore();
   const { ambientMotion, setAmbientMotion } = useUiStore();
-  const roleLabel = user.role === 'ADMIN' ? 'Admin' : 'Member';
+  const roleLabel = user.role === "ADMIN" ? "Admin" : "Member";
 
   return (
     <DropdownMenu.Root>
@@ -70,8 +92,12 @@ export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
       >
         <Avatar user={user} />
         <div className="hidden text-left md:block">
-          <p className="max-w-32 truncate text-sm font-medium leading-tight">{user.name}</p>
-          <p className="text-xs leading-tight text-muted-foreground">{roleLabel}</p>
+          <p className="max-w-32 truncate text-sm font-medium leading-tight">
+            {user.name}
+          </p>
+          <p className="text-xs leading-tight text-muted-foreground">
+            {roleLabel}
+          </p>
         </div>
         <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
       </DropdownMenu.Trigger>
@@ -86,7 +112,9 @@ export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
             <Avatar user={user} className="h-10 w-10" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{user.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {user.email}
+              </p>
             </div>
           </div>
 
@@ -95,7 +123,10 @@ export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
           <DropdownMenu.Label className="px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Appearance
           </DropdownMenu.Label>
-          <DropdownMenu.RadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+          <DropdownMenu.RadioGroup
+            value={theme}
+            onValueChange={(value) => setTheme(value as Theme)}
+          >
             {THEMES.map(({ value, label, icon: Icon }) => (
               <DropdownMenu.RadioItem
                 key={value}
@@ -121,15 +152,15 @@ export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
             <span className="flex-1">Animated background</span>
             <span
               className={cn(
-                'relative h-5 w-9 rounded-full transition-colors',
-                ambientMotion ? 'bg-primary' : 'bg-foreground/15'
+                "relative h-5 w-9 rounded-full transition-colors",
+                ambientMotion ? "bg-primary" : "bg-foreground/15",
               )}
               aria-hidden
             >
               <span
                 className={cn(
-                  'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform',
-                  ambientMotion ? 'translate-x-[18px]' : 'translate-x-0.5'
+                  "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                  ambientMotion ? "translate-x-[18px]" : "translate-x-0.5",
                 )}
               />
             </span>
@@ -138,7 +169,10 @@ export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
           {onOpenSettings && (
             <>
               <DropdownMenu.Separator className="my-1 h-px bg-foreground/10" />
-              <DropdownMenu.Item className={itemClass} onSelect={onOpenSettings}>
+              <DropdownMenu.Item
+                className={itemClass}
+                onSelect={onOpenSettings}
+              >
                 <Settings className="h-4 w-4 text-muted-foreground" />
                 Admin settings
               </DropdownMenu.Item>
@@ -146,9 +180,21 @@ export default function UserMenu({ user, onOpenSettings }: UserMenuProps) {
           )}
 
           <DropdownMenu.Separator className="my-1 h-px bg-foreground/10" />
-          <DropdownMenu.Item className={cn(itemClass, 'text-destructive')} onSelect={signOut}>
+          {signOutError && (
+            <p role="alert" className="px-2.5 py-2 text-sm text-destructive">
+              Sign out was not confirmed. Please try again.
+            </p>
+          )}
+          <DropdownMenu.Item
+            disabled={signingOut}
+            className={cn(itemClass, "text-destructive")}
+            onSelect={(event) => {
+              event.preventDefault();
+              void signOut();
+            }}
+          >
             <LogOut className="h-4 w-4" />
-            Sign out
+            {signingOut ? "Signing out…" : "Sign out"}
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

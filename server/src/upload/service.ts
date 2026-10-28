@@ -5,11 +5,12 @@
 
 import prisma from '@/database/client';
 import { Prisma } from '@prisma/client';
-import path from 'path';
 import fs from 'fs';
 import { parseFile, validateTaskRows, validateHeaders, parseDate } from './parser';
-import { TaskImportRow } from './validators';
-import { sanitizeFilename } from './multer-config';
+import { sanitizeFilename, persistUpload, cleanupUpload, validateStoredFilePath } from './multer-config';
+import { releaseStorage } from '@/platform/usage';
+import { getTenantContext } from '@/tenancy/context';
+import { taskService } from '@/tasks/service';
 
 /**
  * Upload a generic file
@@ -22,8 +23,9 @@ export async function uploadFile(
     throw new Error('No file provided');
   }
 
-  // Create file record in database
-  const fileRecord = await prisma.file.create({
+  await persistUpload(file, userId);
+  let fileRecord;
+  try { fileRecord = await prisma.file.create({
     data: {
       filename: sanitizeFilename(file.originalname),
       storedFilename: file.filename,
@@ -41,7 +43,7 @@ export async function uploadFile(
         },
       },
     },
-  });
+  }); } catch (error) {await cleanupUpload(file); throw error;}
 
   console.log(`[Audit] User ${userId} uploaded file ${fileRecord.id} (${fileRecord.filename})`);
 
@@ -87,8 +89,9 @@ export async function uploadChatAttachment(
     throw new Error('You are not a member of this conversation');
   }
 
-  // Create file record
-  const fileRecord = await prisma.file.create({
+  await persistUpload(file, userId);
+  let fileRecord;
+  try { fileRecord = await prisma.file.create({
     data: {
       filename: sanitizeFilename(file.originalname),
       storedFilename: file.filename,
@@ -107,7 +110,7 @@ export async function uploadChatAttachment(
         },
       },
     },
-  });
+  }); } catch (error) {await cleanupUpload(file); throw error;}
 
   console.log(`[Audit] User ${userId} uploaded chat attachment ${fileRecord.id} to conversation ${conversationId}`);
 
@@ -134,6 +137,7 @@ export async function importTasksFromFile(
     throw new Error('No file provided');
   }
 
+  await persistUpload(file, userId);
   try {
     // Log Prisma client info for debugging
     console.log(`[Import] ========== CSV IMPORT STARTED ==========`);
@@ -301,7 +305,7 @@ export async function importTasksFromFile(
 
         // Check if parent task already exists in this import session
         let parentTask: any;
-        let parentTaskId = taskMap.get(parentTaskName);
+        let parentTaskId = taskMap.get(`${sprintId || 'backlog'}:${parentTaskName}`);
 
         if (parentTaskId) {
           // Parent task already created in a previous row, reuse it
@@ -318,7 +322,7 @@ export async function importTasksFromFile(
             where: {
               taskName: parentTaskName,
               sprintId: sprintId,
-              nestingLevel: 0, // Only match root tasks
+              parentTaskId: null, // Only match actual root tasks
             },
           });
 
@@ -326,7 +330,7 @@ export async function importTasksFromFile(
             console.log(`[Import] Row ${i + 2}: Parent task '${parentTaskName}' found in database (ID: ${existingTask.id}), reusing it`);
             parentTask = existingTask;
             parentTaskId = existingTask.id;
-            taskMap.set(parentTaskName, parentTaskId);
+            taskMap.set(`${sprintId || 'backlog'}:${parentTaskName}`, parentTaskId);
           } else {
             // Create new parent task
             console.log(`[Import] Row ${i + 2}: Creating new parent task '${parentTaskName}'`);
@@ -343,32 +347,20 @@ export async function importTasksFromFile(
               deadline: deadline,
             }, null, 2));
 
-            parentTask = await prisma.task.create({
-              data: {
-                taskName: parentTaskName,
-                details: row.Details ? row.Details.trim() : '',
-                progress: row['Progress %'],
-                nestingLevel: 0,
-                sprint: {
-                  connect: { id: sprintId },
-                },
-                createdBy: {
-                  connect: { id: userId },
-                },
-                ...(assignedToId && {
-                  assignedTo: {
-                    connect: { id: assignedToId },
-                  },
-                }),
-                startDate: null,
-                deadline: deadline,
-              },
-              include: includeClause,
-            });
+            parentTask = await taskService.createTask({
+              taskName: parentTaskName,
+              details: row.Details ? row.Details.trim() : '',
+              sprintId: sprintId || undefined,
+              assignedToId: assignedToId || undefined,
+              deadline: deadline || undefined,
+            }, userId, true);
+            if (row['Progress %']) {
+              parentTask = await taskService.updateTask(parentTask.id, { progress: row['Progress %'] }, userId, true);
+            }
 
             console.log(`[Import] Row ${i + 2}: ✅ Parent task created - ID: ${parentTask.id}`);
             parentTaskId = parentTask.id;
-            taskMap.set(parentTaskName, parentTaskId);
+            taskMap.set(`${sprintId || 'backlog'}:${parentTaskName}`, parentTaskId);
 
             importedTasks.push({
               id: parentTask.id,
@@ -388,25 +380,11 @@ export async function importTasksFromFile(
             try {
               console.log(`[Import] Row ${i + 2}: Creating subtask '${subtaskName}' under '${parentTaskName}'`);
 
-              const subtask = await prisma.task.create({
-                data: {
-                  taskName: subtaskName,
-                  details: '',
-                  progress: 0,
-                  nestingLevel: 1,
-                  parentTask: {
-                    connect: { id: parentTask.id },
-                  },
-                  sprint: {
-                    connect: { id: sprintId },
-                  },
-                  createdBy: {
-                    connect: { id: userId },
-                  },
-                  startDate: null,
-                  deadline: null,
-                },
-              });
+              const subtask = await taskService.createSubtask(parentTask.id, {
+                taskName: subtaskName,
+                details: '',
+                sprintId: sprintId || undefined,
+              }, userId, true);
 
               console.log(`[Import] Row ${i + 2}: ✅ Subtask '${subtaskName}' created - ID: ${subtask.id}`);
 
@@ -452,9 +430,7 @@ export async function importTasksFromFile(
     };
   } finally {
     // Clean up uploaded file
-    if (fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path);
-    }
+    await cleanupUpload(file);
   }
 }
 
@@ -497,12 +473,11 @@ export async function getFileById(fileId: string, userId: string) {
     where: { id: userId },
   });
 
-  const isAdmin = user?.role === 'ADMIN';
-
-  if (!isOwner && !isMember && !isAdmin) {
+  if (!user?.isActive || (!isOwner && !isMember)) {
     throw new Error('You do not have permission to access this file');
   }
 
+  await validateStoredFilePath(file.path);
   return file;
 }
 
@@ -603,15 +578,14 @@ export async function deleteFile(fileId: string, userId: string) {
     throw new Error('You do not have permission to delete this file');
   }
 
-  // Delete file from disk
-  if (fs.existsSync(file.path)) {
-    fs.unlinkSync(file.path);
-  }
-
-  // Delete from database
-  await prisma.file.delete({
-    where: { id: fileId },
-  });
+  if (!user?.isActive) throw new Error('Unauthorized');
+  await validateStoredFilePath(file.path);
+  // Claim this record once before freeing quota; concurrent deletes cannot free
+  // another allocation's storage. Disk failures remain charged for reconciliation.
+  const deleted = await prisma.file.deleteMany({where: {id:fileId}});
+  if (!deleted.count) throw new Error('File not found');
+  await fs.promises.unlink(file.path).catch((error: any) => {if(error.code!=='ENOENT')throw error;});
+  if (file.storedFilename.startsWith('v1-')) await releaseStorage(getTenantContext().id,file.size);
 
   console.log(`[Audit] User ${userId} deleted file ${fileId} (${file.filename})`);
 

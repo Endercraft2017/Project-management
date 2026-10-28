@@ -40,6 +40,8 @@ model User {
   email     String   @unique
   name      String
   picture   String?
+  passwordHash String? @db.Text
+  sessionVersion Int @default(0)
   role      Role     @default(MEMBER)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -51,6 +53,7 @@ model User {
   tokenExpiresAt     DateTime?
 
   // Relations
+  createdProjects      Project[]             @relation("ProjectCreator")
   createdTasks         Task[]                @relation("TaskCreator")
   assignedTasks        Task[]                @relation("TaskAssignee")
   createdSprints       Sprint[]              @relation("SprintCreator")
@@ -68,6 +71,21 @@ model User {
   @@map("users")
 }
 
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  archivedAt  DateTime?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy User @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  sprints Sprint[]
+  tasks Task[]
+  @@index([createdById])
+  @@map("projects")
+}
+
 model Sprint {
   id          String        @id @default(uuid())
   name        String
@@ -77,14 +95,17 @@ model Sprint {
   goal        String?       @db.Text
   isActive    Boolean       @default(false)
   createdById String
+  projectId   String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   // Relations
   createdBy User   @relation("SprintCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   tasks     Task[]
 
   @@index([createdById])
+  @@index([projectId])
   @@index([status])
   @@index([isActive])
   @@index([startDate, endDate])
@@ -94,7 +115,8 @@ model Sprint {
 model Task {
   id             String    @id @default(uuid())
   taskName       String
-  sprintId       String
+  projectId      String?
+  sprintId       String?
   parentTaskId   String?
   details        String?   @db.Text
   progress       Int       @default(0) // 0-100
@@ -107,13 +129,15 @@ model Task {
   updatedAt      DateTime  @updatedAt
 
   // Relations
-  sprint       Sprint  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  sprint       Sprint? @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   assignedTo   User?   @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
   createdBy    User    @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
   parentTask   Task?   @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: Cascade)
   subtasks     Task[]  @relation("TaskHierarchy")
 
   @@index([sprintId])
+  @@index([projectId])
   @@index([parentTaskId])
   @@index([assignedToId])
   @@index([createdById])

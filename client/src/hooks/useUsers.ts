@@ -3,13 +3,13 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, get, getPaginated } from '@/lib/api';
+import { api, get } from '@/lib/api';
 import type { User } from '@/types';
 
 export const userKeys = {
   all: ['users'] as const,
   lists: () => [...userKeys.all, 'list'] as const,
-  list: (filters?: any) => [...userKeys.lists(), filters] as const,
+  list: (filters?: unknown) => [...userKeys.lists(), filters] as const,
   details: () => [...userKeys.all, 'detail'] as const,
   detail: (id: string) => [...userKeys.details(), id] as const,
   me: () => [...userKeys.all, 'me'] as const,
@@ -47,8 +47,8 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: userKeys.me(),
     queryFn: async () => {
-      const response = await api.get<{ success: boolean; user: User }>('/api/auth/me');
-      return response.data.user;
+      const response = await api.get<{ success: boolean; user: User; tenant: User['tenant'] }>('/api/auth/me');
+      return { ...response.data.user, tenant: response.data.tenant };
     },
     staleTime: 1000 * 60 * 15,
     retry: false, // Don't retry if not authenticated

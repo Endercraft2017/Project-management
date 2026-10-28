@@ -3,7 +3,7 @@
  * Request handlers for file upload endpoints
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as uploadService from './service';
 import { uploadChatAttachmentSchema, listFilesQuerySchema } from './validators';
 import { ZodError } from 'zod';
@@ -29,7 +29,7 @@ export async function uploadFile(req: Request, res: Response) {
 
     res.status(201).json({
       success: true,
-      data: result,
+      data: { ...result, ...('url' in result ? { url: `${result.url}?workspaceContext=${encodeURIComponent(req.session.workspaceContext || '')}` } : {}) },
     });
   } catch (error: any) {
     console.error('[Upload] Error uploading file:', error.message);
@@ -122,7 +122,7 @@ export async function uploadChatAttachment(req: Request, res: Response) {
 
     res.status(201).json({
       success: true,
-      data: result,
+      data: { ...result, url: `${result.url}?workspaceContext=${encodeURIComponent(req.session.workspaceContext || '')}` },
     });
   } catch (error: any) {
     console.error('[Upload] Error uploading chat attachment:', error.message);
@@ -131,7 +131,7 @@ export async function uploadChatAttachment(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 
@@ -241,7 +241,7 @@ export async function listFiles(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 
@@ -301,7 +301,7 @@ export function handleMulterError(
   error: any,
   req: Request,
   res: Response,
-  next: Function
+  next: NextFunction
 ) {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {

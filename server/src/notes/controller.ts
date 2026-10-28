@@ -37,7 +37,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -72,7 +72,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -99,7 +99,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -136,7 +136,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -172,7 +172,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -208,7 +208,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -254,7 +254,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -299,7 +299,7 @@ export class NotesController {
         return res.status(400).json({
           success: false,
           error: 'Validation Error',
-          details: error.errors,
+          details: error.issues,
         });
       }
 

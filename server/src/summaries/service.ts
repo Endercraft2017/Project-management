@@ -3,27 +3,27 @@
  * Business logic for generating and managing AI-powered weekly summaries
  */
 
-import { ImpactLevel, PrismaClient } from '@prisma/client';
-import prisma from '@/database/client';
-import { openAIService } from '@/services/openai.service';
-import type { DailyUpdateData } from '@/services/openai.service';
-import { adminSettingsService } from '@/admin/settings.service';
+import { ImpactLevel, Prisma } from "@prisma/client";
+import prisma from "@/database/client";
+import { openAIService } from "@/services/openai.service";
+import type { DailyUpdateData } from "@/services/openai.service";
+import { adminSettingsService } from "@/admin/settings.service";
 
 /**
  * Get the Monday and Sunday dates for a given week
  */
 function getWeekBounds(date: Date): { monday: Date; sunday: Date } {
   const current = new Date(date);
-  const dayOfWeek = current.getDay();
+  const dayOfWeek = current.getUTCDay();
   const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust for Sunday (0) or other days
 
   const monday = new Date(current);
-  monday.setDate(current.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
+  monday.setUTCDate(current.getUTCDate() + diff);
+  monday.setUTCHours(0, 0, 0, 0);
 
   const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  sunday.setUTCHours(23, 59, 59, 999);
 
   return { monday, sunday };
 }
@@ -32,7 +32,7 @@ function getWeekBounds(date: Date): { monday: Date; sunday: Date } {
  * Format date as YYYY-MM-DD for display
  */
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return date.toISOString().split("T")[0];
 }
 
 export class WeeklySummariesService {
@@ -41,6 +41,7 @@ export class WeeklySummariesService {
    * This is the main function that orchestrates the summary generation
    */
   async generateWeeklySummary(weekDate: Date) {
+    openAIService.assertEnabled();
     const { monday, sunday } = getWeekBounds(weekDate);
 
     // Check if summary already exists for this week
@@ -55,12 +56,13 @@ export class WeeklySummariesService {
 
     if (existing) {
       throw new Error(
-        `Weekly summary already exists for week ${formatDate(monday)} to ${formatDate(sunday)}`
+        `Weekly summary already exists for week ${formatDate(monday)} to ${formatDate(sunday)}`,
       );
     }
 
     // Get member selection configuration
-    const membersConfig = await adminSettingsService.getWeeklySummaryMembersConfig();
+    const membersConfig =
+      await adminSettingsService.getWeeklySummaryMembersConfig();
 
     // Get users based on configuration
     let users;
@@ -71,6 +73,7 @@ export class WeeklySummariesService {
           id: { in: membersConfig.includedUserIds },
           isActive: true,
         },
+        take: 51,
         select: {
           id: true,
           name: true,
@@ -82,6 +85,7 @@ export class WeeklySummariesService {
       // Default: Get all active users (backwards compatible)
       users = await prisma.user.findMany({
         where: { isActive: true },
+        take: 51,
         select: {
           id: true,
           name: true,
@@ -91,13 +95,17 @@ export class WeeklySummariesService {
       });
     }
 
+    if (users.length > 50)
+      throw new Error("Select at most 50 members for one generation");
+
     // Get all daily updates for the week (from Monday up to today, not future dates)
     const today = new Date();
-    today.setHours(23, 59, 59, 999); // End of today
+    today.setUTCHours(23, 59, 59, 999); // End of today
     const endDate = today < sunday ? today : sunday; // Use whichever is earlier
 
     const updates = await prisma.dailyUpdate.findMany({
       where: {
+        userId: { in: users.map((user) => user.id) },
         date: {
           gte: monday,
           lte: endDate,
@@ -111,8 +119,12 @@ export class WeeklySummariesService {
           },
         },
       },
-      orderBy: [{ userId: 'asc' }, { date: 'asc' }],
+      orderBy: [{ userId: "asc" }, { date: "asc" }],
+      take: 715,
     });
+
+    if (updates.length >= 715)
+      throw new Error("Too many updates for bounded summary generation");
 
     // Group updates by user
     const updatesByUser = new Map<string, DailyUpdateData[]>();
@@ -125,92 +137,55 @@ export class WeeklySummariesService {
       updatesByUser.set(update.userId, userUpdates);
     });
 
-    // Create the weekly summary record
-    const weeklySummary = await prisma.weeklySummary.create({
-      data: {
-        weekStartDate: monday,
-        weekEndDate: sunday,
-      },
-    });
-
-    // Generate summaries for each user using OpenAI in parallel for better performance
-    const memberSummaries = await Promise.all(
-      users.map(async (user) => {
-        const userUpdates = updatesByUser.get(user.id) || [];
-
-        try {
-          // Generate AI summary
-          const result = await openAIService.generateWeeklySummary(
-            user.name,
-            userUpdates
-          );
-
-          // Store in database
-          const memberSummary = await prisma.memberWeeklySummary.create({
-            data: {
-              weeklySummaryId: weeklySummary.id,
-              userId: user.id,
-              summary: result.summary,
-              impactLevel: result.impact.level as ImpactLevel,
-              rawUpdates: {
-                updates: userUpdates,
-                reasoning: result.impact.reasoning,
-              } as any,
-            },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  role: true,
-                },
-              },
-            },
-          });
-
-          return memberSummary;
-        } catch (error) {
-          // Log error but continue with other users
-          console.error(`Error generating summary for user ${user.name}:`, error);
-
-          // Create a fallback summary
-          const fallbackSummary = await prisma.memberWeeklySummary.create({
-            data: {
-              weeklySummaryId: weeklySummary.id,
-              userId: user.id,
-              summary:
-                userUpdates.length > 0
-                  ? `${user.name} submitted ${userUpdates.length} update(s) this week. Summary generation failed.`
-                  : `${user.name} did not submit any updates this week.`,
-              impactLevel: 'LOW',
-              rawUpdates: {
-                updates: userUpdates,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              } as any,
-            },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  role: true,
-                },
-              },
-            },
-          });
-
-          return fallbackSummary;
-        }
-      })
+    const eligible = users.filter(
+      (user) => (updatesByUser.get(user.id) || []).length > 0,
     );
-
-    // Return the complete summary with all member summaries
-    return {
-      ...weeklySummary,
-      memberSummaries,
-    };
+    if (eligible.length === 0)
+      throw new Error("No submitted updates are available for AI summary");
+    if (eligible.length > 50)
+      throw new Error("Select at most 50 members for one generation");
+    // Sequential provider calls respect per-tenant concurrency. Never persist a fake LOW result.
+    const generated: Array<{
+      userId: string;
+      result: Awaited<ReturnType<typeof openAIService.generateWeeklySummary>>;
+      updates: DailyUpdateData[];
+    }> = [];
+    for (const user of eligible) {
+      const userUpdates = updatesByUser.get(user.id)!;
+      const result = await openAIService.generateWeeklySummary(
+        user.name,
+        userUpdates,
+      );
+      generated.push({ userId: user.id, result, updates: userUpdates });
+    }
+    // All-or-nothing persistence; provider failure leaves no partial/placeholder summary.
+    return prisma.$transaction(async (tx) => {
+      const weeklySummary = await tx.weeklySummary.create({
+        data: { weekStartDate: monday, weekEndDate: sunday },
+      });
+      const memberSummaries = [];
+      for (const item of generated)
+        memberSummaries.push(
+          await tx.memberWeeklySummary.create({
+            data: {
+              weeklySummaryId: weeklySummary.id,
+              userId: item.userId,
+              summary: item.result.summary,
+              impactLevel: item.result.impact.level as ImpactLevel,
+              rawUpdates: {
+                updates: item.updates,
+                reasoning: item.result.impact.reasoning,
+              } as unknown as Prisma.InputJsonValue,
+            },
+            include: {
+              user: {
+                select: { id: true, name: true, email: true, role: true },
+              },
+            },
+          }),
+        );
+      return { ...weeklySummary, memberSummaries };
+    });
   }
 
   /**
@@ -239,8 +214,8 @@ export class WeeklySummariesService {
             },
           },
           orderBy: [
-            { impactLevel: 'asc' }, // HIGH first (alphabetically first)
-            { user: { name: 'asc' } },
+            { impactLevel: "asc" }, // HIGH first (alphabetically first)
+            { user: { name: "asc" } },
           ],
         },
       },
@@ -254,7 +229,7 @@ export class WeeklySummariesService {
    */
   async listWeeklySummaries(limit = 10, offset = 0) {
     const summaries = await prisma.weeklySummary.findMany({
-      orderBy: { weekStartDate: 'desc' },
+      orderBy: { weekStartDate: "desc" },
       take: limit,
       skip: offset,
       include: {
@@ -297,11 +272,9 @@ export class WeeklySummariesService {
     }
 
     const grouped = {
-      high: summary.memberSummaries.filter((s) => s.impactLevel === 'HIGH'),
-      medium: summary.memberSummaries.filter(
-        (s) => s.impactLevel === 'MEDIUM'
-      ),
-      low: summary.memberSummaries.filter((s) => s.impactLevel === 'LOW'),
+      high: summary.memberSummaries.filter((s) => s.impactLevel === "HIGH"),
+      medium: summary.memberSummaries.filter((s) => s.impactLevel === "MEDIUM"),
+      low: summary.memberSummaries.filter((s) => s.impactLevel === "LOW"),
     };
 
     return {

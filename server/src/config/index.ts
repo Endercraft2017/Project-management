@@ -13,19 +13,20 @@ dotenv.config();
 const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().transform(Number).default('3000'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 
   // Database
   DATABASE_URL: z.string().url(),
 
   // Google OAuth
-  GOOGLE_CLIENT_ID: z.string().min(1),
-  GOOGLE_CLIENT_SECRET: z.string().min(1),
-  GOOGLE_CALLBACK_URL: z.string().url(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALLBACK_URL: z.string().url().optional(),
 
   // Session
   SESSION_SECRET: z.string().min(32, 'Session secret must be at least 32 characters'),
-  SESSION_MAX_AGE: z.string().transform(Number).default('604800000'), // 7 days
+  SESSION_MAX_AGE: z.coerce.number().int().min(60000).max(43200000).default(43200000),
+  CONSOLE_SESSION_SECRET: z.string().min(32).optional(),
 
   // Google Sheets
   GOOGLE_SHEETS_PRIVATE_KEY: z.string().optional(),
@@ -33,21 +34,23 @@ const envSchema = z.object({
   GOOGLE_SPREADSHEET_ID: z.string().optional(),
 
   // Admin
-  ADMIN_EMAILS: z.string().transform((str) => str.split(',').map((e) => e.trim())),
+  ADMIN_EMAILS: z.string().default('').transform((str) => str.split(',').map((e) => e.trim()).filter(Boolean)),
 
   // CORS
   CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
 
   // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 min
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).max(86400000).default(900000), // 15 min
   // Per user per window. The app makes several requests per screen, so this
   // must be generous enough for normal use.
-  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('1000'),
+  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).max(100000).default(1000),
 
   // File Upload
-  MAX_FILE_SIZE: z.string().transform(Number).default('5242880'), // 5MB
+  MAX_FILE_SIZE: z.coerce.number().int().min(1).max(104857600).default(5242880), // 5MB
   UPLOAD_DIR: z.string().default('uploads'),
+}).refine((value) => !value.CONSOLE_SESSION_SECRET || value.CONSOLE_SESSION_SECRET !== value.SESSION_SECRET, {
+  path: ['CONSOLE_SESSION_SECRET'], message: 'Operator and tenant session secrets must be different',
 });
 
 // Parse and validate environment variables
@@ -57,7 +60,7 @@ const parseEnv = () => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ Invalid environment variables:');
-      error.errors.forEach((err) => {
+      error.issues.forEach((err) => {
         console.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
       process.exit(1);

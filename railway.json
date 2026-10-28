@@ -2,14 +2,14 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install && cd server && rm -rf node_modules/.prisma node_modules/@prisma/client && npx prisma generate && cd .. && npm run build"
+    "buildCommand": "npm run build"
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "cd server && npx prisma migrate deploy && npx prisma generate && node dist/server.js",
+    "startCommand": "npm start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10,
-    "healthcheckPath": "/health",
+    "healthcheckPath": "/health/ready",
     "healthcheckTimeout": 300
   }
 }

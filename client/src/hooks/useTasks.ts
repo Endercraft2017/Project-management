@@ -4,6 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { get, post, patch, del, getPaginated } from '@/lib/api';
 import type {
   Task,
@@ -134,19 +135,19 @@ export function useUpdateTask() {
       });
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
     },
-    onError: (error: any, variables) => {
+    onError: (error, variables) => {
       // If task not found (404), remove it from cache and invalidate
-      if (error?.response?.status === 404) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         console.log('Task not found (404) - removing from cache and refreshing');
 
         // Remove this specific task from all cached queries
-        queryClient.setQueriesData(
+        queryClient.setQueriesData<PaginatedResponse<Task>>(
           { queryKey: taskKeys.lists() },
-          (oldData: any) => {
+          (oldData) => {
             if (!oldData?.data) return oldData;
             return {
               ...oldData,
-              data: oldData.data.filter((t: any) => t.id !== variables.taskId)
+              data: oldData.data.filter((task) => task.id !== variables.taskId)
             };
           }
         );

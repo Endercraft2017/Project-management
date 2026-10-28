@@ -99,12 +99,12 @@ export function getInitials(name: string): string {
 /**
  * Debounce function
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+export function debounce<Args extends unknown[]>(
+  func: (...args: Args) => unknown,
   delay: number
-): (...args: Parameters<T>) => void {
+): (...args: Args) => void {
   let timeoutId: ReturnType<typeof setTimeout>;
-  return (...args: Parameters<T>) => {
+  return (...args: Args) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
   };

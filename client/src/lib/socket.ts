@@ -3,8 +3,9 @@
  * Manages WebSocket connection for real-time features
  */
 
-import { io, Socket } from 'socket.io-client';
-import type { SocketEvents } from '@/types';
+import { getWorkspaceContext } from "./workspace-context";
+import { io, Socket } from "socket.io-client";
+import type { SocketEvents } from "@/types";
 
 let socket: Socket | null = null;
 
@@ -16,30 +17,34 @@ export function initializeSocket(): Socket {
     return socket;
   }
 
-  // Use empty string in production to connect to same domain, localhost in dev
-  const SOCKET_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000');
+  // Cookie-authenticated transport shares the application's API/proxy origin.
+  const SOCKET_URL =
+    import.meta.env.VITE_SOCKET_URL ||
+    import.meta.env.VITE_API_URL ||
+    window.location.origin;
 
   socket = io(SOCKET_URL, {
+    auth: (done) => done({ workspaceContext: getWorkspaceContext() }),
     withCredentials: true, // Important for session cookies
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     autoConnect: false, // Manual connection control
   });
 
   // Connection event listeners
-  socket.on('connect', () => {
-    console.log('✅ Socket connected:', socket?.id);
+  socket.on("connect", () => {
+    console.log("✅ Socket connected:", socket?.id);
   });
 
-  socket.on('disconnect', (reason) => {
-    console.log('❌ Socket disconnected:', reason);
+  socket.on("disconnect", (reason) => {
+    console.log("❌ Socket disconnected:", reason);
   });
 
-  socket.on('connect_error', (error) => {
-    console.error('Socket connection error:', error.message);
+  socket.on("connect_error", (error) => {
+    console.error("Socket connection error:", error.message);
   });
 
-  socket.on('error', (error: { message: string }) => {
-    console.error('Socket error:', error.message);
+  socket.on("error", (error: { message: string }) => {
+    console.error("Socket error:", error.message);
   });
 
   return socket;
@@ -84,9 +89,9 @@ export function emit<K extends keyof SocketEvents>(
  */
 export function on<K extends keyof SocketEvents>(
   event: K,
-  callback: SocketEvents[K]
+  callback: SocketEvents[K],
 ): void {
-  socket?.on(event as string, callback as any);
+  socket?.on(event as string, callback as (...args: unknown[]) => void);
 }
 
 /**
@@ -94,9 +99,9 @@ export function on<K extends keyof SocketEvents>(
  */
 export function once<K extends keyof SocketEvents>(
   event: K,
-  callback: SocketEvents[K]
+  callback: SocketEvents[K],
 ): void {
-  socket?.once(event as string, callback as any);
+  socket?.once(event as string, callback as (...args: unknown[]) => void);
 }
 
 /**
@@ -104,10 +109,10 @@ export function once<K extends keyof SocketEvents>(
  */
 export function off<K extends keyof SocketEvents>(
   event: K,
-  callback?: SocketEvents[K]
+  callback?: SocketEvents[K],
 ): void {
   if (callback) {
-    socket?.off(event as string, callback as any);
+    socket?.off(event as string, callback as (...args: unknown[]) => void);
   } else {
     socket?.off(event as string);
   }
@@ -117,14 +122,14 @@ export function off<K extends keyof SocketEvents>(
  * Join a conversation room
  */
 export function joinConversation(conversationId: string): void {
-  emit('join_conversation', { conversationId });
+  emit("join_conversation", { conversationId });
 }
 
 /**
  * Leave a conversation room
  */
 export function leaveConversation(conversationId: string): void {
-  emit('leave_conversation', { conversationId });
+  emit("leave_conversation", { conversationId });
 }
 
 /**
@@ -133,9 +138,13 @@ export function leaveConversation(conversationId: string): void {
 export function sendMessage(
   conversationId: string,
   content: string,
-  callback?: (response: any) => void
+  callback?: (response: {
+    success: boolean;
+    data?: unknown;
+    error?: string;
+  }) => void,
 ): void {
-  socket?.emit('send_message', { conversationId, content }, callback);
+  socket?.emit("send_message", { conversationId, content }, callback);
 }
 
 /**
@@ -144,9 +153,13 @@ export function sendMessage(
 export function editMessage(
   messageId: string,
   content: string,
-  callback?: (response: any) => void
+  callback?: (response: {
+    success: boolean;
+    data?: unknown;
+    error?: string;
+  }) => void,
 ): void {
-  socket?.emit('edit_message', { messageId, content }, callback);
+  socket?.emit("edit_message", { messageId, content }, callback);
 }
 
 /**
@@ -154,23 +167,27 @@ export function editMessage(
  */
 export function deleteMessage(
   messageId: string,
-  callback?: (response: any) => void
+  callback?: (response: {
+    success: boolean;
+    data?: unknown;
+    error?: string;
+  }) => void,
 ): void {
-  socket?.emit('delete_message', messageId, callback);
+  socket?.emit("delete_message", messageId, callback);
 }
 
 /**
  * Start typing indicator
  */
 export function startTyping(conversationId: string): void {
-  emit('typing_start', { conversationId });
+  emit("typing_start", { conversationId });
 }
 
 /**
  * Stop typing indicator
  */
 export function stopTyping(conversationId: string): void {
-  emit('typing_stop', { conversationId });
+  emit("typing_stop", { conversationId });
 }
 
 export default {

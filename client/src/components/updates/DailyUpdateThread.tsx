@@ -1,9 +1,10 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Daily Update Thread Component - Chat-style UI for daily updates
  */
 
 import { useState, useEffect } from 'react';
-import { useDayUpdates, useUserUpdateForDate, useCreateOrUpdateUpdate, DailyUpdate } from '@/hooks/useUpdates';
+import { useDayUpdates, useUserUpdateForDate, useCreateOrUpdateUpdate } from '@/hooks/useUpdates';
 import { useCurrentUser } from '@/hooks/useUsers';
 import { Send, Edit2, Check, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,15 +40,16 @@ export default function DailyUpdateThread({ date, onUpdatePosted }: DailyUpdateT
     connectSocket();
 
     // Listen for real-time updates
-    on('daily_update_changed', (data: any) => {
+    const handleChanged = (data: Parameters<import('@/types').SocketEvents['daily_update_changed']>[0]) => {
       if (data.date && new Date(data.date).toISOString().split('T')[0] === date) {
         refetchUpdates();
         refetchUserUpdate();
       }
-    });
+    };
+    on('daily_update_changed', handleChanged);
 
     return () => {
-      off('daily_update_changed');
+      off('daily_update_changed', handleChanged);
     };
   }, [date, refetchUpdates, refetchUserUpdate]);
 
@@ -72,8 +74,8 @@ export default function DailyUpdateThread({ date, onUpdatePosted }: DailyUpdateT
       if (onUpdatePosted) {
         onUpdatePosted();
       }
-    } catch (error: any) {
-      alert(error?.response?.data?.message || 'Failed to save update');
+    } catch (error: unknown) {
+      alert(apiErrorMessage(error) || 'Failed to save update');
     }
   };
 
@@ -95,15 +97,6 @@ export default function DailyUpdateThread({ date, onUpdatePosted }: DailyUpdateT
     });
   };
 
-  const formatDateHeader = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
 
   return (
     <div className="flex h-full flex-col">

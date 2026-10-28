@@ -53,7 +53,7 @@ export class SyncController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -125,7 +125,7 @@ export class SyncController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -204,7 +204,7 @@ export class SyncController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -254,7 +254,7 @@ export class SyncController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid query parameters',
-          details: error.errors,
+          details: error.issues,
         });
       }
 

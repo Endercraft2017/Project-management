@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Users List Component
  * Displays table of all team members with admin controls
@@ -6,7 +7,7 @@
 import { useState } from 'react';
 import { Users, Trash2, AlertCircle, RefreshCw, Shield, User, Check, X } from 'lucide-react';
 import { useUsers, useDeactivateUser } from '@/hooks/useUsers';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 import { cn, formatDate } from '@/lib/utils';
 import type { User as UserType } from '@/types';
 
@@ -29,10 +30,10 @@ export default function UsersList({ currentUserId }: UsersListProps) {
         variant: 'success',
       });
       setConfirmRemoveId(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Failed to remove member',
-        description: error.response?.data?.message || 'An error occurred',
+        description: apiErrorMessage(error) || 'An error occurred',
         variant: 'error',
       });
     }

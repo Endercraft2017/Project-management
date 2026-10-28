@@ -56,7 +56,7 @@ describe('Daily Updates Validators', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain('within the last 30 days');
+        expect(result.error.issues[0].message).toContain('within the last 30 days');
       }
     });
 
@@ -72,7 +72,7 @@ describe('Daily Updates Validators', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain('within the last 30 days');
+        expect(result.error.issues[0].message).toContain('within the last 30 days');
       }
     });
 
@@ -97,7 +97,7 @@ describe('Daily Updates Validators', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain('YYYY-MM-DD format');
+        expect(result.error.issues[0].message).toContain('YYYY-MM-DD format');
       }
     });
 
@@ -111,7 +111,7 @@ describe('Daily Updates Validators', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain('cannot be empty');
+        expect(result.error.issues[0].message).toContain('cannot be empty');
       }
     });
 
@@ -126,7 +126,7 @@ describe('Daily Updates Validators', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain('too long');
+        expect(result.error.issues[0].message).toContain('too long');
       }
     });
 
@@ -179,7 +179,7 @@ describe('Daily Updates Validators', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0].message).toContain('YYYY-MM-DD format');
+        expect(result.error.issues[0].message).toContain('YYYY-MM-DD format');
       }
     });
 

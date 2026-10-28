@@ -7,7 +7,7 @@ import { prisma } from '@/database/client';
 
 export interface UnreadNotification {
   id: string;
-  type: 'message' | 'task_assigned' | 'update_reminder';
+  type: 'message' | 'task_assigned' | 'update_reminder' | 'system';
   conversationId?: string;
   conversationName?: string;
   conversationType?: 'DM' | 'GROUP';
@@ -174,7 +174,7 @@ export async function getUserNotifications(
   for (const notif of persistentNotifications) {
     notifications.push({
       id: notif.id,
-      type: notif.type === 'UPDATE_REMINDER' ? 'update_reminder' : 'message',
+      type: notif.type === 'UPDATE_REMINDER' ? 'update_reminder' : 'system',
       title: notif.title,
       message: notif.message,
       metadata: notif.metadata,

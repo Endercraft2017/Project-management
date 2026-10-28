@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Task Node Component (Recursive)
  * Displays a single task with expand/collapse for subtasks
@@ -65,8 +66,8 @@ export default function TaskNode({
 
     try {
       await deleteTask.mutateAsync(task.id);
-    } catch (error: any) {
-      alert(error?.response?.data?.message || 'Failed to delete task');
+    } catch (error: unknown) {
+      alert(apiErrorMessage(error) || 'Failed to delete task');
     }
   };
 
@@ -81,8 +82,8 @@ export default function TaskNode({
         taskId: task.id,
         data: { progress: newProgress },
       });
-    } catch (error: any) {
-      alert(error?.response?.data?.message || 'Failed to update progress');
+    } catch (error: unknown) {
+      alert(apiErrorMessage(error) || 'Failed to update progress');
     } finally {
       setIsUpdatingProgress(false);
     }

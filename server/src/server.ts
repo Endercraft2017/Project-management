@@ -11,9 +11,9 @@ import { closeSessionStore } from './middlewares/session';
 import { initializeSocketServer, closeSocketServer } from './chat/socket-server';
 import { registerSocketHandlers } from './chat/socket-handlers';
 import { authenticateSocket } from './chat/socket-middleware';
-import { startReminderScheduler, stopReminderScheduler } from './notes/reminder-scheduler';
-import { startScheduler as startWeeklySummaryScheduler, stopScheduler as stopWeeklySummaryScheduler } from './summaries/scheduler';
-import { startDailyReminderScheduler, stopDailyReminderScheduler } from './admin/daily-reminder-scheduler';
+import { ensureControlSchema } from './platform/store';
+import { closeControlPool } from './platform/pool';
+import { closeConsoleSessions } from './platform/routes';
 
 const PORT = serverConfig.port;
 
@@ -22,6 +22,7 @@ const PORT = serverConfig.port;
  */
 async function startServer() {
   try {
+    await ensureControlSchema();
     // Check database connection
     console.log('🔍 Checking database connection...');
     const dbConnected = await checkDatabaseConnection();
@@ -47,65 +48,42 @@ async function startServer() {
 
     console.log('✅ Socket.IO server initialized');
 
-    // Start reminder scheduler
-    startReminderScheduler();
-
-    // Start weekly summary scheduler
-    await startWeeklySummaryScheduler();
-
-    // Start daily update reminder scheduler
-    await startDailyReminderScheduler();
-
+    // In-process tenantless schedulers stay off until a durable worker is available.
     // Start server (bind to :: for Railway IPv6 compatibility)
     server.listen(PORT, '::', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Environment: ${serverConfig.nodeEnv}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
       console.log(`💬 WebSocket enabled`);
-      console.log(`⏰ Reminder scheduler active`);
-      console.log(`📊 Weekly summary scheduler active`);
-      console.log(`🔔 Daily update reminder scheduler active`);
+      console.log('Background schedulers disabled; use a tenant-aware durable worker');
     });
 
-    // Graceful shutdown handler
+    let stopping = false;
     const gracefulShutdown = async (signal: string) => {
-      console.log(`\n${signal} received. Starting graceful shutdown...`);
-
-      server.close(async () => {
-        console.log('✅ HTTP server closed');
-
-        try {
-          stopReminderScheduler();
-          console.log('✅ Reminder scheduler stopped');
-
-          stopWeeklySummaryScheduler();
-          console.log('✅ Weekly summary scheduler stopped');
-
-          stopDailyReminderScheduler();
-          console.log('✅ Daily update reminder scheduler stopped');
-
-          await closeSocketServer();
-          console.log('✅ Socket.IO server closed');
-
-          await closeSessionStore();
-          console.log('✅ Session store closed');
-
-          await disconnectPrisma();
-          console.log('✅ Database disconnected');
-
-          console.log('👋 Graceful shutdown completed');
-          process.exit(0);
-        } catch (error) {
-          console.error('❌ Error during shutdown:', error);
-          process.exit(1);
-        }
-      });
-
-      // Force shutdown after 10 seconds
-      setTimeout(() => {
-        console.error('⚠️  Forced shutdown after timeout');
+      if (stopping) return;
+      stopping = true;
+      console.log(`Shutdown requested: ${signal}`);
+      const forced = setTimeout(() => process.exit(1), 10000);
+      forced.unref();
+      try {
+        // Close Socket.IO first: active websocket connections must not keep the
+        // HTTP close callback from running and reaching store cleanup.
+        await closeSocketServer();
+        await new Promise<void>((resolve, reject) => server.close((error?: NodeJS.ErrnoException) => {
+          if (error && error.code !== 'ERR_SERVER_NOT_RUNNING') reject(error);
+          else resolve();
+        }));
+        await closeSessionStore();
+        await closeConsoleSessions();
+        await disconnectPrisma();
+        await closeControlPool();
+        clearTimeout(forced);
+        process.exit(0);
+      } catch (error) {
+        console.error('Shutdown failed', { name: error instanceof Error ? error.name : 'Error' });
+        clearTimeout(forced);
         process.exit(1);
-      }, 10000);
+      }
     };
 
     // Handle shutdown signals
@@ -114,16 +92,16 @@ async function startServer() {
 
     // Handle uncaught errors
     process.on('uncaughtException', (error) => {
-      console.error('❌ Uncaught Exception:', error);
+      console.error('Uncaught exception', { name: error.name });
       gracefulShutdown('uncaughtException');
     });
 
-    process.on('unhandledRejection', (reason, promise) => {
-      console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    process.on('unhandledRejection', (reason) => {
+      console.error('Unhandled rejection', { name: reason instanceof Error ? reason.name : 'Error' });
       gracefulShutdown('unhandledRejection');
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Startup failed', { name: error instanceof Error ? error.name : 'Error' });
     process.exit(1);
   }
 }

@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useConversations } from '@/hooks/useConversations';
 import { useCurrentUser } from '@/hooks/useUsers';
-import { connectSocket, disconnectSocket, on, off } from '@/lib/socket';
+import { connectSocket, on, off } from '@/lib/socket';
 import type { Message } from '@/hooks/useMessages';
 import ConversationList from './ConversationList';
 import MessageList from './MessageList';
@@ -37,12 +37,11 @@ export default function ChatView({
   useEffect(() => {
     connectSocket();
 
-    on('new_message', () => refetch());
+    const handleNewMessage = () => { void refetch(); };
+    on('new_message', handleNewMessage);
 
-    return () => {
-      off('new_message');
-      disconnectSocket();
-    };
+    // The authenticated app owns the shared connection and global listeners.
+    return () => { off('new_message', handleNewMessage); };
   }, [refetch]);
 
   // Sync with parent component's selected conversation

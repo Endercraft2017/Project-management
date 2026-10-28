@@ -1,9 +1,10 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Accept Invitation Page
  * Public page for accepting team invitations and creating accounts
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BRAND } from '@/lib/brand';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -253,7 +254,7 @@ export default function AcceptInvitePage({ token, onSuccess }: AcceptInvitePageP
                   <AlertTriangle className="h-5 w-5 text-red-400" />
                   <div className="ml-3">
                     <p className="text-sm text-red-800 dark:text-red-200">
-                      {(acceptInviteMutation.error as any)?.response?.data?.message ||
+                      {apiErrorMessage(acceptInviteMutation.error) ||
                         'Failed to accept invitation. Please try again.'}
                     </p>
                   </div>

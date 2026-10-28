@@ -68,7 +68,7 @@ describe('task read authorization', () => {
       next
     );
 
-    expect(taskService.getTaskById).toHaveBeenCalledWith(taskId, false, false);
+    expect(taskService.getTaskById).toHaveBeenCalledWith(taskId, false, false, actorId, access.role === Role.ADMIN);
     expect(res.json).toHaveBeenCalledWith({ success: true, data: task });
     expect(res.status).not.toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();

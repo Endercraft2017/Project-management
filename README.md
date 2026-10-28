@@ -1,298 +1,73 @@
-# ServiceBay PM - Project Management & Collaboration Tool
+# E-Z — Skip the basic
 
-A modern, secure project management and team collaboration tool built specifically for ServiceBay.ai's development team.
+E-Z is a project-management and collaboration app built with React/Vite, Express/TypeScript, Prisma, PostgreSQL and Socket.IO. The production-branch candidate adds company-code/email/password login and a **standalone E-Z operator console**, with a server-generated PostgreSQL schema per company. Core startup requires no Google, AI or SMTP account.
 
-## 🎯 Project Overview
+This is a reviewable candidate, not a claim that the public domain, paid billing, external providers or off-site backups are configured. Read the [production runbook](docs/operations/production-runbook.md), [current ADR](docs/saas/ADR-001-PRODUCTION-TENANCY.md), [ordered rollout](docs/saas/ROLLOUT-CHECKLIST.md) and [decision register](docs/saas/DECISIONS.md).
 
-**Tech Stack**:
-- **Backend**: Node.js + Express + TypeScript + Prisma + Socket.io
-- **Frontend**: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
-- **Database**: PostgreSQL (Railway)
-- **Auth**: Google OAuth 2.0
-- **Real-time**: WebSocket (Socket.io)
-- **Deployment**: Railway
+## Local setup
 
-## ✨ Features
+Use Node 24.19.0/npm 11.9.0 and Docker or a compatible PostgreSQL 16 service. From the repository root:
 
-- ✅ **Authentication**: Google OAuth 2.0 restricted to @servicebay.ai
-- ✅ **Task Management**: Hierarchical tasks (4 levels), sprint-based
-- ✅ **Real-time Chat**: Direct messages and group chats
-- ✅ **Google Sheets Sync**: Bi-directional task synchronization
-- ✅ **Progress Tracking**: Visual dashboards with charts
-- ✅ **Gantt Chart**: Timeline visualization
-- ✅ **Role-Based Access**: Admin and Member roles
-- ✅ **Dark Mode**: Light/Dark theme support
-- ✅ **Secure**: OWASP best practices, rate limiting, CSRF protection
-
-## 📊 Implementation Status
-
-**Completed**: 100% 🎉
-- ✅ Database schema (Prisma + PostgreSQL)
-- ✅ Authentication system (Google OAuth + Sessions)
-- ✅ User management API
-- ✅ Sprint management API
-- ✅ Task management API (4-level hierarchy)
-- ✅ Google Sheets integration (bidirectional sync)
-- ✅ Real-time chat system (Socket.io + REST API)
-- ✅ File upload system (Multer + CSV/Excel import)
-- ✅ Frontend setup & Tasks View (Vite + React + TanStack Query)
-- ✅ Summary View with Charts (Recharts + Dashboard)
-- ✅ Gantt Chart View (Frappe Gantt + Timeline)
-- ✅ Chat View UI (Socket.IO + Emoji Picker + Infinite Scroll)
-- ✅ Theme Toggle (Light/Dark mode with Zustand)
-- ✅ Deployment Configuration (Railway + GitHub Actions)
-
-See [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) for detailed progress.
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 20+
-- PostgreSQL (or Railway account)
-- Google Cloud Project (for OAuth)
-
-### Installation
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd project-management
-
-# Install dependencies
-npm install
-
-# Install server dependencies
-cd server && npm install
-
-# Install client dependencies (when ready)
-cd ../client && npm install
+```sh
+npm ci --no-audit --no-fund
+node scripts/setup-local-env.mjs
+docker run --detach --name ez-postgres --env-file .env.local \
+  --publish 127.0.0.1:5432:5432 \
+  --volume ez-postgres-data:/var/lib/postgresql/data \
+  postgres:16-bookworm@sha256:d81f7b51697014367236d07ec58b54153fc28f828b72bf247fe5c7487520bcb0
+docker exec ez-postgres pg_isready -U ez_local -d ez_development
+npm run build
 ```
 
-### Environment Setup
+The helper creates ignored, private `server/.env` and root `.env.local` with fresh local database/session secrets, prints no values and preserves an existing pair. A partial pair is refused for manual reconciliation. `.env.local` supplies the local database container; backend development scripts read `server/.env`. Never commit either or reuse local secrets in production. Existing containers/volumes are preserved: if the name exists, confirm ownership before reusing it, and do not delete unknown data to make setup pass.
 
-1. Copy `.env.example` to `.env`
-2. Fill in your environment variables:
+Wait for PostgreSQL readiness. Bootstrap the first operator through stdin, without passwords in shell history/arguments:
 
-```bash
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/servicebay_pm
-
-# Google OAuth (get from Google Cloud Console)
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
-
-# Session
-SESSION_SECRET=generate-a-random-32+-character-string
-
-# Admin users
-ADMIN_EMAILS=admin@servicebay.ai,another-admin@servicebay.ai
-```
-
-### Database Setup
-
-```bash
-cd server
-
-# Run migrations
-npx prisma migrate dev
-
-# Generate Prisma Client
-npx prisma generate
-
-# Seed database with sample data
-npx prisma db seed
-
-# Open Prisma Studio (optional)
-npx prisma studio
-```
-
-### Run Development Server
-
-```bash
-cd server
+```sh
+set -o pipefail
+python3 -c 'import sys,json,getpass
+print("Operator email: ",file=sys.stderr,end="",flush=True); email=input()
+print("Operator name: ",file=sys.stderr,end="",flush=True); name=input()
+password=getpass.getpass("Operator password: ")
+sys.stdout.write(json.dumps({"email":email,"name":name,"password":password}))' \
+  | node --env-file=server/.env node_modules/tsx/dist/cli.mjs \
+      --tsconfig server/tsconfig.json scripts/bootstrap-operator.ts
 npm run dev
 ```
 
-Server will start on http://localhost:3000
+Bootstrap is disabled once any operator exists. Passwords need at least 12 characters and at most 72 UTF-8 bytes. Open `http://localhost:5173` consistently; mixing localhost and 127.0.0.1 can break cookie/origin checks.
 
-### Run Tests
+1. Sign in at `/console/login`, then create a company at `/console/tenants`.
+2. Share the returned one-use setup link privately with its owner. It expires after 24 hours; no automatic email is promised.
+3. The owner sets a password at `/activate`, then signs in at `/login` using company code+email+password. Activation does not auto-login.
+4. `/app` is the workspace, `/app#/projects` project management, and `/`/`/tour` the public landing. The same email can have separate tenant-local accounts in several companies.
 
-```bash
-cd server
-npm test
+Google/Drive/Sheets are disabled. AI has zero allowance by default; SMTP and the worker require explicit activation. Local core development needs no provider signup.
 
-# With coverage
-npm test -- --coverage
+## Validation and operations
 
-# Watch mode
-npm run test:watch
-```
-
-## 📁 Project Structure
-
-```
-project-management/
-├── docs/
-│   ├── architecture/    # System guide and API call pipeline
-│   ├── documentation/   # Feature documentation
-│   ├── features/        # Per-feature specs and reviews
-│   ├── guides/          # User, setup, and deployment guides
-│   ├── plans/           # Implementation plans
-│   ├── error_fixes/     # Bug investigation write-ups
-│   └── archive/         # Historical status/progress/test reports
-├── server/              # Backend (Node.js + Express)
-│   ├── src/
-│   │   ├── auth/       # Authentication
-│   │   ├── database/   # Prisma client
-│   │   ├── config/     # Configuration
-│   │   ├── middlewares/# Express middleware
-│   │   ├── users/      # User management
-│   │   ├── tasks/      # Task management (TODO)
-│   │   ├── chat/       # Chat system (TODO)
-│   │   └── sheets/     # Google Sheets sync (TODO)
-│   └── prisma/
-│       ├── schema.prisma  # Database schema
-│       ├── migrations/    # Prisma migrations
-│       └── seed.ts        # Seed data
-├── client/              # Frontend (React + Vite) (TODO)
-├── tests/
-│   ├── feature/        # Integration tests
-│   └── CI_CD/          # GitHub Actions workflows
-├── package.json        # Root package
-└── README.md          # This file
-```
-
-## 🧪 Testing
-
-Tests are written using Jest and Supertest.
-
-```bash
-# Run all tests
-npm test
-
-# Run specific test file
-npm test tests/feature/database.test.ts
-
-# Run with coverage
-npm test -- --coverage
-
-# Watch mode
-npm run test:watch
-```
-
-**Current Test Coverage**: ~90% (for implemented features)
-
-## 🔒 Security
-
-This project follows OWASP security best practices:
-
-- ✅ Input validation (Zod)
-- ✅ SQL injection prevention (Prisma ORM)
-- ✅ XSS protection (sanitization, CSP headers)
-- ✅ CSRF protection (SameSite cookies)
-- ✅ Rate limiting
-- ✅ Secure session management
-- ✅ HTTPS enforcement (production)
-- ✅ Security headers (Helmet.js)
-- ✅ Domain validation (@servicebay.ai)
-- ✅ No secrets in code
-
-## 📚 Documentation
-
-- [Project Overview](./docs/documentation/00-project-overview.md)
-- [Database Schema](./docs/documentation/01-database-schema.md)
-- [Authentication](./docs/documentation/02-authentication.md)
-- [Implementation Status](./IMPLEMENTATION_STATUS.md)
-- [Progress Tracking](./PROGRESS.md)
-
-### API Documentation
-
-API documentation will be generated using OpenAPI/Swagger (TODO).
-
-For now, see plan documents in `docs/plans/` for endpoint specifications.
-
-## 🛠️ Development
-
-### Code Quality
-
-```bash
-# Lint code
-npm run lint
-
-# Format code
-npm run format
-
-# Type check
+```sh
 npm run typecheck
+npm run lint --workspace=server
+npm run lint --workspace=client
+npm run build
+npm run test:unit --workspace=server
+npm run test --workspace=client -- --maxWorkers=2
 ```
 
-### Database
+API/browser harnesses require a **disposable local** `TEST_DATABASE_URL` ending `_test`, without existing tenants/operators. Never use a customer database:
 
-```bash
-# Create migration
-npx prisma migrate dev --name migration_name
-
-# Reset database
-npx prisma migrate reset
-
-# View data
-npx prisma studio
+```sh
+npm run test:integration --workspace=server
+npm run test:browser --workspace=server
 ```
 
-### Git Workflow
+After explicit local enablement, the separate worker starts with:
 
-1. Create feature branch
-2. Implement feature
-3. Write tests
-4. Update documentation
-5. Create pull request
-
-## 🚀 Deployment
-
-The project is configured for deployment to Railway with automated CI/CD via GitHub Actions.
-
-### Railway Deployment
-
-1. Create Railway project from GitHub repository
-2. Add PostgreSQL database service
-3. Configure environment variables (see [docs/documentation/14-deployment.md](./docs/documentation/14-deployment.md))
-4. Railway will automatically build and deploy on push to main
-
-### Manual Build
-
-```bash
-# Build server
-cd server && npm run build
-
-# Build client
-cd client && npm run build
-
-# Start production server
-cd server && npm start
+```sh
+WORKER_ENABLED=true node --env-file=server/.env server/dist/worker.js
 ```
 
-See complete deployment guide: [docs/documentation/14-deployment.md](./docs/documentation/14-deployment.md)
+See [worker/quotas](docs/operations/worker-and-budgets.md) and [encrypted backup/restore](docs/operations/backup-restore.md). Defaults are 10 account slots, 100 MiB storage and zero AI tokens per company; these do not implement active-member subscription billing. The tenant-client cache cap is 32 **per process**, without eviction. Measure actual database capacity before admission.
 
-## 🤝 Contributing
-
-All core features are complete! For future enhancements:
-
-1. Review [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) for current features
-2. Propose new features or improvements
-3. Follow the established pattern: Plan → Implement → Test → Document → CI/CD
-4. Maintain test coverage >80%
-5. Submit PR with comprehensive documentation
-
-## 📝 License
-
-Private - ServiceBay.ai Internal Use Only
-
-## 👥 Team
-
-ServiceBay.ai Development Team (~15 developers)
-
----
-
-**Built with ❤️ for ServiceBay.ai**
+The [audit package](docs/saas/README.md) retains the original 233-check baseline, findings and Arena/design/service provenance. The current ADR/runbook supersede mandatory-Google, shared-row/global-identity and external-console plans. No merge, deployment, DNS change, purchase or production reset follows from this README.

@@ -21,8 +21,8 @@ import {
   automatedReminderConfigSchema,
 } from './validators';
 import { ZodError } from 'zod';
-import { restartScheduler } from '@/summaries/scheduler';
-import { restartDailyReminderScheduler } from './daily-reminder-scheduler';
+import { workerIsReady } from '@/platform/jobs';
+
 import { getSocketServer } from '@/chat/socket-server';
 
 class AdminController {
@@ -70,7 +70,7 @@ class AdminController {
         return res.status(400).json({
           success: false,
           message: 'Invalid request',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -108,7 +108,7 @@ class AdminController {
         return res.status(400).json({
           success: false,
           message: 'Invalid setting value',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -135,7 +135,7 @@ class AdminController {
         return res.status(400).json({
           success: false,
           message: 'Invalid request',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -204,21 +204,20 @@ class AdminController {
         userId
       );
 
-      // Restart the scheduler to apply the new configuration
-      console.log('[Admin] Email config updated, restarting scheduler...');
-      await restartScheduler();
+      const workerReady = await workerIsReady().catch(() => false);
 
       res.json({
         success: true,
         data: setting,
-        message: 'Email configuration updated successfully',
+        message: 'Email configuration saved; a configured background worker applies the schedule',
+        workerReady,
       });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
           message: 'Invalid configuration',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -285,21 +284,20 @@ class AdminController {
         userId
       );
 
-      // Restart the daily reminder scheduler to apply the new configuration
-      console.log('[Admin] Automated reminder config updated, restarting scheduler...');
-      await restartDailyReminderScheduler();
+      const workerReady = await workerIsReady().catch(() => false);
 
       res.json({
         success: true,
         data: setting,
-        message: 'Automated reminder configuration updated successfully',
+        message: 'Reminder configuration saved; the background worker applies the schedule',
+        workerReady,
       });
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
           message: 'Invalid configuration',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -373,7 +371,7 @@ class AdminController {
         return res.status(400).json({
           success: false,
           message: 'Invalid configuration',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -452,7 +450,7 @@ class AdminController {
         return res.status(400).json({
           success: false,
           message: 'Invalid configuration',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -492,7 +490,7 @@ class AdminController {
         return res.status(400).json({
           success: false,
           message: 'Invalid date range',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 
@@ -630,11 +628,11 @@ class AdminController {
       console.error('[AdminController] Error in sendUpdateReminder:', error);
 
       if (error instanceof ZodError) {
-        console.error('[AdminController] Validation error:', error.errors);
+        console.error('[AdminController] Validation error:', error.issues);
         return res.status(400).json({
           success: false,
           message: 'Invalid request',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
 

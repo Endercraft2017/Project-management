@@ -3,9 +3,9 @@
  * Provides data fetching, caching, and mutation hooks for invitations
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, get, post, del } from '@/lib/api';
-import { userKeys } from './useUsers';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, get, post, del } from "@/lib/api";
+import { userKeys } from "./useUsers";
 import type {
   TeamInvite,
   SendInviteInput,
@@ -13,14 +13,14 @@ import type {
   InviteFilters,
   ValidateInviteResponse,
   User,
-} from '@/types';
+} from "@/types";
 
 // Query keys for cache management
 export const inviteKeys = {
-  all: ['invites'] as const,
-  lists: () => [...inviteKeys.all, 'list'] as const,
+  all: ["invites"] as const,
+  lists: () => [...inviteKeys.all, "list"] as const,
   list: (filters?: InviteFilters) => [...inviteKeys.lists(), filters] as const,
-  validate: (token: string) => [...inviteKeys.all, 'validate', token] as const,
+  validate: (token: string) => [...inviteKeys.all, "validate", token] as const,
 };
 
 /**
@@ -35,7 +35,7 @@ export function useInvites(filters?: InviteFilters) {
         success: boolean;
         data: TeamInvite[];
         count: number;
-      }>('/api/invites', { params: filters });
+      }>("/api/invites", { params: filters });
       return response.data.data;
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
@@ -48,8 +48,9 @@ export function useInvites(filters?: InviteFilters) {
  */
 export function useValidateInvite(token: string | null) {
   return useQuery({
-    queryKey: inviteKeys.validate(token || ''),
-    queryFn: () => get<ValidateInviteResponse>(`/api/invites/validate?token=${token}`),
+    queryKey: inviteKeys.validate(token || ""),
+    queryFn: () =>
+      get<ValidateInviteResponse>(`/api/invites/validate?token=${token}`),
     enabled: !!token, // Only run query if token exists
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: false, // Don't retry if token is invalid
@@ -63,7 +64,8 @@ export function useSendInvite() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: SendInviteInput) => post<TeamInvite>('/api/invites', data),
+    mutationFn: (data: SendInviteInput) =>
+      post<TeamInvite>("/api/invites", data),
     onSuccess: () => {
       // Invalidate and refetch invitations list
       queryClient.invalidateQueries({ queryKey: inviteKeys.lists() });
@@ -90,7 +92,7 @@ export function useAcceptInvite() {
             acceptedAt: string;
           };
         };
-      }>('/api/invites/accept', data);
+      }>("/api/invites/accept", data);
       return response.data.data;
     },
   });
@@ -106,28 +108,6 @@ export function useRevokeInvite() {
   return useMutation({
     mutationFn: (inviteId: string) =>
       del<{ success: boolean; message: string }>(`/api/invites/${inviteId}`),
-    onSuccess: () => {
-      // Invalidate and refetch invitations list
-      queryClient.invalidateQueries({ queryKey: inviteKeys.lists() });
-    },
-  });
-}
-
-/**
- * Resend invitation email (Admin only)
- * Only PENDING and non-expired invitations can be resent
- */
-export function useResendInvite() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (inviteId: string) => {
-      const response = await api.post<{
-        success: boolean;
-        message: string;
-      }>(`/api/invites/${inviteId}/resend`);
-      return response.data;
-    },
     onSuccess: () => {
       // Invalidate and refetch invitations list
       queryClient.invalidateQueries({ queryKey: inviteKeys.lists() });

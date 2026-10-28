@@ -3,17 +3,10 @@
  * Provides toast functionality throughout the app
  */
 
-import { createContext, useContext, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useToast as useToastHook } from '@/hooks/useToast';
 import { Toaster } from '@/components/common/Toast';
-import type { Toast } from '@/hooks/useToast';
-
-interface ToastContextType {
-  toast: (toast: Omit<Toast, 'id'>) => string;
-  dismiss: (toastId: string) => void;
-}
-
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+import { ToastContext } from './toast-context';
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const { toasts, toast, dismiss } = useToastHook();
@@ -24,12 +17,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <Toaster toasts={toasts} onDismiss={dismiss} />
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
-  }
-  return context;
 }

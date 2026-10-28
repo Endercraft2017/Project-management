@@ -1,12 +1,24 @@
+import { apiErrorMessage } from "@/lib/api-error";
 /**
  * Task Import Component
  * CSV/Excel import functionality for bulk task creation
  */
 
-import { useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react';
-import ConflictResolutionModal from '../sync/ConflictResolutionModal';
-import { api } from '@/lib/api';
+import { useState, useRef } from "react";
+import {
+  Upload,
+  FileSpreadsheet,
+  AlertCircle,
+  CheckCircle,
+  X,
+} from "lucide-react";
+import ConflictResolutionModal from "../sync/ConflictResolutionModal";
+import { api } from "@/lib/api";
+import {
+  getWorkspaceContext,
+  workspaceContextChanged,
+  markWorkspaceChanged,
+} from "@/lib/workspace-context";
 
 interface ImportResult {
   imported: number;
@@ -20,6 +32,7 @@ interface ImportResult {
     dbDetails: string;
     csvDetails: string;
     conflictType?: string;
+    resolution?: string;
   }>;
   spreadsheetId?: string;
   sheetName?: string;
@@ -37,13 +50,15 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
-  const [noteConflicts, setNoteConflicts] = useState<Array<{
-    taskId: string;
-    taskName: string;
-    reason: string;
-    dbDetails: string;
-    csvDetails: string;
-  }>>([]);
+  const [noteConflicts, setNoteConflicts] = useState<
+    Array<{
+      taskId: string;
+      taskName: string;
+      reason: string;
+      dbDetails: string;
+      csvDetails: string;
+    }>
+  >([]);
   const [pendingImportData, setPendingImportData] = useState<{
     spreadsheetId: string;
     sheetName: string;
@@ -56,21 +71,23 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
 
     // Validate file type
     const allowedTypes = [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      "text/csv",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ];
 
-    if (!allowedTypes.includes(selectedFile.type) &&
-        !selectedFile.name.match(/\.(csv|xlsx|xls)$/i)) {
-      setError('Please upload a CSV or Excel file (.csv, .xlsx, .xls)');
+    if (
+      !allowedTypes.includes(selectedFile.type) &&
+      !selectedFile.name.match(/\.(csv|xlsx|xls)$/i)
+    ) {
+      setError("Please upload a CSV or Excel file (.csv, .xlsx, .xls)");
       return;
     }
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
     if (selectedFile.size > maxSize) {
-      setError('File too large. Maximum size is 10MB.');
+      setError("File too large. Maximum size is 5MB.");
       return;
     }
 
@@ -80,20 +97,20 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
   };
 
   const handleImport = async () => {
-    if (!file) return;
+    if (!file || workspaceContextChanged()) return;
 
     setImporting(true);
     setError(null);
     setProgress(0);
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     try {
       const xhr = new XMLHttpRequest();
 
       // Track upload progress
-      xhr.upload.addEventListener('progress', (e) => {
+      xhr.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable) {
           const percentComplete = Math.round((e.loaded / e.total) * 100);
           setProgress(percentComplete);
@@ -101,17 +118,24 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
       });
 
       // Handle completion
-      xhr.addEventListener('load', () => {
+      xhr.addEventListener("load", () => {
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
-          const importResult = response.data;
+          const importResult: ImportResult = response.data;
 
           // Check if there are note conflicts that need resolution
-          const conflictsNeedingResolution = importResult.conflicts?.filter(
-            (c: any) => c.conflictType === 'notesConflict' && c.resolution === 'needsResolution'
-          ) || [];
+          const conflictsNeedingResolution =
+            importResult.conflicts?.filter(
+              (c) =>
+                c.conflictType === "notesConflict" &&
+                c.resolution === "needsResolution",
+            ) || [];
 
-          if (conflictsNeedingResolution.length > 0 && importResult.spreadsheetId && importResult.sheetName) {
+          if (
+            conflictsNeedingResolution.length > 0 &&
+            importResult.spreadsheetId &&
+            importResult.sheetName
+          ) {
             // Show conflict resolution modal
             setNoteConflicts(conflictsNeedingResolution);
             setPendingImportData({
@@ -129,23 +153,26 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
             }
           }
         } else {
+          if (xhr.status === 409) markWorkspaceChanged();
           const errorResponse = JSON.parse(xhr.responseText);
-          setError(errorResponse.message || 'Import failed. Please try again.');
+          setError(errorResponse.message || "Import failed. Please try again.");
           setImporting(false);
         }
       });
 
       // Handle errors
-      xhr.addEventListener('error', () => {
-        setError('Network error. Please check your connection and try again.');
+      xhr.addEventListener("error", () => {
+        setError("Network error. Please check your connection and try again.");
         setImporting(false);
       });
 
-      xhr.open('POST', '/api/upload/tasks-import');
+      xhr.open("POST", "/api/upload/tasks-import");
       xhr.withCredentials = true;
+      const context = getWorkspaceContext();
+      if (context) xhr.setRequestHeader("X-EZ-Workspace", context);
       xhr.send(formData);
-    } catch (err: any) {
-      setError(err.message || 'Import failed. Please try again.');
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err) || "Import failed. Please try again.");
       setImporting(false);
     }
   };
@@ -159,12 +186,15 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
     setNoteConflicts([]);
     setPendingImportData(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const handleResolveConflicts = async (
-    resolutions: Array<{ taskId: string; resolution: 'useDb' | 'useSheet' | 'merge' }>
+    resolutions: Array<{
+      taskId: string;
+      resolution: "useDb" | "useSheet" | "merge";
+    }>,
   ) => {
     if (!pendingImportData) return;
 
@@ -172,7 +202,7 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
     setShowConflictModal(false);
 
     try {
-      const response = await api.post('/api/sync/resolve-conflicts', {
+      const response = await api.post("/api/sync/resolve-conflicts", {
         spreadsheetId: pendingImportData.spreadsheetId,
         sheetName: pendingImportData.sheetName,
         resolutions,
@@ -192,8 +222,11 @@ export default function TaskImport({ onSuccess, onClose }: TaskImportProps) {
       if (onSuccess) {
         setTimeout(onSuccess, 1000);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to resolve conflicts. Please try again.');
+    } catch (err: unknown) {
+      setError(
+        apiErrorMessage(err) ||
+          "Failed to resolve conflicts. Please try again.",
+      );
       setImporting(false);
     }
   };
@@ -206,11 +239,11 @@ User Model,Database Schema Design,Sprint 1,Create User model with authentication
 Task Model,Database Schema Design,Sprint 1,Create Task model with hierarchy support,50,Jane Smith,2025-01-27
 API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,2025-02-05`;
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'task-import-template.csv';
+    a.download = "task-import-template.csv";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -245,7 +278,8 @@ API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,
           <div className="flex-1">
             <h3 className="font-semibold">Need a template?</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Download our CSV template with example data and correct column headers.
+              Download our CSV template with example data and correct column
+              headers.
             </p>
             <button
               onClick={downloadTemplate}
@@ -263,23 +297,23 @@ API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,
           <div
             className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
               file
-                ? 'border-primary bg-primary/5'
-                : 'border-border hover:border-primary/50 hover:bg-accent'
+                ? "border-primary bg-primary/5"
+                : "border-border hover:border-primary/50 hover:bg-accent"
             }`}
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload
               className={`mb-4 h-12 w-12 ${
-                file ? 'text-primary' : 'text-muted-foreground'
+                file ? "text-primary" : "text-muted-foreground"
               }`}
             />
             <p className="mb-2 text-center font-medium">
-              {file ? file.name : 'Click to select a file'}
+              {file ? file.name : "Click to select a file"}
             </p>
             <p className="text-center text-sm text-muted-foreground">
               {file
                 ? `Size: ${(file.size / 1024).toFixed(2)} KB`
-                : 'CSV or Excel file (max 10MB)'}
+                : "CSV or Excel file (max 5MB)"}
             </p>
             <input
               ref={fileInputRef}
@@ -346,11 +380,15 @@ API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,
             <div className="flex items-start gap-3">
               <CheckCircle className="mt-0.5 h-5 w-5 text-green-600" />
               <div className="flex-1">
-                <h3 className="font-semibold text-green-600">Import Complete</h3>
+                <h3 className="font-semibold text-green-600">
+                  Import Complete
+                </h3>
                 <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Imported:</span>
-                    <span className="ml-2 font-semibold">{result.imported}</span>
+                    <span className="ml-2 font-semibold">
+                      {result.imported}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Skipped:</span>
@@ -373,7 +411,7 @@ API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,
                 <ul className="space-y-2">
                   {result.errors.map((err, i) => (
                     <li key={i} className="text-sm">
-                      <span className="font-medium">Row {err.row}:</span>{' '}
+                      <span className="font-medium">Row {err.row}:</span>{" "}
                       <span className="text-muted-foreground">{err.error}</span>
                     </li>
                   ))}
@@ -393,7 +431,10 @@ API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,
               <div className="max-h-60 overflow-y-auto p-4">
                 <ul className="space-y-2">
                   {result.tasks.map((task) => (
-                    <li key={task.id} className="flex items-center gap-3 text-sm">
+                    <li
+                      key={task.id}
+                      className="flex items-center gap-3 text-sm"
+                    >
                       <div className="h-2 w-2 rounded-full bg-primary" />
                       <span className="flex-1">{task.name}</span>
                       <span className="text-muted-foreground">
@@ -431,19 +472,22 @@ API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,
         <h3 className="mb-2 font-semibold">CSV Format Requirements</h3>
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
-            <strong>Column order:</strong> Tasks | Subtasks | Sprint | Details | Progress % | Assigned to | Deadline
+            <strong>Column order:</strong> Tasks | Subtasks | Sprint | Details |
+            Progress % | Assigned to | Deadline
           </p>
           <p>
             <strong>Required columns:</strong> Tasks, Progress %
           </p>
           <p>
-            <strong>Optional columns:</strong> Subtasks, Sprint, Details, Assigned to, Deadline
+            <strong>Optional columns:</strong> Subtasks, Sprint, Details,
+            Assigned to, Deadline
           </p>
           <p>
             <strong>Tasks:</strong> Main task name (1-200 characters)
           </p>
           <p>
-            <strong>Subtasks:</strong> Parent task name if this is a subtask (leave empty for root tasks)
+            <strong>Subtasks:</strong> Parent task name if this is a subtask
+            (leave empty for root tasks)
           </p>
           <p>
             <strong>Progress %:</strong> Must be 0-100 (integer)
@@ -452,7 +496,8 @@ API Development,,Sprint 2,Build REST API endpoints for all features,25,John Doe,
             <strong>Assigned to:</strong> User's name or email address
           </p>
           <p>
-            <strong>Deadline:</strong> ISO 8601 (YYYY-MM-DD) or MM/DD/YYYY format
+            <strong>Deadline:</strong> ISO 8601 (YYYY-MM-DD) or MM/DD/YYYY
+            format
           </p>
           <p>
             <strong>Max rows:</strong> 10,000 tasks per file

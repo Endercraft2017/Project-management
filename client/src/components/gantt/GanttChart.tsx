@@ -3,7 +3,7 @@
  * Wrapper for Frappe Gantt library
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import Gantt from 'frappe-gantt';
 import type { Task } from '@/types';
 import { escapeHtml } from '@/lib/utils';
@@ -38,7 +38,7 @@ export default function GanttChart({
   const ganttRef = useRef<Gantt | null>(null);
 
   // Transform tasks to Gantt format with validation
-  const ganttTasks: GanttTask[] = (Array.isArray(tasks) ? tasks : [])
+  const ganttTasks: GanttTask[] = useMemo(() => (Array.isArray(tasks) ? tasks : [])
     .filter((task) => {
       // Validate task has required dates
       if (!task.startDate || !task.deadline) {
@@ -71,12 +71,13 @@ export default function GanttChart({
       end: task.deadline,
       progress: Math.max(0, Math.min(100, task.progress || 0)),
       custom_class: getTaskClass(task),
-    }));
+    })), [tasks]);
 
   useEffect(() => {
-    if (!containerRef.current || ganttTasks.length === 0) {
+    const container = containerRef.current;
+    if (!container || ganttTasks.length === 0) {
       if (ganttRef.current) {
-        containerRef.current!.innerHTML = '';
+        if (container) container.innerHTML = '';
         ganttRef.current = null;
       }
       return;
@@ -84,11 +85,9 @@ export default function GanttChart({
 
     try {
       // Clear previous instance
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
+      container.innerHTML = '';
 
-      ganttRef.current = new Gantt(containerRef.current, ganttTasks, {
+      ganttRef.current = new Gantt(container, ganttTasks, {
         view_mode: viewMode,
         on_click: (task: GanttTask) => {
           const originalTask = tasks.find((t) => t.id === task.id);
@@ -126,12 +125,10 @@ export default function GanttChart({
     }
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
+      container.innerHTML = '';
       ganttRef.current = null;
     };
-  }, [ganttTasks, viewMode, readOnly]);
+  }, [ganttTasks, viewMode, readOnly, tasks, onTaskClick, onTaskChange]);
 
   // Update view mode when changed
   useEffect(() => {

@@ -1017,7 +1017,7 @@ export class SyncService {
               console.log(`[SyncService] Using CSV notes for task ${taskId}`);
               break;
 
-            case 'merge':
+            case 'merge': {
               // Merge both notes
               const dbNotes = dbTask.details || '';
               const csvNotes = sheetTask.details || '';
@@ -1026,6 +1026,7 @@ export class SyncService {
                 : dbNotes || csvNotes || null;
               console.log(`[SyncService] Merging notes for task ${taskId}`);
               break;
+            }
           }
 
           // Update task if notes changed

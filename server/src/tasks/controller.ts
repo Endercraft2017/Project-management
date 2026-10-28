@@ -41,7 +41,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid query parameters',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -64,7 +64,9 @@ export class TaskController {
       const task = await taskService.getTaskById(
         taskId,
         includeSubtasks,
-        includeParent
+        includeParent,
+        userId,
+        isAdmin
       );
 
       if (!task) {
@@ -99,7 +101,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid task ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -134,7 +136,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -199,7 +201,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -272,7 +274,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -358,7 +360,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid sprint ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -387,7 +389,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid task ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -437,7 +439,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -493,7 +495,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid task ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -551,7 +553,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid task ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
 
@@ -600,7 +602,7 @@ export class TaskController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid task ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
 

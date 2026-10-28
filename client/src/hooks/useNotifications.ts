@@ -2,15 +2,17 @@
  * TanStack Query Hooks for Notifications
  */
 
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useCurrentUser } from "./useUsers";
+import { seenTaskIds } from "@/lib/notification-storage";
 
 export interface UnreadNotification {
   id: string;
-  type: 'message' | 'task_assigned' | 'update_reminder';
+  type: "message" | "task_assigned" | "update_reminder" | "system";
   conversationId?: string;
   conversationName?: string;
-  conversationType?: 'DM' | 'GROUP';
+  conversationType?: "DM" | "GROUP";
   messageId?: string;
   messageContent?: string;
   senderId?: string;
@@ -22,7 +24,12 @@ export interface UnreadNotification {
   assignedByName?: string;
   title?: string;
   message?: string;
-  metadata?: any;
+  metadata?: {
+    missingDates?: string[];
+    noteId?: string;
+    reminderId?: string;
+    [key: string]: unknown;
+  };
   link?: string;
   createdAt: string;
   isThreadReply?: boolean;
@@ -30,9 +37,9 @@ export interface UnreadNotification {
 }
 
 export const notificationKeys = {
-  all: ['notifications'] as const,
-  list: () => [...notificationKeys.all, 'list'] as const,
-  count: () => [...notificationKeys.all, 'count'] as const,
+  all: ["notifications"] as const,
+  list: () => [...notificationKeys.all, "list"] as const,
+  count: () => [...notificationKeys.all, "count"] as const,
 };
 
 type NotificationData = {
@@ -45,10 +52,11 @@ type NotificationData = {
  */
 export function useNotifications(
   limit: number = 50,
-  options?: Partial<UseQueryOptions<NotificationData>>
+  options?: Partial<UseQueryOptions<NotificationData>>,
 ) {
+  const { data: user } = useCurrentUser();
   return useQuery({
-    queryKey: [...notificationKeys.list(), limit],
+    queryKey: [...notificationKeys.list(), limit, user?.tenant?.id, user?.id],
     queryFn: async () => {
       const response = await api.get<{
         success: boolean;
@@ -56,9 +64,12 @@ export function useNotifications(
       }>(`/api/conversations/notifications?limit=${limit}`);
 
       // Filter out task notifications that have been marked as seen
-      const seenTasks = JSON.parse(localStorage.getItem('seenTaskNotifications') || '[]');
+      const seenTasks = seenTaskIds(user);
       const filteredNotifications = response.data.data.notifications.filter(
-        (notif) => notif.type !== 'task_assigned' || !seenTasks.includes(notif.taskId)
+        (notif) =>
+          notif.type !== "task_assigned" ||
+          !notif.taskId ||
+          !seenTasks.includes(notif.taskId),
       );
 
       return {
@@ -66,8 +77,10 @@ export function useNotifications(
         count: filteredNotifications.length,
       };
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes - rely on WebSocket for updates
-    refetchOnWindowFocus: false, // Disabled - using WebSocket events instead
+    enabled: !!user,
+    staleTime: 30000,
+    refetchInterval: 30000, // Durable worker notifications arrive through the database.
+    refetchOnWindowFocus: true,
     ...options, // Allow overriding with custom options like select
   });
 }
@@ -76,19 +89,22 @@ export function useNotifications(
  * Get total unread count for the current user
  */
 export function useUnreadCount() {
+  const { data: user } = useCurrentUser();
   return useQuery({
-    queryKey: notificationKeys.count(),
+    queryKey: [...notificationKeys.count(), user?.tenant?.id, user?.id],
     queryFn: async () => {
       const response = await api.get<{
         success: boolean;
         data: { count: number };
-      }>('/api/conversations/unread-count');
+      }>("/api/conversations/unread-count");
       return response.data.data.count;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes - rely on WebSocket for updates
-    refetchOnWindowFocus: false, // Disabled - using WebSocket events instead
+    enabled: !!user,
+    staleTime: 30000,
+    refetchInterval: 30000, // Durable worker notifications arrive through the database.
+    refetchOnWindowFocus: true,
     // Optimize: Only trigger re-render when count value actually changes
-    notifyOnChangeProps: ['data', 'error'],
+    notifyOnChangeProps: ["data", "error"],
   });
 }
 
@@ -97,17 +113,8 @@ export function useUnreadCount() {
  * Prevents re-renders when notification list changes but count stays same
  */
 export function useNotificationCount() {
-  return useQuery({
-    queryKey: [...notificationKeys.list(), 50],
-    queryFn: async () => {
-      const response = await api.get<{
-        success: boolean;
-        data: NotificationData;
-      }>('/api/conversations/notifications?limit=50');
-      return response.data.data.count;
-    },
-    staleTime: 1000 * 60 * 2,
-    refetchOnWindowFocus: false,
-    notifyOnChangeProps: ['data'],
-  });
+  // Reuse the list query's data shape; a number under the same cache key
+  // corrupts other observers of that query.
+  const result = useNotifications(50);
+  return { ...result, data: result.data?.count };
 }

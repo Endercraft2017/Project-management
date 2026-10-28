@@ -1,0 +1,36 @@
+.ez-projects {
+  --ez-card: hsl(var(--card));
+  --ez-raised: hsl(var(--secondary));
+  --ez-text: hsl(var(--foreground));
+  --ez-subtle: hsl(var(--muted-foreground));
+  --ez-border: hsl(var(--border));
+  --ez-accent: hsl(var(--primary));
+}
+.ez-projects .ez-field input,
+.ez-projects .ez-field textarea {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+}
+.ez-projects .ez-button--primary {
+  color: hsl(var(--primary-foreground));
+}
+.ez-projects .ez-button:hover:not(:disabled) {
+  background: hsl(var(--secondary));
+}
+.ez-projects .ez-button--primary:hover:not(:disabled) {
+  background: hsl(var(--primary) / 0.9);
+}
+.ez-projects .ez-notice {
+  color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.08);
+  border-color: hsl(var(--destructive) / 0.3);
+}
+.ez-projects .ez-notice--success {
+  color: hsl(var(--foreground));
+  background: hsl(var(--primary) / 0.06);
+  border-color: hsl(var(--primary) / 0.3);
+}
+.ez-projects :focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 4px;
+}

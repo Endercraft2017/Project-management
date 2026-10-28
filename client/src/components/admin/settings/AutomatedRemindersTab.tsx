@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Automated Daily Reminders Settings Tab
  * Configuration for automated daily update reminders
@@ -6,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAutomatedReminderConfig, useUpdateAutomatedReminderConfig } from '@/hooks/useSummaries';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 import type { AutomatedReminderConfig } from '@/types';
 
 interface AutomatedRemindersTabProps {
@@ -45,10 +46,10 @@ export default function AutomatedRemindersTab({ onClose }: AutomatedRemindersTab
       if (onClose) {
         onClose();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Update Failed',
-        description: error.response?.data?.message || 'Failed to update automated reminder settings',
+        description: apiErrorMessage(error) || 'Failed to update automated reminder settings',
         variant: 'error',
       });
     } finally {

@@ -46,7 +46,7 @@ export async function listConversations(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 
@@ -81,7 +81,7 @@ export async function createDm(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 
@@ -131,7 +131,7 @@ export async function createGroup(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 
@@ -184,7 +184,7 @@ export async function getMessages(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 
@@ -294,7 +294,7 @@ export async function addMember(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 
@@ -504,7 +504,7 @@ export async function sendMessage(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        message: error.errors[0].message,
+        message: error.issues[0].message,
       });
     }
 

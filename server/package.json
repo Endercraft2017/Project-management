@@ -1,7 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "Backend server for ServiceBay PM",
+  "description": "E-Z tenant API, operator console, and worker",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
@@ -15,12 +15,20 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "test:unit": "jest --config jest.unit.config.cjs --runInBand",
+    "test:integration": "tsx ../scripts/production-smoke.ts",
+    "bootstrap:operator": "tsx ../scripts/bootstrap-operator.ts",
+    "test:browser": "tsx ../scripts/production-browser.ts",
+    "test:chat": "tsx ../scripts/chat-atomicity-smoke.ts",
+    "test:operations": "tsx ../scripts/production-operations-smoke.ts",
+    "test:hierarchy": "tsx ../scripts/task-hierarchy-smoke.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
     "@types/multer": "^1.4.11",
     "@types/node-cron": "^3.0.11",
+    "bcryptjs": "^3.0.3",
     "compression": "^1.8.2",
     "connect-pg-simple": "^9.0.1",
     "cors": "^2.8.5",
@@ -34,15 +42,16 @@
     "helmet": "^7.1.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
-    "nodemailer": "^10.0.10",
+    "nodemailer": "10.2.1",
     "openai": "^6.6.0",
     "papaparse": "^5.4.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.23.1",
     "socket.io": "^4.7.5",
     "winston": "^3.13.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "zod": "^3.23.8"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
@@ -55,6 +64,7 @@
     "@types/papaparse": "^5.3.14",
     "@types/passport": "^1.0.16",
     "@types/passport-google-oauth20": "^2.0.16",
+    "@types/pg": "^8.23.1",
     "@typescript-eslint/eslint-plugin": "^7.16.1",
     "@typescript-eslint/parser": "^7.16.1",
     "eslint": "^8.57.0",

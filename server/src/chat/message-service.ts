@@ -4,9 +4,9 @@
  */
 
 import prisma from '@/database/client';
+import { lockMessage, lockConversationMember } from './transaction-policy';
 import { isMemberOfConversation, isAdminOfConversation } from './conversation-service';
 import { extractMentions, validateMentions, logMentionExtraction } from '@/lib/mentions';
-import { getFileMetadata, shareFileWithUsers } from '@/services/drive-service';
 
 /**
  * Send a message to a conversation
@@ -17,6 +17,8 @@ export async function sendMessage(
   content: string,
   driveFileIds?: string[]
 ) {
+  if (driveFileIds?.length) throw Object.assign(new Error('Google Drive attachments are disabled'), { status: 503 });
+
   // Verify user is a member
   const isMember = await isMemberOfConversation(conversationId, senderId);
   if (!isMember) {
@@ -48,47 +50,12 @@ export async function sendMessage(
   const mentionIds = extractMentions(content);
   const validMentions = await validateMentions(mentionIds, conversationId);
 
-  // Process Drive attachments if provided
-  let attachmentRecords: any[] = [];
-  if (driveFileIds && driveFileIds.length > 0) {
-    // Get other conversation members' emails for file sharing
-    const memberEmails = conversation.members
-      .filter((m) => m.user && m.user.id !== senderId)
-      .map((m) => m.user!.email);
-
-    // Fetch metadata and share files with conversation members
-    for (const fileId of driveFileIds) {
-      try {
-        // Get file metadata from Drive
-        const metadata = await getFileMetadata(senderId, fileId);
-
-        // Share file with all conversation members
-        if (memberEmails.length > 0) {
-          await shareFileWithUsers(senderId, fileId, memberEmails, 'reader');
-        }
-
-        // Prepare attachment record
-        attachmentRecords.push({
-          driveFileId: fileId,
-          fileName: metadata.name,
-          mimeType: metadata.mimeType,
-          fileSize: BigInt(metadata.size || '0'),
-          thumbnailLink: metadata.thumbnailLink,
-          webViewLink: metadata.webViewLink,
-          webContentLink: metadata.webContentLink,
-          iconLink: metadata.iconLink,
-        });
-
-        console.log(`[MessageService] Attached file ${fileId} to message`);
-      } catch (error: any) {
-        console.error(`[MessageService] Failed to process attachment ${fileId}:`, error.message);
-        // Continue with other attachments even if one fails
-      }
-    }
-  }
+  const attachmentRecords: any[] = [];
 
   // Create message with mentions and attachments
-  const message = await prisma.message.create({
+  const message = await prisma.$transaction(async (tx) => {
+    await lockConversationMember(tx, conversationId, senderId);
+    const message = await tx.message.create({
     data: {
       conversationId,
       senderId,
@@ -109,17 +76,16 @@ export async function sendMessage(
       driveAttachments: true,
     },
   });
+    await tx.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
+    return message;
+  });
 
   // Log mention extraction for audit
   if (validMentions.length > 0) {
     logMentionExtraction(message.id, senderId, validMentions);
   }
 
-  // Update conversation updatedAt
-  await prisma.conversation.update({
-    where: { id: conversationId },
-    data: { updatedAt: new Date() },
-  });
+
 
   return {
     id: message.id,
@@ -159,57 +125,17 @@ export async function editMessage(
   userId: string,
   newContent: string
 ) {
-  // Get message
-  const message = await prisma.message.findUnique({
-    where: { id: messageId },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          name: true,
-          picture: true,
-        },
-      },
-    },
-  });
-
-  if (!message) {
-    throw new Error('Message not found');
-  }
-
-  // Validate: Only sender can edit
-  if (message.senderId !== userId) {
-    throw new Error('You can only edit your own messages');
-  }
-
-  // Validate: Cannot edit deleted messages
-  if (message.isDeleted) {
-    throw new Error('Cannot edit deleted messages');
-  }
-
-  // Validate: Can only edit within 24 hours
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  if (message.createdAt < twentyFourHoursAgo) {
-    throw new Error('Messages can only be edited within 24 hours');
-  }
-
-  // Update message
-  const updatedMessage = await prisma.message.update({
-    where: { id: messageId },
-    data: {
-      content: newContent.trim(),
-      isEdited: true,
-      updatedAt: new Date(),
-    },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          name: true,
-          picture: true,
-        },
-      },
-    },
+  const updatedMessage = await prisma.$transaction(async (tx) => {
+    const message = await lockMessage(tx, messageId);
+    if (!message) throw new Error('Message not found');
+    await lockConversationMember(tx, message.conversationId, userId);
+    if (message.senderId !== userId) throw new Error('You can only edit your own messages');
+    if (message.isDeleted) throw new Error('Cannot edit deleted messages');
+    if (message.createdAt < new Date(Date.now() - 24 * 60 * 60 * 1000)) throw new Error('Messages can only be edited within 24 hours');
+    return tx.message.update({
+      where: { id: messageId }, data: { content: newContent.trim(), isEdited: true, updatedAt: new Date() },
+      include: { sender: { select: { id: true, name: true, picture: true } } },
+    });
   });
 
   console.log(`[Audit] User ${userId} edited message ${messageId}`);
@@ -232,39 +158,21 @@ export async function editMessage(
  * Delete a message
  */
 export async function deleteMessage(messageId: string, userId: string) {
-  // Get message
-  const message = await prisma.message.findUnique({
-    where: { id: messageId },
+  const candidate = await prisma.message.findUnique({ where: { id: messageId }, select: { parentMessageId: true } });
+  if (!candidate) throw new Error('Message not found');
+  if (candidate.parentMessageId) {
+    const { deleteThreadReply } = await import('./thread-service');
+    return deleteThreadReply(messageId, userId);
+  }
+  const deletedMessage = await prisma.$transaction(async (tx) => {
+    const message = await lockMessage(tx, messageId);
+    if (!message) throw new Error('Message not found');
+    if (message.parentMessageId) throw new Error('Message changed; retry');
+    const member = await lockConversationMember(tx, message.conversationId, userId);
+    if (message.senderId !== userId && !member.isAdmin) throw new Error('You can only delete your own messages or be a group admin');
+    if (message.isDeleted) throw new Error('Message already deleted');
+    return tx.message.update({ where: { id: messageId }, data: { isDeleted: true } });
   });
-
-  if (!message) {
-    throw new Error('Message not found');
-  }
-
-  // Validate: Cannot delete already deleted message
-  if (message.isDeleted) {
-    throw new Error('Message already deleted');
-  }
-
-  // Check if user is sender or admin
-  const isSender = message.senderId === userId;
-  const isAdmin = await isAdminOfConversation(message.conversationId, userId);
-
-  if (!isSender && !isAdmin) {
-    throw new Error('You can only delete your own messages or be a group admin');
-  }
-
-  // Soft delete message
-  const deletedMessage = await prisma.message.update({
-    where: { id: messageId },
-    data: {
-      isDeleted: true,
-    },
-  });
-
-  console.log(
-    `[Audit] User ${userId} deleted message ${messageId} (${isSender ? 'own' : 'as admin'})`
-  );
 
   return {
     id: deletedMessage.id,
@@ -355,108 +263,37 @@ export async function canDeleteMessage(
   return await isAdminOfConversation(message.conversationId, userId);
 }
 
-/**
- * Add reaction to message
- */
-export async function addReaction(
-  messageId: string,
-  userId: string,
-  emoji: string
-): Promise<{ id: string; reactions: any; conversationId: string }> {
-  // 1. Get message and verify it exists
-  const message = await prisma.message.findUnique({
-    where: { id: messageId },
-  });
-
-  if (!message) {
-    throw new Error('Message not found');
-  }
-
-  // 2. Verify user is member of conversation
-  const isMember = await isMemberOfConversation(message.conversationId, userId);
-  if (!isMember) {
-    throw new Error('Not a member of this conversation');
-  }
-
-  // 3. Cannot react to deleted messages
-  if (message.isDeleted) {
-    throw new Error('Cannot react to deleted messages');
-  }
-
-  // 4. Get current reactions or initialize empty object
-  const reactions = (message.reactions as Record<string, string[]>) || {};
-
-  // 5. Add user to emoji reactions if not already present
-  if (!reactions[emoji]) {
-    reactions[emoji] = [];
-  }
-
-  if (!reactions[emoji].includes(userId)) {
-    reactions[emoji].push(userId);
-  }
-
-  // 6. Update message
-  const updatedMessage = await prisma.message.update({
-    where: { id: messageId },
-    data: { reactions },
-  });
-
-  console.log(`[Audit] User ${userId} reacted ${emoji} to message ${messageId}`);
-
-  return {
-    id: updatedMessage.id,
-    reactions: updatedMessage.reactions,
-    conversationId: updatedMessage.conversationId,
-  };
-}
-
-/**
- * Remove reaction from message
- */
-export async function removeReaction(
-  messageId: string,
-  userId: string,
-  emoji: string
-): Promise<{ id: string; reactions: any; conversationId: string }> {
-  // 1. Get message
-  const message = await prisma.message.findUnique({
-    where: { id: messageId },
-  });
-
-  if (!message) {
-    throw new Error('Message not found');
-  }
-
-  // 2. Verify user is member of conversation
-  const isMember = await isMemberOfConversation(message.conversationId, userId);
-  if (!isMember) {
-    throw new Error('Not a member of this conversation');
-  }
-
-  // 3. Get current reactions
-  const reactions = (message.reactions as Record<string, string[]>) || {};
-
-  // 4. Remove user from emoji reactions
-  if (reactions[emoji]) {
-    reactions[emoji] = reactions[emoji].filter((id) => id !== userId);
-
-    // 5. Remove emoji key if no users left
-    if (reactions[emoji].length === 0) {
-      delete reactions[emoji];
+/** Every mutation serializes the reaction read, authorization and write on the message row. */
+async function changeReaction(messageId: string, userId: string, emoji: string, adding: boolean): Promise<{ id: string; reactions: any; conversationId: string }> {
+  if (typeof emoji !== 'string' || emoji.length < 1 || emoji.length > 10 || ['__proto__', 'prototype', 'constructor'].includes(emoji)) throw Object.assign(new Error('Invalid emoji'), { status: 400 });
+  return prisma.$transaction(async (tx) => {
+    const message = await lockMessage(tx, messageId);
+    if (!message) throw new Error('Message not found');
+    await lockConversationMember(tx, message.conversationId, userId);
+    if (adding && message.isDeleted) throw new Error('Cannot react to deleted messages');
+    const reactions: Record<string, string[]> = Object.create(null);
+    if (message.reactions !== null) {
+      if (typeof message.reactions !== 'object' || Array.isArray(message.reactions)) throw new Error('Invalid stored reactions');
+      for (const [key, value] of Object.entries(message.reactions)) {
+        if (['__proto__', 'prototype', 'constructor'].includes(key)) throw new Error('Invalid stored reactions');
+        if (!Array.isArray(value) || value.some((id) => typeof id !== 'string')) throw new Error('Invalid stored reactions');
+        reactions[key] = [...new Set(value as string[])];
+      }
     }
-  }
-
-  // 6. Update message
-  const updatedMessage = await prisma.message.update({
-    where: { id: messageId },
-    data: { reactions },
+    const users = reactions[emoji] || [];
+    if (adding) reactions[emoji] = [...new Set([...users, userId])];
+    else {
+      const remaining = users.filter((id) => id !== userId);
+      if (remaining.length) reactions[emoji] = remaining;
+      else delete reactions[emoji];
+    }
+    const updated = await tx.message.update({ where: { id: messageId }, data: { reactions } });
+    return { id: updated.id, reactions: updated.reactions, conversationId: updated.conversationId };
   });
-
-  console.log(`[Audit] User ${userId} removed ${emoji} reaction from message ${messageId}`);
-
-  return {
-    id: updatedMessage.id,
-    reactions: updatedMessage.reactions,
-    conversationId: updatedMessage.conversationId,
-  };
+}
+export async function addReaction(messageId: string, userId: string, emoji: string): Promise<{ id: string; reactions: any; conversationId: string }> {
+  return changeReaction(messageId, userId, emoji, true);
+}
+export async function removeReaction(messageId: string, userId: string, emoji: string): Promise<{ id: string; reactions: any; conversationId: string }> {
+  return changeReaction(messageId, userId, emoji, false);
 }

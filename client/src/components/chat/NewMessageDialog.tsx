@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * New Message Dialog Component
  * Allows users to start a new DM or group conversation
@@ -8,7 +9,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, MessageSquarePlus, User, Users as UsersIcon, Search } from 'lucide-react';
 import { useUsers } from '@/hooks/useUsers';
 import { useCreateConversation } from '@/hooks/useConversations';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/toast-context';
 import { cn } from '@/lib/utils';
 
 interface NewMessageDialogProps {
@@ -92,10 +93,10 @@ export default function NewMessageDialog({
       if (onConversationCreated && result && typeof result === 'object' && 'id' in result) {
         onConversationCreated(result.id as string);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Failed to create conversation',
-        description: error.response?.data?.message || 'An error occurred',
+        description: apiErrorMessage(error) || 'An error occurred',
         variant: 'error',
       });
     }

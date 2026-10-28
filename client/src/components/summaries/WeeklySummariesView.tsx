@@ -3,15 +3,18 @@
  * Displays AI-powered weekly team summaries with impact assessments
  */
 
-import { useState } from 'react';
-import { useGroupedWeeklySummary, useWeeklySummaries } from '@/hooks/useSummaries';
-import { TrendingUp, Calendar, Sparkles } from 'lucide-react';
-import WeekList from './WeekList';
-import SummaryContent from './SummaryContent';
-import GenerateSummaryButton from './GenerateSummaryButton';
-import SendEmailButton from './SendEmailButton';
-import DeleteSummaryButton from './DeleteSummaryButton';
-import { useCurrentUser } from '@/hooks/useUsers';
+import { useState } from "react";
+import {
+  useGroupedWeeklySummary,
+  useWeeklySummaries,
+} from "@/hooks/useSummaries";
+import { TrendingUp, Calendar, Sparkles } from "lucide-react";
+import WeekList from "./WeekList";
+import SummaryContent from "./SummaryContent";
+import GenerateSummaryButton from "./GenerateSummaryButton";
+import SendEmailButton from "./SendEmailButton";
+import DeleteSummaryButton from "./DeleteSummaryButton";
+import { useCurrentUser } from "@/hooks/useUsers";
 
 export default function WeeklySummariesView() {
   // Get current week's Monday
@@ -21,7 +24,7 @@ export default function WeeklySummariesView() {
     const diff = day === 0 ? -6 : 1 - day;
     const monday = new Date(d);
     monday.setDate(d.getDate() + diff);
-    return monday.toISOString().split('T')[0];
+    return monday.toISOString().split("T")[0];
   };
 
   const today = new Date();
@@ -29,10 +32,14 @@ export default function WeeklySummariesView() {
 
   const [selectedWeek, setSelectedWeek] = useState<string>(currentMonday);
   const { data: weeks } = useWeeklySummaries();
-  const { data: summary, isLoading, error } = useGroupedWeeklySummary(selectedWeek);
+  const {
+    data: summary,
+    isLoading,
+    error,
+  } = useGroupedWeeklySummary(selectedWeek);
   const { data: currentUser } = useCurrentUser();
 
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === "ADMIN";
 
   // Handle summary deletion - switch to current week if deleted week was selected
   const handleDeleted = () => {
@@ -45,15 +52,15 @@ export default function WeeklySummariesView() {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const startFormatted = start.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+    const startFormatted = start.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
     });
 
-    const endFormatted = end.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    const endFormatted = end.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
 
     return `${startFormatted} - ${endFormatted}`;
@@ -95,13 +102,17 @@ export default function WeeklySummariesView() {
                 <>
                   <h2 className="text-lg font-semibold flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
-                    {formatDateRange(summary.weekStartDate, summary.weekEndDate)}
+                    {formatDateRange(
+                      summary.weekStartDate,
+                      summary.weekEndDate,
+                    )}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     Generated {new Date(summary.generatedAt).toLocaleString()}
                     {summary.emailSentAt && (
                       <span className="ml-2 text-green-600">
-                        • Email sent {new Date(summary.emailSentAt).toLocaleString()}
+                        • Email sent{" "}
+                        {new Date(summary.emailSentAt).toLocaleString()}
                       </span>
                     )}
                   </p>
@@ -113,8 +124,11 @@ export default function WeeklySummariesView() {
                     {formatDateRange(
                       selectedWeek,
                       new Date(
-                        new Date(selectedWeek).getTime() + 6 * 24 * 60 * 60 * 1000
-                      ).toISOString().split('T')[0]
+                        new Date(selectedWeek).getTime() +
+                          6 * 24 * 60 * 60 * 1000,
+                      )
+                        .toISOString()
+                        .split("T")[0],
                     )}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">

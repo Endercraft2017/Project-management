@@ -1,14 +1,15 @@
+import { apiErrorMessage } from '@/lib/api-error';
 /**
  * Member Selection Button (Admin Only)
  * Opens a dialog to select which team members are included in weekly summaries
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Users, Loader2, X, Check } from 'lucide-react';
 import { useMembersConfig, useUpdateMembersConfig } from '@/hooks/useSummaries';
 import { useUsers } from '@/hooks/useUsers';
-import { useToast } from '@/contexts/ToastContext';
-import type { WeeklySummaryMembersConfig, User } from '@/types';
+import { useToast } from '@/contexts/toast-context';
+import type { User } from '@/types';
 
 export default function MemberSelectionButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,7 +21,7 @@ export default function MemberSelectionButton() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   // Get the users array from the API response
-  const users = usersData?.data?.users || [];
+  const users = useMemo(() => usersData?.data?.users || [], [usersData]);
 
   // Initialize with config or all users (default)
   useEffect(() => {
@@ -63,10 +64,10 @@ export default function MemberSelectionButton() {
         variant: 'success',
       });
       setIsOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Update failed',
-        description: error.response?.data?.message || 'Failed to update member selection',
+        description: apiErrorMessage(error) || 'Failed to update member selection',
         variant: 'error',
       });
     }

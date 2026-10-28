@@ -1,5 +1,29 @@
 import { test, expect } from "@playwright/test";
 
+// These are frontend route/carousel tests, not authentication integration tests.
+// The separate access-console journey uses the real backend and no auth intercepts.
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      status: 401,
+      json: { success: false },
+      headers: {
+        "access-control-allow-origin": new URL(page.url()).origin,
+        "access-control-allow-credentials": "true",
+      },
+    }),
+  );
+  await page.route("**/api/auth/capabilities", (route) =>
+    route.fulfill({
+      json: { success: true, passwordEnabled: true, googleEnabled: false },
+      headers: {
+        "access-control-allow-origin": new URL(page.url()).origin,
+        "access-control-allow-credentials": "true",
+      },
+    }),
+  );
+});
+
 test("manual navigation, slide accessibility and preserved app entry", async ({
   page,
 }) => {
@@ -33,8 +57,8 @@ test("manual navigation, slide accessibility and preserved app entry", async ({
   await page.goto("/");
   await page.getByRole("link", { name: "Log in", exact: true }).first().click();
   await expect(
-    page.getByRole("link", { name: "Sign in with Google" }),
-  ).toHaveAttribute("href", "/api/auth/google");
+    page.getByRole("textbox", { name: "Company code" }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "Explore the product tour" }).click();
   await expect(
     page.getByRole("heading", { name: "Skip the basic." }),
@@ -201,7 +225,7 @@ test("E-Z public root has correct contact, login and actual-screen assets", asyn
   for (const route of ["/login", "/app", "/?view=updates", "/#/tasks"]) {
     await page.goto(route);
     await expect(
-      page.getByRole("link", { name: "Sign in with Google" }),
+      page.getByRole("textbox", { name: "Company code" }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Skip the basic." }),
@@ -214,7 +238,8 @@ test("legacy root invite links still reach the invitation flow", async ({
 }) => {
   await page.route("**/api/invites/validate?token=*", (route) =>
     route.fulfill({
-      json: { success: true, data: { isValid: false, status: "EXPIRED" } },
+      status: 410,
+      json: { success: false },
       headers: {
         "access-control-allow-origin": new URL(page.url()).origin,
         "access-control-allow-credentials": "true",
@@ -225,7 +250,7 @@ test("legacy root invite links still reach the invitation flow", async ({
   await expect(
     page.getByRole("heading", { name: "Invalid Invitation" }),
   ).toBeVisible();
-  await expect(page.getByText("This invitation has expired")).toBeVisible();
+  await expect(page.getByText("Invalid invitation token")).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Skip the basic." }),
   ).toHaveCount(0);

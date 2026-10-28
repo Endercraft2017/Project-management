@@ -33,7 +33,7 @@ export class UserController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid query parameters',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -69,7 +69,7 @@ export class UserController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid user ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -98,7 +98,7 @@ export class UserController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -114,7 +114,7 @@ export class UserController {
       const userId = uuidSchema.parse(req.params.id);
       const data = updateRoleSchema.parse(req.body);
 
-      const user = await userService.updateUserRole(userId, data);
+      const user = await userService.updateUserRole(userId, data, req.user!.id);
 
       // Log role change for audit
       console.log(`Role changed: User ${userId} changed to ${data.role} by ${req.user?.email}`);
@@ -130,7 +130,7 @@ export class UserController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid input',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -145,7 +145,7 @@ export class UserController {
     try {
       const userId = uuidSchema.parse(req.params.id);
 
-      const user = await userService.deactivateUser(userId);
+      const user = await userService.deactivateUser(userId, req.user!.id);
 
       // Log deactivation for audit
       console.log(`User deactivated: ${userId} by ${req.user?.email}`);
@@ -157,7 +157,7 @@ export class UserController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid user ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -172,7 +172,7 @@ export class UserController {
     try {
       const userId = uuidSchema.parse(req.params.id);
 
-      const user = await userService.activateUser(userId);
+      const user = await userService.activateUser(userId, req.user!.id);
 
       // Log activation for audit
       console.log(`User activated: ${userId} by ${req.user?.email}`);
@@ -188,7 +188,7 @@ export class UserController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid user ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);
@@ -215,7 +215,7 @@ export class UserController {
           success: false,
           error: 'Validation Error',
           message: 'Invalid user ID',
-          details: error.errors,
+          details: error.issues,
         });
       }
       next(error);

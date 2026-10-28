@@ -10,7 +10,7 @@ import { useCurrentUser } from '@/hooks/useUsers';
 import GanttChart from './GanttChart';
 import GanttToolbar from './GanttToolbar';
 import TaskDetailsPanel from './TaskDetailsPanel';
-import type { Task } from '@/types';
+import type { Task, UpdateTaskInput } from '@/types';
 
 type ViewMode = 'Quarter Day' | 'Half Day' | 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -39,7 +39,7 @@ export default function GanttView() {
       return;
     }
 
-    const updateData: any = {};
+    const updateData: UpdateTaskInput = {};
 
     if (action === 'date' && task.start && task.end) {
       updateData.startDate = task.start;

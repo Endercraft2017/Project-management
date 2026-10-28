@@ -2,7 +2,7 @@
  * TanStack Query Hooks for Messages
  */
 
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { get, post, patch, del } from '@/lib/api';
 
 export interface MessageAttachment {
@@ -76,8 +76,8 @@ export function useEditMessage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
-      patch(`/api/messages/${messageId}`, { content }),
-    onSuccess: (data: any) => {
+      patch<Pick<Message, 'conversationId'>>(`/api/messages/${messageId}`, { content }),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: messageKeys.conversation(data.conversationId) });
     },
   });
@@ -86,8 +86,8 @@ export function useEditMessage() {
 export function useDeleteMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (messageId: string) => del(`/api/messages/${messageId}`),
-    onSuccess: (data: any) => {
+    mutationFn: (messageId: string) => del<Pick<Message, 'conversationId'>>(`/api/messages/${messageId}`),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: messageKeys.conversation(data.conversationId) });
     },
   });
