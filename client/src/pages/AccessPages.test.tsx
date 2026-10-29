@@ -25,6 +25,8 @@ vi.mock("@/lib/access-api", async () => {
       login: vi.fn(),
       activate: vi.fn(),
       operatorLogin: vi.fn(),
+      operatorMfa: vi.fn(),
+      verifyOperatorMfa: vi.fn(),
       operatorMe: vi.fn(),
       operatorLogout: vi.fn(),
       changeOperatorPassword: vi.fn(),
@@ -68,6 +70,7 @@ beforeEach(() => {
     googleEnabled: false,
   });
   vi.mocked(accessApi.operatorMe).mockResolvedValue({ user: operator });
+  vi.mocked(accessApi.operatorMfa).mockResolvedValue({ configured: false, enabled: false });
   vi.mocked(accessApi.tenants).mockResolvedValue([]);
   vi.mocked(accessApi.audit).mockResolvedValue([]);
 });

@@ -6,7 +6,7 @@ No external bucket, provider account, production backup schedule or production r
 
 ## Prerequisites
 
-Use matching-compatible PostgreSQL client tools (`pg_dump`/`pg_restore`), Node22+, and Python3.12+ for safe file extraction. Alternatively set `POSTGRES_TOOLS_CONTAINER` to an existing local PostgreSQL-tools container; Docker passes required PG variables by name, never password values on the command line. Container network addresses must actually reach the intended database. The local test used PostgreSQL16.15.
+Use matching-compatible PostgreSQL client tools (`pg_dump`/`pg_restore`), Node22+, and Python3.12+ for safe file extraction. The observed hosted PostgreSQL image is version18; use compatible PostgreSQL18 dump/restore tools for that deployment. PostgreSQL16 tools in the local rehearsal are evidence only for its version16 database and cannot dump a version18 server. Alternatively set `POSTGRES_TOOLS_CONTAINER` to an existing local PostgreSQL-tools container; Docker passes required PG variables by name, never password values on the command line. Container network addresses must actually reach the intended database. The local test used PostgreSQL16.15.
 
 Provide `DATABASE_URL` and a random32-byte key encoded as base64 in `BACKUP_KEY` via secure environment settings. Generate/store that key outside the repository; never print it in logs/chat or save it beside the backups. A lost key means a lost backup. Retain old keys securely when rotating and identify them in the operations inventory. `BACKUP_DIR` defaults to `/workspace/.ez-backups` and must be persistent/private in the real deployment.
 

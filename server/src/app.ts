@@ -27,6 +27,7 @@ import updatesRoutes from './updates/routes';
 import notesRoutes from './notes/routes';
 import summariesRoutes from './summaries/routes';
 import adminRoutes from './admin/routes';
+import exportRoutes from './export/routes';
 import { corsConfig, serverConfig } from './config';
 import { checkDatabaseConnection } from './database/client';
 
@@ -147,6 +148,7 @@ app.use('/api/updates', updatesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/summaries', summariesRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/export', exportRoutes);
 
 /**
  * Unknown API routes return JSON, never the React app's HTML

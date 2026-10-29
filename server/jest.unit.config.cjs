@@ -7,6 +7,7 @@ module.exports = {
   testMatch: [
     '<rootDir>/src/auth/__tests__/*.test.ts',
     '<rootDir>/src/platform/__tests__/*.test.ts',
+    '<rootDir>/src/export/__tests__/*.test.ts',
     '<rootDir>/src/tenancy/__tests__/*.test.ts',
     '<rootDir>/src/lib/__tests__/*.test.ts',
     '<rootDir>/src/invites/__tests__/controller.test.ts',

@@ -14,6 +14,7 @@ import { authenticateSocket } from './chat/socket-middleware';
 import { ensureControlSchema } from './platform/store';
 import { closeControlPool } from './platform/pool';
 import { closeConsoleSessions } from './platform/routes';
+import { provisionInitialOperatorFromEnvironment } from './platform/operator-setup';
 
 const PORT = serverConfig.port;
 
@@ -23,6 +24,8 @@ const PORT = serverConfig.port;
 async function startServer() {
   try {
     await ensureControlSchema();
+    const operatorSetup = await provisionInitialOperatorFromEnvironment();
+    if (operatorSetup !== 'disabled') console.info('Initial operator setup', { status: operatorSetup });
     // Check database connection
     console.log('🔍 Checking database connection...');
     const dbConnected = await checkDatabaseConnection();

@@ -44,7 +44,7 @@ Bootstrap is disabled once any operator exists. Passwords need at least 12 chara
 
 Google/Drive/Sheets are disabled. AI has zero allowance by default; SMTP and the worker require explicit activation. Local core development needs no provider signup.
 
-Signed-in operators can change their password in the console, revoking their other sessions. Forgotten-password recovery and operator MFA remain rollout work. New production uploads stay unavailable until an absolute private `UPLOAD_DIR` on verified durable storage is configured with `STORAGE_PERSISTENCE_CONFIRMED=true`; local development uploads remain available. An operator confirmation flag does not itself mount storage or establish backup recovery.
+Signed-in operators can change their password in the console, revoking their other sessions. Private one-use [operator activation and authenticator MFA](docs/operations/operator-access.md) are available; forgotten-password recovery remains separate work. New production uploads stay unavailable until an absolute private `UPLOAD_DIR` on verified durable storage is configured with `STORAGE_PERSISTENCE_CONFIRMED=true`; local development uploads remain available. An operator confirmation flag does not itself mount storage or establish backup recovery. Company admins can download a bounded JSON snapshot from Admin Settings → Workspace data; [export coverage and limits](docs/operations/workspace-export.md) are explicit.
 
 ## Validation and operations
 

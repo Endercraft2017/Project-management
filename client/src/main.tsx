@@ -8,6 +8,7 @@ import "highlight.js/styles/github-dark.css";
 const ProductTour = lazy(() => import("./pages/ProductTour"));
 const TenantLogin = lazy(() => import("./pages/TenantLogin"));
 const ConsoleLogin = lazy(() => import("./pages/ConsoleLogin"));
+const OperatorActivate = lazy(() => import("./pages/OperatorActivate"));
 const ConsoleTenants = lazy(() => import("./pages/ConsoleTenants"));
 const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
 const path = window.location.pathname.replace(/\/$/, "") || "/";
@@ -32,9 +33,11 @@ const AccessPage =
       ? ActivateAccount
       : path === "/console/login"
         ? ConsoleLogin
-        : path === "/console" || path.startsWith("/console/")
-          ? ConsoleTenants
-          : null;
+        : path === "/console/activate"
+          ? OperatorActivate
+          : path === "/console" || path.startsWith("/console/")
+            ? ConsoleTenants
+            : null;
 
 class TourErrorBoundary extends Component<
   { children: ReactNode },

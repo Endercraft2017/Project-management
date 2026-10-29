@@ -63,6 +63,18 @@ test("real operator, company activation and tenant credentials stay separated", 
             element.scrollTop = 0;
           }),
         );
+        if (screen === "workspace-data") {
+          await page
+            .getByRole("tab", { name: "Workspace data" })
+            .scrollIntoViewIfNeeded();
+          await page
+            .locator('[role="dialog"] .overflow-y-auto')
+            .evaluateAll((elements) =>
+              elements.forEach((element) => {
+                element.scrollTop = 0;
+              }),
+            );
+        }
         await page.screenshot({
           path: join(evidenceDir, `${screen}-${width}-${theme}.png`),
           fullPage: true,
@@ -253,6 +265,79 @@ test("real operator, company activation and tenant credentials stay separated", 
     b.getByText("Review the real workflow", { exact: true }),
   ).toBeVisible();
   await capture(b, "projects");
+  // The real administrator export uses the same pinned workspace context as
+  // normal app requests, and its downloaded JSON must exclude credentials.
+  await b.getByRole("button", { name: "Account menu" }).click();
+  await b
+    .getByRole("menuitem", { name: "Admin settings", exact: true })
+    .click();
+  await expect(b.getByRole("dialog", { name: "Admin Settings" })).toBeVisible();
+  await b.getByRole("tab", { name: "Workspace data" }).click();
+  await expect(
+    b.getByRole("heading", { name: "Export workspace data" }),
+  ).toBeVisible();
+  const exportResponse = b.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/export/workspace" &&
+      response.request().method() === "GET",
+  );
+  const exportDownload = b.waitForEvent("download");
+  await b.getByRole("button", { name: "Download JSON export" }).click();
+  const response = await exportResponse;
+  expect(response.status()).toBe(200);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(response.request().headers()["x-ez-workspace"]).toBeTruthy();
+  const download = await exportDownload;
+  expect(download.suggestedFilename()).toBe("E-Z-workspace-export.json");
+  const stream = await download.createReadStream();
+  if (!stream)
+    throw new Error("The local workspace export download was unavailable.");
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  const exportedText = Buffer.concat(chunks).toString("utf8");
+  const exported = JSON.parse(exportedText);
+  expect(exported.format).toBe("ez-workspace-export/1");
+  expect(exported.workspace.code).toBe(companyB.code);
+  expect(
+    exported.data.projects.some(
+      (project: { name: string }) =>
+        project.name === `Delivery project ${stamp}`,
+    ),
+  ).toBe(true);
+  expect(exported.coverage.excluded).toContain("passwords and password hashes");
+  expect(exported.coverage.excluded).toContain("private notes and reminders");
+  expect(exported.coverage.excluded).toContain(
+    "file contents, filesystem paths and signed/external attachment URLs",
+  );
+  expect(exported.coverage.limitations).toContain(
+    "not a full personal-data portability response, backup or restorable archive",
+  );
+  // Boolean assertions prevent a failed check from echoing a secret value.
+  expect(
+    [
+      passwordA,
+      passwordB,
+      operatorPassword,
+      rotatedPassword,
+      companyA.setup,
+      companyB.setup,
+    ].some((value) => exportedText.includes(value)),
+  ).toBe(false);
+  expect(exportedText.includes(companyA.code)).toBe(false);
+  expect(
+    exported.data.users.every(
+      (user: Record<string, unknown>) =>
+        !("passwordHash" in user) && !("password_hash" in user),
+    ),
+  ).toBe(true);
+  await expect(b.getByRole("dialog").getByRole("status")).toContainText(
+    "Download prepared",
+  );
+  await capture(b, "workspace-data");
+  await b.getByRole("button", { name: "Close admin settings" }).click();
+  await expect(b.getByRole("dialog", { name: "Admin Settings" })).toHaveCount(
+    0,
+  );
   await b.getByRole("button", { name: "Archive project", exact: true }).click();
   await expect(
     b.getByRole("button", { name: "Restore project", exact: true }),

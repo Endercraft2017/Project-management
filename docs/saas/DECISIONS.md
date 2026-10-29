@@ -38,4 +38,6 @@ Research refreshed 2026-10-29: [hosting and provider review](HOSTING-AND-PROVIDE
 
 The operator console decision is settled: build and use the standalone E-Z console in this repository. There is no pending external ERP console binding. The ERP reference was inspected read-only. Credentials belong in secure environment settings, not chat.
 
+Private operator activation, optional authenticator MFA and bounded admin workspace export are now implemented. The immediate owner input is the operator email/display name. Password selection uses the private one-use code at `/console/activate`; no password should be sent in chat. See [operator access](../operations/operator-access.md). Export is a documented workspace snapshot, not a complete personal-data portability/deletion or 30-day recovery implementation.
+
 Historical options and the original numbered question wording remain in [the preserved decision snapshot](history/2026-10-28-before-production-DECISIONS.md).

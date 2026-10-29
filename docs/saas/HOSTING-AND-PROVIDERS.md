@@ -34,7 +34,7 @@ Fresh retrieval of PayMongo developer docs, Cloudflare R2 pricing, OpenAI pricin
 - Landing: “E-Z — Skip the basic,” actual-screen attribution, clear company login/contact, and staged-rollout description. No unlimited AI/storage, free-forever hosting, automatic onboarding, available paid-plan or verified recovery-SLA claims.
 - Company access: company code, email and password. Customers do not supply Google credentials. Share invitations/recovery links privately until email delivery is verified.
 - Console: distinguish account slots from billable active members, explain pending accounts count, display storage units and cumulative AI limits, and explain fresh sign-in for owner recovery.
-- Account security: password change verifies the current password and revokes other sessions. Forgotten-password recovery, MFA and additional-operator lifecycle remain separate work.
+- Account security: password change verifies the current password and revokes other sessions. Private initial activation and optional enforced authenticator MFA with recovery codes are now in source. Forgotten-password recovery and additional-operator lifecycle remain separate work.
 - Privacy/support: real support/security contact, vendor/data-location disclosures and implemented retention policy before customers. Seven daily backups do not establish 30-day deleted-item recovery.
 
 ## Ordered next work and consolidated owner inputs
@@ -42,8 +42,8 @@ Fresh retrieval of PayMongo developer docs, Cloudflare R2 pricing, OpenAI pricin
 1. Establish the first operator privately and verify company creation → owner setup → company login on the custom domain. Owner input: operator email/name and secure credential delivery; never paste a password in chat.
 2. Verify Railway plan, allowance and hard stop. Owner chooses strictly $0 with constrained availability or a separately approved future hosting budget. No increase is assumed.
 3. Verify durable private uploads/off-site backup and rehearse restore before enabling uploads. Owner confirms data region and backup/support responsibility. Preserve existing files first.
-4. Add/test operator MFA and independently controlled recovery. Keep operator security separate from company-admin access.
-5. Implement tenant export/deletion, compatible 30-day recovery, versioned tenant migrations, measured admission limits and alerts.
+4. Enroll the intended operator in implemented authenticator MFA and save recovery codes/key independently. Complete a separately reviewed forgotten-password procedure. Keep operator security separate from company-admin access.
+5. Exercise the implemented bounded JSON workspace export. Complete full personal-data portability/deletion, compatible 30-day recovery, versioned tenant migrations, measured admission limits and alerts.
 6. Select AI model/provider and numeric allowance after free terms/privacy verification; activate worker only within measured resources. Owner approves data disclosure. Zero remains the allowance.
 7. Finalize active-member definition, prices/currencies, caps, grace/cancellation/refunds and provider approval. Build hosted checkout and signed, deduplicated, reorder-safe webhooks in test mode before taking money.
 

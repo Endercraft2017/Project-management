@@ -8,6 +8,8 @@ The earlier candidate was pushed to `production` and Railway deployed `a8157a85`
 
 The follow-up adds operator password change/session revocation, editable existing-company account caps, explicit recovery reauthentication messaging and a production upload guard. The API has no verified persistent upload mount. The guard must stay closed until real durability and recovery are verified. See [hosting/provider research and consolidated next steps](HOSTING-AND-PROVIDERS.md) and [verification](VERIFICATION.md). The unchecked exits below remain broader launch requirements, not a denial of bounded checks already recorded.
 
+The next source update adds private first-operator activation/expired-pending reissue, optional authenticator MFA enforced for enabled operators, one-use second-factor recovery codes, and bounded company-admin JSON export. See [operator setup/security](../operations/operator-access.md) and [export scope](../operations/workspace-export.md). These do not implement forgotten-password reset, complete portability/deletion, hosted backups or billing. Production account creation still requires the owner-selected email/name and secure setup-code delivery.
+
 ## 1. Freeze and validate the final candidate
 
 Status: implemented foundations; final integration/review pending. Owner: integration lead and independent reviewers.
@@ -28,7 +30,7 @@ Status: implemented; bounded local evidence exists. Owner: developer/operator.
 - [ ] Bootstrap once through stdin/explicit env-file; repeat bootstrap must refuse. No default credential or public bootstrap endpoint.
 - [ ] Exercise console login → create company → private one-use setup → explicit company login → app. Check failures, loading/empty states and token history/log hygiene.
 - [ ] Verify status/storage/AI/account-cap controls, audit, member invitations and owner recovery. Pending accounts reserve slots; this is not active-member billing.
-- [ ] Verify recent operator reauthentication, one-hour recovery and revoked old sessions. Operator MFA/self-service recovery remain separate work.
+- [ ] Verify recent operator reauthentication, one-hour recovery and revoked old sessions. Verify optional authenticator enrollment/login/recovery and session revocation. Forgotten-password recovery remains separate work.
 
 Exit: real API/database/browser flow, with no synthetic-success backend substitute.
 
@@ -77,7 +79,7 @@ Status: remaining product/operational work. Owner: business/product and qualifie
 - [ ] Select a Philippines-eligible payment provider and obtain actual account approval. Implement hosted checkout, signed/deduplicated/reorder-safe webhooks, reconciliation and authoritative server-side entitlements; test mode first.
 - [ ] Complete privacy/terms/vendor disclosures, cross-border data assessment for PH/US/UK/EU customers and export/deletion controls. A code audit does not certify legal compliance.
 - [ ] Name the support/security/incident owner and calendar, publish the support email and test escalation. The one-business-day restore is a target pending measured operations.
-- [ ] Configure scrubbed logs/alerts and review dependency/security findings. Operator MFA/recovery, account lifecycle and public self-service signup remain explicitly scoped follow-up work.
+- [ ] Configure scrubbed logs/alerts and review dependency/security findings. Operator forgotten-password recovery, broader account lifecycle and public self-service signup remain follow-up work.
 
 Exit: no charging or public recovery promise precedes the implemented/tested policy and operational owner.
 

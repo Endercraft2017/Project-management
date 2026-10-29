@@ -6,6 +6,9 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { hashPassword, verifyPassword, newPasswordSchema } from '../auth/password';
 import { requireTrustedOrigin } from '../auth/request-security';
+import operatorSetupRouter from './operator-setup-routes';
+import { mfaConfigured, operatorMfaEnabled, beginMfaEnrollment, confirmMfaEnrollment, verifyOperatorMfa } from './operator-mfa';
+import type { Operator } from './store';
 import {
   ensureControlSchema, getControlPool, findOperatorByEmail, findOperatorById,
   createTenant, listTenants, updateTenant, publicTenant, listAudit,
@@ -13,7 +16,8 @@ import {
 } from './store';
 
 declare module 'express-session' {
-  interface SessionData { operatorId?: string; operatorVersion?: number; operatorAuthAt?: number; }
+  interface SessionData { operatorId?: string; operatorVersion?: number; operatorAuthAt?: number;
+    operatorPendingMfaId?: string; operatorPendingMfaVersion?: number; operatorPendingMfaAt?: number; }
 }
 
 const router = Router();
@@ -35,6 +39,7 @@ router.use((_req, res, next) => {
   next();
 });
 router.use(requireTrustedOrigin);
+router.use(operatorSetupRouter);
 router.use((req, res, next) => {
   ensureControlSchema().then(() => {
     if (!middleware) {
@@ -52,6 +57,11 @@ const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHead
   message: { success: false, message: 'Too many operator sign-in attempts; try later' } });
 const mutationLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false,
   message: { success: false, message: 'Too many operator changes; try later' } });
+const mfaLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false,
+  message: { success: false, message: 'Too many MFA attempts; wait five minutes and try again' } });
+const mfaAccountLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false,
+  keyGenerator: (req) => req.session.operatorPendingMfaId || req.session.operatorId || `ip:${req.ip}`,
+  message: { success: false, message: 'Too many MFA attempts; wait five minutes and try again' } });
 const loginSchema = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(200) }).strict();
 const passwordSchema = z.object({ currentPassword: z.string().min(1).max(200), newPassword: newPasswordSchema }).strict();
 const createSchema = z.object({ name: z.string().trim().min(1).max(120), ownerName: z.string().trim().min(1).max(120),
@@ -66,6 +76,30 @@ const handle = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: 
     next(error);
   });
 };
+const mfaHandle = (fn: (req: Request, res: Response) => Promise<unknown>) => handle(async (req, res) => {
+  try { await fn(req, res); } catch (error) {
+    if (error instanceof z.ZodError) throw error;
+    const status = Number((error as { status?: number }).status);
+    if ([400,401,409,503].includes(status)) {
+      res.status(status).json({ success: false, message: (error as Error).message }); return;
+    }
+    throw error;
+  }
+});
+async function establishOperatorSession(req: Request, operator: Operator): Promise<void> {
+  await new Promise<void>((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()));
+  req.session.operatorId = operator.id; req.session.operatorVersion = operator.sessionVersion; req.session.operatorAuthAt = Date.now();
+  req.session.cookie.maxAge = 12 * 60 * 60 * 1000;
+  await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+}
+async function renewAfterMfa(req: Request, res: Response, operator: Operator): Promise<boolean> {
+  try { await establishOperatorSession(req, operator); return true; }
+  catch {
+    await new Promise<void>((resolve) => req.session.destroy(() => resolve())).catch(() => undefined);
+    res.clearCookie('ez.operator.sid', { path: '/api/console', httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production' });
+    return false;
+  }
+}
 
 router.post('/login', loginLimiter, handle(async (req, res) => {
   const input = loginSchema.parse(req.body);
@@ -73,9 +107,28 @@ router.post('/login', loginLimiter, handle(async (req, res) => {
   dummyHash ||= hashPassword(randomBytes(24).toString('hex'));
   const valid = await verifyPassword(input.password, operator?.passwordHash || await dummyHash);
   if (!operator || !valid) { res.status(401).json({ success: false, message: 'Invalid email or password' }); return; }
-  await new Promise<void>((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()));
-  req.session.operatorId = operator.id; req.session.operatorVersion = operator.sessionVersion; req.session.operatorAuthAt=Date.now();
-  await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+  if (await operatorMfaEnabled(operator.id)) {
+    if (!mfaConfigured()) { res.status(503).json({ success: false, message: 'Operator MFA is unavailable; contact your platform operator' }); return; }
+    await new Promise<void>((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()));
+    req.session.operatorPendingMfaId = operator.id; req.session.operatorPendingMfaVersion = operator.sessionVersion; req.session.operatorPendingMfaAt = Date.now();
+    req.session.cookie.maxAge = 5 * 60 * 1000;
+    await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+    res.json({ success: true, mfaRequired: true }); return;
+  }
+  await establishOperatorSession(req, operator);
+  res.json({ success: true, user: { id: operator.id, email: operator.email, name: operator.name } });
+}));
+
+router.post('/mfa/verify', mfaLimiter, mfaAccountLimiter, mfaHandle(async (req, res) => {
+  const { token } = z.object({ token: z.string().min(6).max(64) }).strict().parse(req.body);
+  const id = req.session.operatorPendingMfaId, version = req.session.operatorPendingMfaVersion, at = req.session.operatorPendingMfaAt;
+  if (!id || version === undefined || !at || Date.now()-at > 5*60*1000) {
+    res.status(401).json({ success: false, message: 'Sign in again before entering your authenticator code' }); return;
+  }
+  const operator = await verifyOperatorMfa(id, version, token.trim());
+  if (!await renewAfterMfa(req, res, operator)) {
+    res.status(503).json({ success: false, message: 'Sign in again; a recovery code used for this attempt has already been consumed' }); return;
+  }
   res.json({ success: true, user: { id: operator.id, email: operator.email, name: operator.name } });
 }));
 
@@ -94,6 +147,33 @@ router.get('/me', (_req, res) => {
   const { id, email, name } = res.locals.operator;
   res.json({ success: true, user: { id, email, name } });
 });
+router.get('/mfa', mfaHandle(async (_req, res) => {
+  res.json({ success: true, configured: mfaConfigured(), enabled: await operatorMfaEnabled(res.locals.operator.id) });
+}));
+router.post('/mfa/enrollment', mfaLimiter, mfaAccountLimiter, mfaHandle(async (req, res) => {
+  const { password } = z.object({ password: z.string().min(1).max(200) }).strict().parse(req.body);
+  const current = await findOperatorByEmail(res.locals.operator.email);
+  if (!current || current.sessionVersion !== req.session.operatorVersion || !await verifyPassword(password, current.passwordHash)) {
+    res.status(403).json({ success: false, error: 'CURRENT_PASSWORD_INVALID', message: 'Current password could not be verified' }); return;
+  }
+  res.json({ success: true, ...await beginMfaEnrollment(current) });
+}));
+router.post('/mfa/enable', mfaLimiter, mfaAccountLimiter, mfaHandle(async (req, res) => {
+  const { token } = z.object({ token: z.string().regex(/^\d{6}$/) }).strict().parse(req.body);
+  const result = await confirmMfaEnrollment(res.locals.operator.id, req.session.operatorVersion!, token);
+  const renewed = await renewAfterMfa(req, res, result.operator);
+  res.json({ success: true, enabled: true, recoveryCodes: result.recoveryCodes, signInRequired: !renewed });
+}));
+router.post('/mfa/disable', mfaLimiter, mfaAccountLimiter, mfaHandle(async (req, res) => {
+  const { password, token } = z.object({ password: z.string().min(1).max(200), token: z.string().min(6).max(64) }).strict().parse(req.body);
+  const current = await findOperatorByEmail(res.locals.operator.email);
+  if (!current || current.sessionVersion !== req.session.operatorVersion || !await verifyPassword(password, current.passwordHash)) {
+    res.status(403).json({ success: false, error: 'CURRENT_PASSWORD_INVALID', message: 'Current password could not be verified' }); return;
+  }
+  const operator = await verifyOperatorMfa(current.id, current.sessionVersion, token.trim(), true);
+  const renewed = await renewAfterMfa(req, res, operator);
+  res.json({ success: true, enabled: false, signInRequired: !renewed });
+}));
 router.post('/password', mutationLimiter, handle(async (req, res) => {
   const input = passwordSchema.parse(req.body);
   const current = await findOperatorByEmail(res.locals.operator.email);

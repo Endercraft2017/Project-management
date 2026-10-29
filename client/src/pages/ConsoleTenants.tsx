@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AccessFrame, Notice } from "@/components/console/AccessFrame";
 import { OperatorPasswordForm } from "@/components/console/OperatorPasswordForm";
+import { OperatorMfaForm } from "@/components/console/OperatorMfaForm";
 import ConsoleLogin from "./ConsoleLogin";
 import {
   accessApi,
@@ -737,6 +738,10 @@ export default function ConsoleTenants() {
         )}
       </section>
       <OperatorPasswordForm
+        disabled={Boolean(busy) || loading || Boolean(loadError)}
+        onSignInRequired={requireSignIn}
+      />
+      <OperatorMfaForm
         disabled={Boolean(busy) || loading || Boolean(loadError)}
         onSignInRequired={requireSignIn}
       />

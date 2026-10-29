@@ -115,7 +115,42 @@ export const accessApi = {
       input,
     ),
   operatorLogin: (input: { email: string; password: string }) =>
-    request<{ user: OperatorUser }>("post", "/api/console/login", input),
+    request<{ user?: OperatorUser; mfaRequired?: boolean }>(
+      "post",
+      "/api/console/login",
+      input,
+    ),
+  verifyOperatorMfa: (token: string) =>
+    request<{ user: OperatorUser }>("post", "/api/console/mfa/verify", {
+      token,
+    }),
+  operatorMfa: () =>
+    request<{ configured: boolean; enabled: boolean }>(
+      "get",
+      "/api/console/mfa",
+    ),
+  beginOperatorMfa: (password: string) =>
+    request<{ secret: string; uri: string; expiresInSeconds: number }>(
+      "post",
+      "/api/console/mfa/enrollment",
+      { password },
+    ),
+  enableOperatorMfa: (token: string) =>
+    request<{ recoveryCodes: string[]; signInRequired: boolean }>(
+      "post",
+      "/api/console/mfa/enable",
+      { token },
+    ),
+  disableOperatorMfa: (password: string, token: string) =>
+    request<{ signInRequired: boolean }>("post", "/api/console/mfa/disable", {
+      password,
+      token,
+    }),
+  activateOperator: (input: {
+    email: string;
+    setupCode: string;
+    password: string;
+  }) => request("post", "/api/console/setup", input),
   operatorMe: () => request<{ user: OperatorUser }>("get", "/api/console/me"),
   operatorLogout: () => request("post", "/api/console/logout"),
   changeOperatorPassword: (input: {

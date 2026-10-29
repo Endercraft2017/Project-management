@@ -68,6 +68,12 @@ jobs:
         run: node scripts/local-setup-smoke.mjs
       - name: Real PostgreSQL and HTTP isolation regressions
         run: npm run test:integration --workspace=server
+      - name: One-use initial operator activation
+        run: node node_modules/tsx/dist/cli.mjs scripts/operator-setup-smoke.ts
+      - name: Operator MFA enrollment, login and recovery
+        run: node node_modules/tsx/dist/cli.mjs scripts/operator-mfa-smoke.ts
+      - name: Bounded tenant export and privacy boundaries
+        run: node node_modules/tsx/dist/cli.mjs scripts/workspace-export-smoke.ts
       - name: Real session and Socket.IO isolation
         run: node scripts/realtime-smoke.cjs
       - name: Concurrent chat and reaction database regressions

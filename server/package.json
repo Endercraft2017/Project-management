@@ -45,6 +45,7 @@
     "node-cron": "^4.2.1",
     "nodemailer": "10.2.1",
     "openai": "^6.6.0",
+    "otpauth": "9.5.2",
     "papaparse": "^5.4.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
