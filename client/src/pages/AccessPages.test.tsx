@@ -27,6 +27,7 @@ vi.mock("@/lib/access-api", async () => {
       operatorLogin: vi.fn(),
       operatorMe: vi.fn(),
       operatorLogout: vi.fn(),
+      changeOperatorPassword: vi.fn(),
       tenants: vi.fn(),
       audit: vi.fn(),
       createTenant: vi.fn(),
@@ -261,6 +262,32 @@ describe("private console and owner activation", () => {
       }),
     );
   });
+  it("allows operators to change an existing company's account-slot cap", async () => {
+    vi.mocked(accessApi.tenants).mockResolvedValue([company]);
+    vi.mocked(accessApi.updateTenant).mockResolvedValue({
+      ...company,
+      seatLimit: 20,
+    });
+    render(<ConsoleTenants />);
+    await screen.findByText("owner@example.test");
+    fireEvent.click(screen.getByText("Manage limits"));
+    const limit = screen.getByLabelText("Account slot limit");
+    expect(limit).toHaveValue(10);
+    expect(limit).toHaveAccessibleDescription(/active and pending accounts/);
+    fireEvent.change(limit, { target: { value: "20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save limits" }));
+    await waitFor(() =>
+      expect(accessApi.updateTenant).toHaveBeenCalledWith(company.id, {
+        name: company.name,
+        storageLimitBytes: company.storageLimitBytes,
+        aiTokenLimit: company.aiTokenLimit,
+        seatLimit: 20,
+      }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Company settings saved.",
+    );
+  });
   it("captures and removes the one-use token, activates, then requires normal login", async () => {
     (
       window as unknown as { happyDOM: { setURL: (url: string) => void } }
@@ -336,7 +363,9 @@ it("requires the server to issue an owner recovery link and describes its shorte
 });
 it("drops private console data when a privileged operation requires reauthentication", async () => {
   vi.mocked(accessApi.tenants).mockResolvedValue([company]);
-  vi.mocked(accessApi.ownerSetup).mockRejectedValue(new AccessError(403));
+  vi.mocked(accessApi.ownerSetup).mockRejectedValue(
+    new AccessError(403, "OPERATOR_REAUTH_REQUIRED"),
+  );
   render(<ConsoleTenants />);
   await screen.findByText("owner@example.test");
   fireEvent.click(screen.getByText("Owner account recovery"));
@@ -344,6 +373,76 @@ it("drops private console data when a privileged operation requires reauthentica
     screen.getByRole("button", { name: "Issue owner reset link" }),
   );
   await screen.findByLabelText("Operator email");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Sign in again before issuing an owner recovery link. No reset link has been issued.",
+  );
   expect(screen.queryByText("owner@example.test")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("Owner setup link")).not.toBeInTheDocument();
+});
+
+describe("operator password changes", () => {
+  async function openPasswordForm() {
+    vi.mocked(accessApi.tenants).mockResolvedValue([company]);
+    render(<ConsoleTenants />);
+    await screen.findByText("owner@example.test");
+    fireEvent.click(screen.getByText("Change your password"));
+    change("Current password", "Current operator passphrase");
+    change("New password", "New unique operator passphrase");
+    change("Confirm new password", "New unique operator passphrase");
+  }
+
+  it("submits a confirmed password change and clears password fields", async () => {
+    vi.mocked(accessApi.changeOperatorPassword).mockResolvedValue({
+      success: true,
+    });
+    await openPasswordForm();
+    fireEvent.click(screen.getByRole("button", { name: "Save new password" }));
+    await waitFor(() =>
+      expect(accessApi.changeOperatorPassword).toHaveBeenCalledWith({
+        currentPassword: "Current operator passphrase",
+        newPassword: "New unique operator passphrase",
+      }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Password changed. Your other operator sessions have been signed out.",
+    );
+    expect(screen.getByLabelText("Current password")).toHaveValue("");
+    expect(screen.getByLabelText("New password")).toHaveValue("");
+    expect(screen.getByLabelText("Confirm new password")).toHaveValue("");
+  });
+
+  it("blocks mismatched new passwords before making a request", async () => {
+    await openPasswordForm();
+    change("Confirm new password", "Different operator passphrase");
+    fireEvent.click(screen.getByRole("button", { name: "Save new password" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("do not match");
+    expect(accessApi.changeOperatorPassword).not.toHaveBeenCalled();
+  });
+
+  it("keeps the console available after an incorrect current password", async () => {
+    vi.mocked(accessApi.changeOperatorPassword).mockRejectedValue(
+      new AccessError(403, "CURRENT_PASSWORD_INVALID"),
+    );
+    await openPasswordForm();
+    fireEvent.click(screen.getByRole("button", { name: "Save new password" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Your current password could not be verified",
+    );
+    expect(screen.getByText("owner@example.test")).toBeVisible();
+    expect(screen.getByLabelText("Current password")).toHaveValue("");
+  });
+
+  it("explains when the password changed but the renewed session failed", async () => {
+    vi.mocked(accessApi.changeOperatorPassword).mockRejectedValue(
+      new AccessError(503, "PASSWORD_CHANGED_SIGN_IN_REQUIRED"),
+    );
+    await openPasswordForm();
+    fireEvent.click(screen.getByRole("button", { name: "Save new password" }));
+    await screen.findByLabelText("Operator email");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Your password was changed. Sign in again using your new password.",
+    );
+    expect(screen.queryByText("owner@example.test")).not.toBeInTheDocument();
+    expect(navigateTo).not.toHaveBeenCalled();
+  });
 });

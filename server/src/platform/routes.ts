@@ -4,12 +4,12 @@ import connectPgSimple from 'connect-pg-simple';
 import rateLimit from 'express-rate-limit';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
-import { hashPassword, verifyPassword } from '../auth/password';
+import { hashPassword, verifyPassword, newPasswordSchema } from '../auth/password';
 import { requireTrustedOrigin } from '../auth/request-security';
 import {
   ensureControlSchema, getControlPool, findOperatorByEmail, findOperatorById,
   createTenant, listTenants, updateTenant, publicTenant, listAudit,
-  createOwnerSetupLink,
+  createOwnerSetupLink, changeOperatorPassword,
 } from './store';
 
 declare module 'express-session' {
@@ -53,6 +53,7 @@ const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHead
 const mutationLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false,
   message: { success: false, message: 'Too many operator changes; try later' } });
 const loginSchema = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(200) }).strict();
+const passwordSchema = z.object({ currentPassword: z.string().min(1).max(200), newPassword: newPasswordSchema }).strict();
 const createSchema = z.object({ name: z.string().trim().min(1).max(120), ownerName: z.string().trim().min(1).max(120),
   ownerEmail: z.string().email().max(254), storageLimitBytes: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   aiTokenLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),seatLimit:z.number().int().min(1).max(10000).optional() }).strict();
@@ -93,6 +94,43 @@ router.get('/me', (_req, res) => {
   const { id, email, name } = res.locals.operator;
   res.json({ success: true, user: { id, email, name } });
 });
+router.post('/password', mutationLimiter, handle(async (req, res) => {
+  const input = passwordSchema.parse(req.body);
+  const current = await findOperatorByEmail(res.locals.operator.email);
+  if (!current || current.id !== res.locals.operator.id || current.sessionVersion !== req.session.operatorVersion) {
+    res.status(409).json({ success: false, error: 'OPERATOR_CREDENTIALS_CHANGED', message: 'Operator credentials changed; sign in again' }); return;
+  }
+  if (!await verifyPassword(input.currentPassword, current.passwordHash)) {
+    res.status(403).json({ success: false, error: 'CURRENT_PASSWORD_INVALID', message: 'Current password could not be verified' }); return;
+  }
+  if (input.currentPassword === input.newPassword) {
+    res.status(400).json({ success: false, error: 'PASSWORD_UNCHANGED', message: 'Choose a different password' }); return;
+  }
+  const passwordHash = await hashPassword(input.newPassword);
+  let operator;
+  try {
+    operator = await changeOperatorPassword({ id: current.id, expectedVersion: current.sessionVersion, expectedHash: current.passwordHash, passwordHash });
+  } catch (error) {
+    if ((error as { status?: number }).status === 409) {
+      res.status(409).json({ success: false, error: 'OPERATOR_CREDENTIALS_CHANGED', message: 'Operator credentials changed; sign in again' }); return;
+    }
+    throw error;
+  }
+  // Credentials/audit commit together. A failed cookie renewal must never restore
+  // the old password; all old session versions remain revoked.
+  try {
+    await new Promise<void>((resolve, reject) => req.session.regenerate((error) => error ? reject(error) : resolve()));
+    req.session.operatorId = operator.id; req.session.operatorVersion = operator.sessionVersion; req.session.operatorAuthAt = Date.now();
+    await new Promise<void>((resolve, reject) => req.session.save((error) => error ? reject(error) : resolve()));
+  } catch {
+    // Detach the failed session so express-session cannot retry saving its
+    // authenticated fields while sending this failure response.
+    await new Promise<void>((resolve) => req.session.destroy(() => resolve())).catch(() => undefined);
+    res.clearCookie('ez.operator.sid', { path: '/api/console', httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production' });
+    res.status(503).json({ success: false, error: 'PASSWORD_CHANGED_SIGN_IN_REQUIRED', message: 'Password changed. Sign in again using your new password' }); return;
+  }
+  res.json({ success: true });
+}));
 router.post('/logout', handle(async (req, res) => {
   await new Promise<void>((resolve, reject) => req.session.destroy((error) => error ? reject(error) : resolve()));
   res.clearCookie('ez.operator.sid', { path: '/api/console', httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production' });

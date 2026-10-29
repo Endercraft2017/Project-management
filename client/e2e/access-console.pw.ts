@@ -26,7 +26,15 @@ test("real operator, company activation and tenant credentials stay separated", 
   await mkdir(evidenceDir, { recursive: true });
   async function capture(page: Page, screen: string) {
     // Raw setup URLs and entered credentials must never appear in evidence.
-    await expect(page.locator('input[type="password"]')).toHaveCount(0);
+    // Collapsed security settings may contain empty password inputs. Check
+    // booleans so a failed assertion cannot print an entered secret.
+    const passwords = page.locator('input[type="password"]');
+    expect(
+      await passwords.evaluateAll((inputs) =>
+        inputs.every((input) => (input as HTMLInputElement).value === ""),
+      ),
+    ).toBe(true);
+    await expect(page.locator('input[type="password"]:visible')).toHaveCount(0);
     await expect(
       page.getByLabel("Owner setup link", { exact: true }),
     ).toHaveCount(0);
@@ -103,6 +111,45 @@ test("real operator, company activation and tenant credentials stay separated", 
   await expect(
     op.getByRole("heading", { name: "Company workspaces" }),
   ).toBeVisible();
+  // Exercise actual PostgreSQL/session rotation with two independent cookies.
+  const otherOpContext = await localContext();
+  const otherOp = await otherOpContext.newPage();
+  await otherOp.goto("/console/login");
+  await otherOp.getByLabel("Operator email").fill(operatorEmail);
+  await passwordEntry(otherOp, "Password", operatorPassword);
+  await otherOp.getByRole("button", { name: "Log in to console" }).click();
+  await expect(
+    otherOp.getByRole("heading", { name: "Company workspaces" }),
+  ).toBeVisible();
+  const rotatedPassword = `Rotation-${randomBytes(20).toString("base64url")}`;
+  await op.getByText("Change your password", { exact: true }).click();
+  await passwordEntry(op, "Current password", operatorPassword);
+  await passwordEntry(op, "New password", rotatedPassword);
+  await passwordEntry(op, "Confirm new password", rotatedPassword);
+  await op.getByRole("button", { name: "Save new password" }).click();
+  await expect(op.getByRole("status")).toContainText("Password changed.");
+  expect(
+    await op
+      .locator('input[type="password"]')
+      .evaluateAll((inputs) =>
+        inputs.every((input) => (input as HTMLInputElement).value === ""),
+      ),
+  ).toBe(true);
+  await op.getByText("Change your password", { exact: true }).click();
+  await otherOp.goto("/console/tenants");
+  await expect(otherOp.getByLabel("Operator email")).toBeVisible();
+  await otherOp.getByLabel("Operator email").fill(operatorEmail);
+  await passwordEntry(otherOp, "Password", operatorPassword);
+  await otherOp.getByRole("button", { name: "Log in to console" }).click();
+  await expect(otherOp.getByRole("alert")).toContainText(
+    "could not be verified",
+  );
+  await passwordEntry(otherOp, "Password", rotatedPassword);
+  await otherOp.getByRole("button", { name: "Log in to console" }).click();
+  await expect(
+    otherOp.getByRole("heading", { name: "Company workspaces" }),
+  ).toBeVisible();
+  await otherOpContext.close();
   async function createCompany(suffix: string) {
     await op
       .getByLabel("Company name", { exact: true })

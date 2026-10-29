@@ -2,7 +2,7 @@
 
 E-Z is a project-management and collaboration app built with React/Vite, Express/TypeScript, Prisma, PostgreSQL and Socket.IO. The production-branch candidate adds company-code/email/password login and a **standalone E-Z operator console**, with a server-generated PostgreSQL schema per company. Core startup requires no Google, AI or SMTP account.
 
-This is a reviewable candidate, not a claim that the public domain, paid billing, external providers or off-site backups are configured. Read the [production runbook](docs/operations/production-runbook.md), [current ADR](docs/saas/ADR-001-PRODUCTION-TENANCY.md), [ordered rollout](docs/saas/ROLLOUT-CHECKLIST.md) and [decision register](docs/saas/DECISIONS.md).
+This is a reviewable candidate, not a claim that paid billing, external providers or off-site backups are configured. Read the [production runbook](docs/operations/production-runbook.md), [current ADR](docs/saas/ADR-001-PRODUCTION-TENANCY.md), [ordered rollout](docs/saas/ROLLOUT-CHECKLIST.md), [observed hosting/provider review](docs/saas/HOSTING-AND-PROVIDERS.md) and [decision register](docs/saas/DECISIONS.md).
 
 ## Local setup
 
@@ -43,6 +43,8 @@ Bootstrap is disabled once any operator exists. Passwords need at least 12 chara
 4. `/app` is the workspace, `/app#/projects` project management, and `/`/`/tour` the public landing. The same email can have separate tenant-local accounts in several companies.
 
 Google/Drive/Sheets are disabled. AI has zero allowance by default; SMTP and the worker require explicit activation. Local core development needs no provider signup.
+
+Signed-in operators can change their password in the console, revoking their other sessions. Forgotten-password recovery and operator MFA remain rollout work. New production uploads stay unavailable until an absolute private `UPLOAD_DIR` on verified durable storage is configured with `STORAGE_PERSISTENCE_CONFIRMED=true`; local development uploads remain available. An operator confirmation flag does not itself mount storage or establish backup recovery.
 
 ## Validation and operations
 

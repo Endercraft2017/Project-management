@@ -105,7 +105,8 @@ async function main() {
     assert.equal(decoded.date, '2026-01-01T00:00:00.000Z');
   });
   status(await request('/api/tasks'), 401);
-  const opEmail = `operator-${randomUUID()}@example.invalid`, opPassword = `Local-${randomBytes(18).toString('hex')}!`;
+  const opEmail = `operator-${randomUUID()}@example.invalid`;
+  let opPassword = `Local-${randomBytes(18).toString('hex')}!`;
   await check('first operator bootstraps through stdin only', async () => {
     const result = await bootstrap(opEmail, opPassword); assert.equal(result.code, 0, 'First bootstrap must succeed');
     const parsed = JSON.parse(result.output.trim()); assert.equal(parsed.success, true); operatorId = parsed.operator.id;
@@ -115,11 +116,55 @@ async function main() {
     for (const origin of [null, 'https://untrusted.example.invalid']) status(await request('/api/console/login', { method: 'POST', origin, body: { email: opEmail, password: opPassword } }), 403);
   });
   const opLogin = await request('/api/console/login', { method: 'POST', body: { email: opEmail, password: opPassword } }); status(opLogin, 200);
-  const opCookie = cookie(opLogin, 'ez.operator.sid');
+  let opCookie = cookie(opLogin, 'ez.operator.sid');
   await check('operator cookie is distinct from tenant authority', async () => {
     assert(opLogin.cookies.some((value) => /SameSite=Strict/i.test(value) && /Path=\/api\/console/i.test(value)));
     status(await request('/api/console/me', { cookie: opCookie }), 200);
     status(await request('/api/auth/me', { cookie: opCookie }), 401);
+  });
+  await check('operator password changes require authentication, origin, current password and policy', async () => {
+    const newPassword = `Rotated-${randomBytes(18).toString('hex')}!`;
+    const body = { currentPassword: opPassword, newPassword };
+    status(await request('/api/console/password', { method: 'POST', body }), 401);
+    status(await request('/api/console/password', { method: 'POST', cookie: opCookie, origin: null, body }), 403);
+    const incorrect = await request('/api/console/password', { method: 'POST', cookie: opCookie, body: { ...body, currentPassword: 'Wrong-password!' } });
+    status(incorrect, 403); assert.equal(incorrect.data.error, 'CURRENT_PASSWORD_INVALID');
+    for (const newPassword of ['short', '😀'.repeat(19), opPassword]) {
+      status(await request('/api/console/password', { method: 'POST', cookie: opCookie, body: { ...body, newPassword } }), 400);
+    }
+    status(await request('/api/console/password', { method: 'POST', cookie: opCookie, body: { ...body, operatorId } }), 400);
+    status(await request('/api/console/me', { cookie: opCookie }), 200);
+  });
+  await check('operator password rotation renews this cookie and revokes other sessions', async () => {
+    const another = await request('/api/console/login', { method: 'POST', body: { email: opEmail, password: opPassword } }); status(another, 200);
+    const anotherCookie = cookie(another, 'ez.operator.sid'), oldCookie = opCookie;
+    const newPassword = `Rotated-${randomBytes(18).toString('hex')}!`;
+    const result = await request('/api/console/password', { method: 'POST', cookie: opCookie, body: { currentPassword: opPassword, newPassword } }); status(result, 200);
+    opCookie = cookie(result, 'ez.operator.sid'); assert.notEqual(opCookie, oldCookie);
+    status(await request('/api/console/me', { cookie: opCookie }), 200);
+    status(await request('/api/console/me', { cookie: oldCookie }), 401);
+    status(await request('/api/console/me', { cookie: anotherCookie }), 401);
+    status(await request('/api/console/login', { method: 'POST', body: { email: opEmail, password: opPassword } }), 401);
+    status(await request('/api/console/login', { method: 'POST', body: { email: opEmail, password: newPassword } }), 200);
+    const audit = await pool.query("SELECT detail FROM ez_control.audit WHERE action='operator.password_changed' AND operator_id=$1", [operatorId]);
+    assert.equal(audit.rows.length, 1); assert.deepEqual(audit.rows[0].detail, {});
+    opPassword = newPassword;
+  });
+  await check('concurrent verified operator rotations cannot overwrite the winner', async () => {
+    const current = await store.findOperatorByEmail(opEmail);
+    const { hashPassword } = require(resolve(root, 'server/dist/auth/password.js'));
+    const passwords = [0, 1].map(() => `Concurrent-${randomBytes(18).toString('hex')}!`);
+    const hashes = await Promise.all(passwords.map((password) => hashPassword(password)));
+    const outcomes = await Promise.allSettled(hashes.map((passwordHash) => store.changeOperatorPassword({ id: current.id, expectedVersion: current.sessionVersion, expectedHash: current.passwordHash, passwordHash })));
+    const winner = outcomes.findIndex((result) => result.status === 'fulfilled');
+    assert(winner >= 0); assert.equal(outcomes.filter((result) => result.status === 'fulfilled').length, 1);
+    const loser = outcomes.find((result) => result.status === 'rejected') as PromiseRejectedResult;
+    assert.equal(loser.reason.status, 409);
+    status(await request('/api/console/me', { cookie: opCookie }), 401);
+    const logged = await request('/api/console/login', { method: 'POST', body: { email: opEmail, password: passwords[winner] } }); status(logged, 200);
+    opCookie = cookie(logged, 'ez.operator.sid'); opPassword = passwords[winner];
+    const audit = await pool.query("SELECT detail FROM ez_control.audit WHERE action='operator.password_changed' AND operator_id=$1", [operatorId]);
+    assert.equal(audit.rows.length, 2); assert(audit.rows.every((row: { detail: object }) => JSON.stringify(row.detail) === '{}'));
   });
   const first = await provision(opCookie, 'Smoke Alpha'), second = await provision(opCookie, 'Smoke Beta');
   const a = first.tenant, b = second.tenant;

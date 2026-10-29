@@ -1,6 +1,6 @@
 # E-Z production-candidate runbook
 
-Updated 2026-10-28. This runbook prepares and validates the **production branch candidate**. It does not authorize a deployment, paid provider, DNS edit or destructive reset. Read [ADR-001](../saas/ADR-001-PRODUCTION-TENANCY.md) first. The new E-Z console is standalone; no ERP console or external tenant catalog is required.
+Updated 2026-10-29. This runbook prepares and validates the **production branch candidate**. Its instructions do not themselves authorize paid providers, DNS edits or destructive resets. Read [ADR-001](../saas/ADR-001-PRODUCTION-TENANCY.md) first. The new E-Z console is standalone; no ERP console or external tenant catalog is required. See the dated [hosting and provider review](../saas/HOSTING-AND-PROVIDERS.md) for observed Railway state and remaining gates.
 
 ## 1. Establish the target and capacity
 
@@ -20,6 +20,7 @@ Use a distinct development/test database and secure production configuration. Do
 | `APP_URL` | Same public origin when email links are enabled. Production mail links require HTTPS. |
 | `AI_ENABLED`, `MAIL_ENABLED`, `WORKER_ENABLED` | Disabled/unset initially. Their configuration is separate from creating a tenant or setting a numeric limit. |
 | `TENANT_DB_MAX_CLIENTS`, `TENANT_DB_POOL_SIZE` | Defaults 32 and 2; validate database capacity before changing. Allowed ranges 1–128 and 1–10. |
+| `UPLOAD_DIR`, `STORAGE_PERSISTENCE_CONFIRMED` | Production uploads require an absolute private directory and confirmation exactly `true`. Verify the actual persistent mount, permissions and backup/restore first. A directory name or confirmation flag alone does not provide durability. Otherwise new uploads return 503 before parsing/reserving/writing; authorized reads and deletion remain available. Development/test keep local uploads. |
 
 Do not paste secret values in chat, command arguments, Git, `.env.example` or logs. Do not reuse local test secrets in production. The initial operator has no default password and no public bootstrap endpoint. Google/AI/SMTP credentials are not needed for core boot; Google login/Drive/Sheets remain disabled in this candidate.
 
@@ -38,7 +39,7 @@ npm run test:unit --workspace=server
 npm run test --workspace=client -- --maxWorkers=2
 ```
 
-The reviewed toolchain uses Node 24.19.0/npm 11.9.0. `nixpacks.toml` selects Node 24 and a frozen install. The Railway config builds with `npm run build`, starts with `npm start`, uses one API replica and checks `/health/ready`. Actual platform settings and plan resources must still be verified.
+The reviewed toolchain uses Node 24.19.0/npm 11.9.0. The Railway config uses Railpack, builds with `npm run build`, starts with `npm start`, uses one API replica and checks `/health/ready`. `nixpacks.toml` is a legacy fallback, not evidence of the active builder. Verify actual platform overrides and plan resources. Railway's deployment healthcheck does not provide continuous monitoring; configure a separate monitor and alert owner.
 
 For real API/database/browser tests, provide `TEST_DATABASE_URL` for a **disposable local** PostgreSQL database ending `_test`, without a selected tenant schema. The harness refuses existing tenant/operator data. Follow its ownership/cleanup rules:
 
@@ -68,6 +69,8 @@ sys.stdout.write(json.dumps({"email":email,"name":name,"password":password}))' \
 ```
 
 Input prompts go to the terminal, while only JSON enters the pipe. Alternatively a trusted secret manager can send the JSON stdin directly. Never save an operator JSON file in the checkout or put a password in the command text. New passwords need at least 12 characters and at most 72 UTF-8 bytes. If bootstrap is already disabled, do not clear the operators table to regain access; use an independently reviewed operator recovery procedure. Operator MFA/self-service recovery is not implemented.
+
+An authenticated operator can change their password under **Operator account security** in `/console/tenants`. The current password is required. A conditional database update and credential-free audit commit together; the operator session version increments, revoking other sessions. The current session is regenerated. If cookie renewal fails after commit, the UI explicitly requests sign-in with the new password; do not assume the old password was restored. This is password change for a signed-in operator, not forgotten-password recovery or MFA.
 
 ## 5. Start the API and provision a company
 

@@ -1,6 +1,12 @@
 # Ordered E-Z rollout checklist
 
-Updated 2026-10-28. The production candidate implements local SaaS foundations; it is **not a production-readiness declaration**. Original audit counts remain historical. Follow [ADR-001](ADR-001-PRODUCTION-TENANCY.md), the [runbook](../operations/production-runbook.md) and this order. Parallel work needs stable shared contracts and lead review before commits/pushes.
+Updated 2026-10-29. The production candidate implements SaaS foundations; it is **not a production-readiness declaration**. Original audit counts remain historical. Follow [ADR-001](ADR-001-PRODUCTION-TENANCY.md), the [runbook](../operations/production-runbook.md) and this order. Parallel work needs stable shared contracts and lead review before commits/pushes.
+
+## Current progress
+
+The earlier candidate was pushed to `production` and Railway deployed `a8157a85` successfully. Railway access, source branch, core readiness and the distinct operator session secret are verified. Custom-domain automated checks remain blocked by its WAF; authenticated customer/operator onboarding on that domain is not yet verified. Initial operator credentials have not been created by this review.
+
+The follow-up adds operator password change/session revocation, editable existing-company account caps, explicit recovery reauthentication messaging and a production upload guard. The API has no verified persistent upload mount. The guard must stay closed until real durability and recovery are verified. See [hosting/provider research and consolidated next steps](HOSTING-AND-PROVIDERS.md) and [verification](VERIFICATION.md). The unchecked exits below remain broader launch requirements, not a denial of bounded checks already recorded.
 
 ## 1. Freeze and validate the final candidate
 
@@ -28,7 +34,7 @@ Exit: real API/database/browser flow, with no synthetic-success backend substitu
 
 ## 3. Verify hosting, admission and the $0 envelope
 
-Status: external/unconfigured. Owner: infrastructure/operator.
+Status: Railway project/service/ref/region and readiness observed; budget, capacity and durable uploads remain unverified. Owner: infrastructure/operator.
 
 - [ ] Identify actual Railway service/ref/database, DNS/domain/PWA owner, region, TLS and persistence.
 - [ ] Measure real free allowances and stop admission/capabilities before overages. No paid upgrade or uptime promise follows from advertised free tiers.
@@ -77,7 +83,7 @@ Exit: no charging or public recovery promise precedes the implemented/tested pol
 
 ## 7. Release a bounded pilot, then reassess
 
-Status: not deployed by this change. Owner: release lead.
+Status: earlier pilot source deployed; commercial/public rollout exits remain open. Owner: release lead.
 
 - [ ] Accumulate remaining choices in [DECISIONS.md](DECISIONS.md); do not reopen accepted brand, country, scope or standalone-console choices.
 - [ ] Publish only the exact reviewed branch/commit after lead review. Deployment, DNS changes, provider activation and main merge need their own authorized concrete action.

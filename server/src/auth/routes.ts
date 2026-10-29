@@ -8,6 +8,7 @@ import { runWithTenant } from '@/tenancy/context';
 import { currentTenantDto } from './session-context';
 import { hashPassword, verifyPassword, newPasswordSchema } from './password';
 import { loginIpLimiter, loginAccountLimiter } from './request-security';
+import { uploadsEnabled } from '@/upload/storage-policy';
 
 const router = Router();
 const companyCode = z.string().trim().toUpperCase().regex(/^[A-Z][0-9]{4}[A-Z]$/);
@@ -23,7 +24,7 @@ const unavailable = (_req: Request, res: Response) => res.status(503).json({
 });
 
 router.get('/capabilities', (_req, res) => res.json({
-  success: true, passwordEnabled: true, googleEnabled: false, driveEnabled: false, aiEnabled: false,
+  success: true, passwordEnabled: true, googleEnabled: false, driveEnabled: false, aiEnabled: false, uploadEnabled: uploadsEnabled(),
 }));
 // Old tabs/bookmarks can still navigate to Google after a release. Send browser
 // navigations to password login; API clients keep the disabled-capability JSON.

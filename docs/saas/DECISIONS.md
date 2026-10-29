@@ -27,12 +27,14 @@ No new decisions are needed to review this source branch or run the local consol
 |---|---|---|
 | Commercial plans | Prices/currencies, what an active billable member means, free/paid caps, billing period, grace/refund/cancellation. | No live billing. Account admission defaults to 10 active/pending slots and is not a billing meter. |
 | AI provider/model | Verified free allowance, permitted countries/data use, model quality and numeric per-company allowance. | AI disabled, allowance 0; no paid calls. Existing adapter uses the OpenAI API and is not a promise of free inference. |
-| Hosting and residency | Railway service/database region, actual free credits/limits, admitted company count, worker availability; private S3-compatible backup bucket and region. | Local development. No purchase, always-on claim or external bucket activation. |
+| Hosting and residency | Railway plan/credits/hard stop, accepted data region, admitted company count, durable upload mount, worker availability; private backup bucket policy/region. | API observed in Railway `sfo`; core deployed, cost controls unverified. No new paid resources or upload durability claim. Production uploads guarded until verified. |
 | Payments | Philippines-eligible provider, merchant approval, checkout currency and settlement/tax handling. | No checkout or paid entitlement claims. |
 | Support and recovery | Named support/security owner, support mailbox/calendar, incident response and measured restore responsibilities. | Email-support direction and one-business-day restore target retained; no verified SLA. |
 | Retention and privacy | Export/deletion policy, implementation of 30-day deleted-item recovery, backup expiry and cross-border disclosures. | No claim that seven daily backups provide 30-day item recovery. |
 
 Initial development limits are explicit and adjustable by operators: 100 MiB storage, 10 account slots and 0 AI tokens per company. AI token limits are cumulative, with no monthly billing reset implemented. No tenant must obtain Google OAuth credentials for password login.
+
+Research refreshed 2026-10-29: [hosting and provider review](HOSTING-AND-PROVIDERS.md). Railway's published Free credit is $1/month; that does not establish this workspace's allowance or ongoing $0 operation. Paddle is the recommended international payment candidate to assess, subject to approval and owner policy decisions. No current free AI allowance was verified. Operator email/name and secure bootstrap delivery remain operational inputs; do not send passwords in chat.
 
 The operator console decision is settled: build and use the standalone E-Z console in this repository. There is no pending external ERP console binding. The ERP reference was inspected read-only. Credentials belong in secure environment settings, not chat.
 

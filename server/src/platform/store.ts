@@ -350,6 +350,26 @@ export async function findOperatorById(id: string): Promise<Operator | null> {
   const result = await getControlPool().query('SELECT id,email,name,session_version FROM ez_control.operators WHERE id=$1', [id]);
   return result.rows[0] ? mapOperator(result.rows[0]) : null;
 }
+/** Compare-and-swap prevents two verified requests from overwriting each other. */
+export async function changeOperatorPassword(input: {
+  id: string; expectedVersion: number; expectedHash: string; passwordHash: string;
+}): Promise<Operator> {
+  assertHash(input.passwordHash);
+  const client = await getControlPool().connect();
+  try {
+    await client.query('BEGIN');
+    const changed = await client.query(`UPDATE ez_control.operators
+      SET password_hash=$1,session_version=session_version+1
+      WHERE id=$2 AND session_version=$3 AND password_hash=$4
+      RETURNING id,email,name,session_version`,
+    [input.passwordHash, input.id, input.expectedVersion, input.expectedHash]);
+    if (!changed.rows.length) throw Object.assign(new Error('Operator credentials changed; sign in again'), { status: 409 });
+    await audit(client, 'operator.password_changed', undefined, input.id);
+    await client.query('COMMIT');
+    return mapOperator(changed.rows[0]);
+  } catch (error) { await client.query('ROLLBACK'); throw error; }
+  finally { client.release(); }
+}
 export async function listAudit(count = 100) {
   await ensureControlSchema();
   const result = await getControlPool().query('SELECT id,tenant_id,operator_id,action,detail,created_at FROM ez_control.audit ORDER BY created_at DESC LIMIT $1', [Math.max(1, Math.min(500, count))]);

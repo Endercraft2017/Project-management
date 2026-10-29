@@ -50,8 +50,22 @@ export interface TenantInput {
   seatLimit?: number;
   aiTokenLimit?: number;
 }
+const operatorErrorCodes = [
+  "OPERATOR_REAUTH_REQUIRED",
+  "CURRENT_PASSWORD_INVALID",
+  "PASSWORD_UNCHANGED",
+  "OPERATOR_CREDENTIALS_CHANGED",
+  "PASSWORD_CHANGED_SIGN_IN_REQUIRED",
+] as const;
+type OperatorErrorCode = (typeof operatorErrorCodes)[number];
+function operatorErrorCode(value: unknown): OperatorErrorCode | undefined {
+  return operatorErrorCodes.find((code) => code === value);
+}
 export class AccessError extends Error {
-  constructor(public status: number) {
+  constructor(
+    public status: number,
+    public code?: OperatorErrorCode,
+  ) {
     super("Access request failed");
   }
 }
@@ -67,13 +81,23 @@ async function request<T>(
       url: path,
       data,
     });
-    if (!response.data.success) throw new AccessError(response.status);
+    if (!response.data.success)
+      throw new AccessError(
+        response.status,
+        operatorErrorCode((response.data as { error?: unknown }).error),
+      );
     return response.data;
   } catch (error) {
     if (error instanceof AccessError) throw error;
-    const status =
-      (error as { response?: { status?: number } })?.response?.status || 0;
-    throw new AccessError(status);
+    const response = (
+      error as {
+        response?: { status?: number; data?: { error?: unknown } };
+      }
+    )?.response;
+    throw new AccessError(
+      response?.status || 0,
+      operatorErrorCode(response?.data?.error),
+    );
   }
 }
 export const accessApi = {
@@ -94,6 +118,10 @@ export const accessApi = {
     request<{ user: OperatorUser }>("post", "/api/console/login", input),
   operatorMe: () => request<{ user: OperatorUser }>("get", "/api/console/me"),
   operatorLogout: () => request("post", "/api/console/logout"),
+  changeOperatorPassword: (input: {
+    currentPassword: string;
+    newPassword: string;
+  }) => request("post", "/api/console/password", input),
   tenants: async () =>
     (await request<{ data: PublicTenant[] }>("get", "/api/console/tenants"))
       .data,

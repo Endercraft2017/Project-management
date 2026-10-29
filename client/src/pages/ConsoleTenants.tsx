@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AccessFrame, Notice } from "@/components/console/AccessFrame";
+import { OperatorPasswordForm } from "@/components/console/OperatorPasswordForm";
 import ConsoleLogin from "./ConsoleLogin";
 import {
   accessApi,
@@ -102,6 +103,25 @@ function TenantLimits({
           />
         </div>
         <div className="ez-field">
+          <label htmlFor={`seats-${tenant.id}`}>Account slot limit</label>
+          <input
+            id={`seats-${tenant.id}`}
+            type="number"
+            min="1"
+            max="10000"
+            step="1"
+            required
+            value={seats}
+            onChange={(e) => setSeats(e.target.value)}
+            disabled={pending}
+            aria-describedby={`seats-help-${tenant.id}`}
+          />
+          <small id={`seats-help-${tenant.id}`}>
+            Includes active and pending accounts. Reducing the cap does not
+            remove existing accounts; new accounts need an available slot.
+          </small>
+        </div>
+        <div className="ez-field">
           <label htmlFor={`ai-${tenant.id}`}>AI token allowance</label>
           <input
             id={`ai-${tenant.id}`}
@@ -113,7 +133,10 @@ function TenantLimits({
             onChange={(e) => setAI(e.target.value)}
             disabled={pending}
           />
-          <small>Zero disables AI. This does not enable a paid provider.</small>
+          <small>
+            Cumulative allowance, with no monthly reset. Zero disables AI. This
+            does not configure or enable an AI provider.
+          </small>
         </div>
         {error && <Notice>{error}</Notice>}
         <button type="submit" className="ez-button" disabled={pending}>
@@ -129,6 +152,7 @@ export default function ConsoleTenants() {
     "loading" | "ready" | "anonymous" | "error"
   >("loading");
   const [operator, setOperator] = useState<OperatorUser | null>(null);
+  const [signInNotice, setSignInNotice] = useState("");
   const [tenants, setTenants] = useState<PublicTenant[]>([]);
   const [audit, setAudit] = useState<AuditRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -190,16 +214,24 @@ export default function ConsoleTenants() {
   useEffect(() => {
     if (setup) setupHeading.current?.focus();
   }, [setup]);
+  function requireSignIn(message: string) {
+    setTenants([]);
+    setAudit([]);
+    setSetup(null);
+    setOperator(null);
+    setSignInNotice(message);
+    setSession("anonymous");
+  }
   function failure(error: unknown) {
     if (
       error instanceof AccessError &&
       (error.status === 401 || error.status === 403)
     ) {
-      setTenants([]);
-      setAudit([]);
-      setSetup(null);
-      setOperator(null);
-      setSession("anonymous");
+      requireSignIn(
+        error.code === "OPERATOR_REAUTH_REQUIRED"
+          ? "Sign in again before issuing an owner recovery link. No reset link has been issued."
+          : "Your operator session has ended. Sign in again to continue.",
+      );
     } else setActionError(accessErrorMessage(error));
   }
   async function refresh() {
@@ -353,7 +385,7 @@ export default function ConsoleTenants() {
       );
     }
   }
-  if (session === "anonymous") return <ConsoleLogin />;
+  if (session === "anonymous") return <ConsoleLogin notice={signInNotice} />;
   if (session === "loading")
     return (
       <AccessFrame title="Operator console" eyebrow="Verifying your session">
@@ -540,8 +572,8 @@ export default function ConsoleTenants() {
                 disabled={Boolean(busy)}
               />
               <small>
-                Zero by default. A limit alone does not configure or enable a
-                paid AI provider.
+                Zero by default. Cumulative, with no monthly reset. A limit
+                alone does not configure or enable an AI provider.
               </small>
             </div>
           </div>
@@ -704,6 +736,10 @@ export default function ConsoleTenants() {
           </div>
         )}
       </section>
+      <OperatorPasswordForm
+        disabled={Boolean(busy) || loading || Boolean(loadError)}
+        onSignInRequired={requireSignIn}
+      />
       <section className="ez-card ez-section" aria-labelledby="audit-heading">
         <h2 id="audit-heading">Recent audit activity</h2>
         {!loading && !loadError && audit.length === 0 && (

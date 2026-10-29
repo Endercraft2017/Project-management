@@ -8,6 +8,13 @@ import * as uploadService from './service';
 import { uploadChatAttachmentSchema, listFilesQuerySchema } from './validators';
 import { ZodError } from 'zod';
 import multer from 'multer';
+import { UploadStorageUnavailable } from './storage-policy';
+
+function storageUnavailable(error: unknown, res: Response): boolean {
+  if (!(error instanceof UploadStorageUnavailable)) return false;
+  res.status(503).json({ success: false, error: error.code, message: error.message });
+  return true;
+}
 
 /**
  * Upload a generic file
@@ -32,6 +39,7 @@ export async function uploadFile(req: Request, res: Response) {
       data: { ...result, ...('url' in result ? { url: `${result.url}?workspaceContext=${encodeURIComponent(req.session.workspaceContext || '')}` } : {}) },
     });
   } catch (error: any) {
+    if (storageUnavailable(error, res)) return;
     console.error('[Upload] Error uploading file:', error.message);
 
     if (error.message.includes('Unsupported file type')) {
@@ -73,6 +81,7 @@ export async function importTasks(req: Request, res: Response) {
       data: result,
     });
   } catch (error: any) {
+    if (storageUnavailable(error, res)) return;
     console.error('[Upload] Error importing tasks:', error.message);
 
     if (
@@ -125,6 +134,7 @@ export async function uploadChatAttachment(req: Request, res: Response) {
       data: { ...result, url: `${result.url}?workspaceContext=${encodeURIComponent(req.session.workspaceContext || '')}` },
     });
   } catch (error: any) {
+    if (storageUnavailable(error, res)) return;
     console.error('[Upload] Error uploading chat attachment:', error.message);
 
     if (error instanceof ZodError) {
@@ -303,6 +313,7 @@ export function handleMulterError(
   res: Response,
   next: NextFunction
 ) {
+  if (storageUnavailable(error, res)) return;
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({

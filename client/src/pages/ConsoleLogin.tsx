@@ -6,7 +6,7 @@ import {
   navigateTo,
   passwordBytes,
 } from "@/lib/access-api";
-export default function ConsoleLogin() {
+export default function ConsoleLogin({ notice }: { notice?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -40,6 +40,7 @@ export default function ConsoleLogin() {
         Manage company workspaces with your operator account. Company
         administrators do not have console access.
       </p>
+      {notice && <Notice>{notice}</Notice>}
       {error && <Notice>{error}</Notice>}
       <form className="ez-form" onSubmit={submit} aria-busy={pending}>
         <div className="ez-field">

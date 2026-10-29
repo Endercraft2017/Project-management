@@ -16,7 +16,7 @@ describe('disabled external login capability', () => {
     const route = authRoutes.stack.find((layer) => layer.route?.path === '/capabilities')!.route;
     const json = jest.fn();
     route.stack[0].handle({} as Request, { json } as unknown as Response, jest.fn());
-    expect(json).toHaveBeenCalledWith({ success: true, passwordEnabled: true, googleEnabled: false, driveEnabled: false, aiEnabled: false });
+    expect(json).toHaveBeenCalledWith({ success: true, passwordEnabled: true, googleEnabled: false, driveEnabled: false, aiEnabled: false, uploadEnabled: true });
   });
 
   it.each(['/google', '/drive'])('fails %s closed without following query return hints', (path) => {

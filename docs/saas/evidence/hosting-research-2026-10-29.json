@@ -1,0 +1,101 @@
+{
+  "checked_date": "2026-10-29",
+  "sources": [
+    {
+      "source": "railway-pricing",
+      "url": "https://docs.railway.com/pricing/plans",
+      "status": "retrieved",
+      "textLength": 14505,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "railway-health",
+      "url": "https://docs.railway.com/deployments/healthchecks",
+      "status": "retrieved",
+      "textLength": 7820,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "railway-ssh",
+      "url": "https://docs.railway.com/cli",
+      "status": "retrieved",
+      "textLength": 13164,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "paddle-countries",
+      "url": "https://www.paddle.com/help/start/intro-to-paddle/which-countries-are-supported-by-paddle",
+      "status": "retrieved",
+      "textLength": 6178,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "paymongo",
+      "error": "HTTP Error 403: Forbidden",
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS",
+      "status": "blocked",
+      "url": "https://developers.paymongo.com/docs/introduction"
+    },
+    {
+      "source": "ai-data",
+      "url": "https://developers.openai.com/api/docs/guides/your-data",
+      "status": "retrieved",
+      "textLength": 66138,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "r2-pricing",
+      "error": "HTTP Error 403: Forbidden",
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS",
+      "status": "blocked",
+      "url": "https://developers.cloudflare.com/r2/pricing/"
+    },
+    {
+      "source": "railway-volumes",
+      "url": "https://docs.railway.com/volumes",
+      "status": "retrieved",
+      "textLength": 8196,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "railway-cost-control",
+      "url": "https://docs.railway.com/pricing/cost-control",
+      "status": "retrieved",
+      "textLength": 9312,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "paddle-pricing",
+      "url": "https://www.paddle.com/pricing",
+      "status": "retrieved",
+      "textLength": 7234,
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS"
+    },
+    {
+      "source": "openai-pricing",
+      "error": "HTTP Error 403: Forbidden",
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS",
+      "status": "blocked",
+      "url": "https://openai.com/api/pricing/"
+    },
+    {
+      "source": "owasp-password",
+      "error": "HTTP Error 403: Forbidden",
+      "checked_date": "2026-10-29",
+      "method": "Read-only HTTPS via inherited proxy and verified TLS",
+      "status": "blocked",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+    }
+  ]
+}

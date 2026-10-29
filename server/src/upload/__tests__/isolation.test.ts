@@ -6,6 +6,8 @@ import {runWithTenant, getTenantContext} from '@/tenancy/context';
 import * as uploads from '../multer-config';
 import * as service from '../service';
 import * as usage from '@/platform/usage';
+import { handleMulterError } from '../controller';
+import { uploadsEnabled } from '../storage-policy';
 const mockRoot = '/tmp/ez-upload-tests-' + process.pid;
 let mockUsed = 0,
   mockLimit = 1024,
@@ -227,6 +229,83 @@ test('multipart async callback restores ALS before the controller', async () => 
     path: null,
   });
   expect(usage.reserveStorage).not.toHaveBeenCalled();
+});
+
+describe('production durable-storage admission', () => {
+  let previousNodeEnv: string | undefined;
+  let previousConfirmation: string | undefined;
+  beforeEach(() => {
+    previousNodeEnv = process.env.NODE_ENV;
+    previousConfirmation = process.env.STORAGE_PERSISTENCE_CONFIRMED;
+    process.env.NODE_ENV = 'production';
+    delete process.env.STORAGE_PERSISTENCE_CONFIRMED;
+  });
+  afterEach(() => {
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousConfirmation === undefined) delete process.env.STORAGE_PERSISTENCE_CONFIRMED;
+    else process.env.STORAGE_PERSISTENCE_CONFIRMED = previousConfirmation;
+  });
+
+  test('rejects before multipart parsing, controller work, reservation or disk writes', async () => {
+    const controller = jest.fn((_req, res) => res.json({ success: true }));
+    const app = express();
+    app.use((req: any, _res, next) => {
+      req.user = { id: 'user' };
+      req.isAuthenticated = () => true;
+      runWithTenant(tenant, next);
+    });
+    app.post('/', uploads.upload.single('file'), controller);
+    app.use(handleMulterError);
+    const response = await request(app).post('/').attach('file', Buffer.from('invalid'), {
+      filename: 'unsupported.exe', contentType: 'application/octet-stream',
+    });
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      success: false,
+      error: 'UPLOAD_STORAGE_UNAVAILABLE',
+      message: 'File uploads are unavailable until durable storage is configured. Contact your operator.',
+    });
+    expect(controller).not.toHaveBeenCalled();
+    expect(usage.reserveStorage).not.toHaveBeenCalled();
+    await expect(fs.stat(mockRoot)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  test('direct persistence cannot bypass the production guard', async () => {
+    const f = file('hello');
+    await expect(runWithTenant(tenant, () => uploads.persistUpload(f, 'user')))
+      .rejects.toMatchObject({ status: 503, code: 'UPLOAD_STORAGE_UNAVAILABLE' });
+    expect(usage.reserveStorage).not.toHaveBeenCalled();
+    expect(f.buffer.toString()).toBe('hello');
+    await expect(fs.stat(mockRoot)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  test('confirmation plus an absolute path permits configured production storage', async () => {
+    process.env.STORAGE_PERSISTENCE_CONFIRMED = 'true';
+    expect(uploadsEnabled('/private/uploads')).toBe(true);
+    expect(uploadsEnabled('uploads')).toBe(false);
+    expect(uploadsEnabled('')).toBe(false);
+    const f = file('durable');
+    await runWithTenant(tenant, () => uploads.persistUpload(f, 'user'));
+    expect(await fs.readFile(f.path, 'utf8')).toBe('durable');
+    expect(mockUsed).toBe(7);
+  });
+
+  test('a truthy-looking flag does not confirm persistence', () => {
+    process.env.STORAGE_PERSISTENCE_CONFIRMED = 'false';
+    expect(uploadsEnabled('/private/uploads')).toBe(false);
+  });
+
+  test('authorized reads remain available while new uploads are refused', async () => {
+    const directory = path.join(mockRoot, tenant.id);
+    const target = path.join(directory, 'v1-existing.txt');
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(target, 'existing');
+    mockRecord = { id: 'file', uploadedById: 'user', path: target, conversation: null };
+    const result = await runWithTenant(tenant, () => service.getFileById('file', 'user'));
+    expect(await fs.readFile(result.path, 'utf8')).toBe('existing');
+    expect(usage.reserveStorage).not.toHaveBeenCalled();
+  });
 });
 
 export {};

@@ -1,5 +1,19 @@
 # Production candidate verification
 
+## Follow-up verified 2026-10-29
+
+The operator/storage patch passed the full workspace typecheck and build, **149 maintained backend tests across 18 suites**, **64 frontend tests across 14 files**, strict frontend lint and backend lint (0 errors, 176 warnings). Changed dependencies: none. A credential-pattern guard and `git diff --check` passed. These results apply to the follow-up source; they do not imply every original audit item passed.
+
+The guarded local PostgreSQL/HTTP harness passed **39 checks**, including operator current-password/origin/policy enforcement, regenerated cookie, revocation of both previous sessions, old-password rejection, credential-free audit and competing credential updates. The compiled production UI harness passed **6 checks**. Six carousel/legacy-link browser journeys passed; the access journey initially failed because its screenshot guard assumed no password inputs existed at all. The guard now requires hidden password fields to be empty and forbids visible password fields, preserving setup-token protection. The rerun of the real access journey passed, including password rotation with two separate sessions, old/new password checks, company activation/isolation and responsive screenshots. No provider call or production fixture was used. Other historical socket/chat/hierarchy/backup harnesses below were not rerun for this patch.
+
+Production upload tests prove refusal before multipart parsing, quota reservation or disk writes, direct-persistence refusal, explicit configuration admission, false-flag rejection and authorized existing reads. An absolute path plus the confirmation flag is an operator assertion, not proof that a volume or backup exists.
+
+Railway configuration was read through a ready project-token binding. The earlier deployed `a8157a85` was verified healthy through the Railway origin; the custom domain blocks automated requests from this environment. Missing operator-session configuration was fixed in the preceding turn. This follow-up updates effective startup to `npm start` and deployment healthcheck to `/health/ready`; release verification is recorded separately below when available. Billing controls, production operator existence, hosted file inventory, durable uploads, worker and off-site backup schedules remain unverified. No initial operator/default password, paid service, data reset, Google/AI enablement or main merge was performed.
+
+Primary-source [hosting/provider research](HOSTING-AND-PROVIDERS.md) and its [retrieval ledger](evidence/hosting-research-2026-10-29.json) distinguish retrieved evidence from blocked sources and outstanding owner inputs.
+
+## Earlier pilot evidence
+
 Verified locally on 2026-10-28, on branch `production`, based on `f3cd5ed44714b939ad62fd83602c1c346427491c`. These results describe the reviewed source candidate. Hosted GitHub checks, live provider accounts and production deployment have not been verified by these local runs.
 
 Follow-up for the reported old Google sign-in link: the full build, **136 backend tests**, **56 frontend tests** and **6 checks against compiled production login pages** pass. Browser HTML navigation to the disabled Google entry/callback redirects to native login; JSON callers retain 503. HTML entry documents are not stored. The 84 database/recovery checks and 7 broader browser journeys below are the preceding pilot baseline, not a claim they were all rerun for this small follow-up. Live `ez.afkcube.com` requests returned 403 from the work environment, so its deployed commit/cache could not be inspected. See the [deployment troubleshooting guide](../operations/production-runbook.md#old-google-sign-in-page-or-capability_disabled-in-the-browser).

@@ -12,6 +12,7 @@ import {
   TenantContext,
 } from '@/tenancy/context';
 import { reserveStorage, releaseStorage } from '@/platform/usage';
+import { requireDurableUploadStorage } from './storage-policy';
 const root = path.resolve(
   path.isAbsolute(fileUploadConfig.uploadDir)
     ? fileUploadConfig.uploadDir
@@ -179,6 +180,11 @@ function scopedParser(parser: multer.Multer): multer.Multer {
       return (...args: any[]) => {
         const handler = value.apply(target, args);
         return (req: Request, res: any, next: any) => {
+          try {
+            requireDurableUploadStorage(fileUploadConfig.uploadDir);
+          } catch (error) {
+            return next(error);
+          }
           let tenant: Readonly<TenantContext>;
           try {
             tenant = getTenantContext();
@@ -213,6 +219,7 @@ export async function persistUpload(
   file: Express.Multer.File,
   userId: string,
 ): Promise<void> {
+  requireDurableUploadStorage(fileUploadConfig.uploadDir);
   await activeUser(userId);
   if (
     !Buffer.isBuffer(file.buffer) ||
