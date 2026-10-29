@@ -5,8 +5,10 @@ import { Notice } from "./AccessFrame";
 export function OperatorMfaForm({
   disabled,
   onSignInRequired,
+  onPendingChange,
 }: {
   disabled: boolean;
+  onPendingChange?: (pending: boolean) => void;
   onSignInRequired: (notice: string) => void;
 }) {
   const [status, setStatus] = useState<{
@@ -40,6 +42,7 @@ export function OperatorMfaForm({
     event.preventDefault();
     if (pending || disabled || !status) return;
     setPending(true);
+    onPendingChange?.(true);
     setError("");
     setNotice("");
     try {
@@ -87,6 +90,7 @@ export function OperatorMfaForm({
       setPassword("");
       setToken("");
       setPending(false);
+      onPendingChange?.(false);
     }
   }
   return (

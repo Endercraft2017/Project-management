@@ -409,3 +409,24 @@
     transition: none !important;
   }
 }
+.ez-password-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ez-subtle);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ez-password-toggle:hover:not(:disabled) {
+  color: var(--ez-text);
+}
+.ez-password-toggle:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}

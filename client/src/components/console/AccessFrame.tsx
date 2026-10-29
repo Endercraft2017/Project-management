@@ -18,7 +18,7 @@ export function AccessFrame({
   return (
     <main className={`ez-access ${wide ? "ez-access--wide" : ""}`}>
       <header className="ez-access-header">
-        <a href="/" className="ez-access-brand" aria-label="E-Z home">
+        <a href="/" className="ez-access-brand">
           <img src="/brand/ez-logo-64.png" width="42" height="42" alt="" />
           <span>
             {BRAND.name}

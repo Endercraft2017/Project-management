@@ -134,6 +134,9 @@ test("real operator, company activation and tenant credentials stay separated", 
     otherOp.getByRole("heading", { name: "Company workspaces" }),
   ).toBeVisible();
   const rotatedPassword = `Rotation-${randomBytes(20).toString("base64url")}`;
+  await op
+    .getByRole("button", { name: "Account security", exact: true })
+    .click();
   await op.getByText("Change your password", { exact: true }).click();
   await passwordEntry(op, "Current password", operatorPassword);
   await passwordEntry(op, "New password", rotatedPassword);
@@ -162,13 +165,18 @@ test("real operator, company activation and tenant credentials stay separated", 
     otherOp.getByRole("heading", { name: "Company workspaces" }),
   ).toBeVisible();
   await otherOpContext.close();
+  await op.getByRole("button", { name: "Workspaces", exact: true }).click();
   async function createCompany(suffix: string) {
+    await op
+      .getByRole("button", { name: "Create company", exact: true })
+      .click();
     await op
       .getByLabel("Company name", { exact: true })
       .fill(`Browser fixture ${stamp} ${suffix}`);
     await op.getByLabel("Owner name", { exact: true }).fill("Fixture Owner");
     await op.getByLabel("Owner email", { exact: true }).fill(ownerEmail);
     await op
+      .getByRole("dialog", { name: "Create a company", exact: true })
       .getByRole("button", { name: "Create company", exact: true })
       .click();
     const link = op.getByLabel("Owner setup link", { exact: true });
@@ -229,16 +237,33 @@ test("real operator, company activation and tenant credentials stay separated", 
   const row = op
     .getByRole("row")
     .filter({ has: op.getByText(companyA.code, { exact: true }) });
-  await row.getByRole("button", { name: "Suspend", exact: true }).click();
-  await expect(row.getByText("SUSPENDED", { exact: true })).toBeVisible();
+  await row
+    .getByRole("button", { name: /Manage/ })
+    .first()
+    .click();
+  await op.getByRole("button", { name: "Suspend", exact: true }).click();
+  await op
+    .getByRole("button", { name: "Confirm suspension", exact: true })
+    .click();
+  if (await op.getByRole("dialog").count())
+    await op.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await expect(row.getByText("suspended", { exact: true })).toBeVisible();
   await a.goto("/login");
   await a.getByLabel("Company code").fill(companyA.code);
   await a.getByLabel("Email address").fill(ownerEmail);
   await passwordEntry(a, "Password", passwordA);
   await a.getByRole("button", { name: "Log in", exact: true }).click();
   await expect(a.getByRole("alert")).toContainText("could not be verified");
-  await row.getByRole("button", { name: "Resume", exact: true }).click();
-  await expect(row.getByText("ACTIVE", { exact: true })).toBeVisible();
+  await row
+    .getByRole("button", { name: /Manage/ })
+    .first()
+    .click();
+  await op.getByRole("button", { name: "Resume", exact: true }).click();
+  await op.getByRole("button", { name: "Confirm resume", exact: true }).click();
+  if (await op.getByRole("dialog").count())
+    await op.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await expect(row.getByText("active", { exact: true })).toBeVisible();
+  await op.getByRole("button", { name: "Activity", exact: true }).click();
   await expect(
     op.getByRole("heading", { name: "Recent audit activity" }),
   ).toBeVisible();

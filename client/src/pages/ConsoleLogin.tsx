@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { AccessFrame, Notice } from "@/components/console/AccessFrame";
 import {
   accessApi,
@@ -9,6 +10,7 @@ import {
 export default function ConsoleLogin({ notice }: { notice?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [challenge, setChallenge] = useState(false);
@@ -126,11 +128,28 @@ export default function ConsoleLogin({ notice }: { notice?: string }) {
             />
           </div>
           <div className="ez-field">
-            <label htmlFor="operator-password">Password</label>
+            <div className="ez-label-row">
+              <label htmlFor="operator-password">Password</label>
+              <button
+                className="ez-password-toggle"
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                disabled={pending}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff size={16} aria-hidden="true" />
+                ) : (
+                  <Eye size={16} aria-hidden="true" />
+                )}
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
             <input
               id="operator-password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
               maxLength={72}

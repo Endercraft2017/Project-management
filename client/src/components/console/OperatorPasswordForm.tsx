@@ -10,8 +10,10 @@ import {
 export function OperatorPasswordForm({
   disabled,
   onSignInRequired,
+  onPendingChange,
 }: {
   disabled: boolean;
+  onPendingChange?: (pending: boolean) => void;
   onSignInRequired: (message: string) => void;
 }) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -45,6 +47,7 @@ export function OperatorPasswordForm({
       return;
     }
     setPending(true);
+    onPendingChange?.(true);
     try {
       await accessApi.changeOperatorPassword({ currentPassword, newPassword });
       setSuccess(true);
@@ -80,6 +83,7 @@ export function OperatorPasswordForm({
       setNewPassword("");
       setConfirmation("");
       setPending(false);
+      onPendingChange?.(false);
     }
   }
 
