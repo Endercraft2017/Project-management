@@ -30,6 +30,7 @@ import adminRoutes from './admin/routes';
 import exportRoutes from './export/routes';
 import { corsConfig, serverConfig } from './config';
 import { checkDatabaseConnection } from './database/client';
+import { legacyServiceWorkerRoutes } from './delivery/legacy-service-worker';
 
 const app: Express = express();
 const privateJsonKeys = new Set([
@@ -62,6 +63,7 @@ app.use(compression());
  */
 const clientBuildPath = path.join(__dirname, '../../client/dist');
 if (serverConfig.isProduction) {
+  app.use(legacyServiceWorkerRoutes);
   app.use(
     express.static(clientBuildPath, {
       index: false,
